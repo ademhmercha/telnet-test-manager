@@ -1,0 +1,313 @@
+{
+  "commands": [
+    {
+      "id": "wifi-wl0",
+      "name": "WiFi Interface wl0",
+      "type": "single",
+      "command": "scos-wifi show wl0",
+      "description": "Affiche la configuration WiFi de l'interface wl0"
+    },
+    {
+      "id": "wifi-2.4ghz",
+      "name": "WiFi 2.4GHz",
+      "type": "single",
+      "command": "scos-wifi show 2.4GHz",
+      "description": "Affiche la configuration WiFi 2.4GHz"
+    },
+    {
+      "id": "wifi-5ghz",
+      "name": "WiFi 5GHz",
+      "type": "single",
+      "command": "scos-wifi show 5GHz",
+      "description": "Affiche la configuration WiFi 5GHz"
+    },
+    {
+      "id": "wifi-all",
+      "name": "WiFi toutes interfaces",
+      "type": "single",
+      "command": "scos-wifi show all",
+      "description": "Affiche toutes les interfaces WiFi (avec erreurs de syntaxe)"
+    },
+    {
+      "id": "keys",
+      "name": "Moniteur clés",
+      "type": "monitoring",
+      "command": "scos-keys monitor",
+      "description": "Active le monitoring des touches/clés du système",
+      "expectedEvents": ["KEY_WLAN:PRESSED", "KEY_WPS_BUTTON:PRESSED", "KEY_RESTART:PRESSED"]
+    },
+    {
+      "id": "events-monitor",
+      "name": "Moniteur événements système",
+      "type": "monitoring",
+      "command": "scos-events monitor",
+      "description": "Surveille les événements système en temps réel"
+    },
+    {
+      "id": "log-monitor",
+      "name": "Moniteur logs",
+      "type": "monitoring",
+      "command": "tail -f /var/log/system.log",
+      "description": "Surveille les logs système en continu"
+    },
+    {
+      "id": "temp",
+      "name": "Vérifier température",
+      "type": "single",
+      "command": "scos-sensors temp",
+      "description": "Affiche les informations de température des capteurs",
+      "expectedResponse": "temperature sensors:"
+    },
+    {
+      "id": "current",
+      "name": "Vérifier courant",
+      "type": "single",
+      "command": "scos-sensors current",
+      "description": "Affiche les informations de courant des capteurs"
+    },
+    {
+      "id": "setarch-32",
+      "name": "Architecture 32 bits",
+      "type": "single",
+      "command": "setarch linux32",
+      "description": "Bascule le système en mode 32 bits"
+    },
+    {
+      "id": "setarch-64",
+      "name": "Architecture 64 bits",
+      "type": "single",
+      "command": "setarch linux64",
+      "description": "Bascule le système en mode 64 bits"
+    },
+    {
+      "id": "setpriv-dump",
+      "name": "Voir privilèges système",
+      "type": "single",
+      "command": "setpriv --dump",
+      "description": "Affiche les capacités et privilèges actuels du système"
+    },
+    {
+      "id": "help",
+      "name": "Aide système",
+      "type": "single",
+      "command": "help",
+      "description": "Affiche l'aide et les commandes disponibles"
+    },
+    {
+      "id": "ls-bin",
+      "name": "Lister /bin",
+      "type": "single",
+      "command": "ls /bin",
+      "description": "Liste les commandes disponibles dans /bin"
+    },
+    {
+      "id": "ls-dev",
+      "name": "Lister /dev",
+      "type": "single",
+      "command": "ls /dev",
+      "description": "Liste les devices matériels disponibles"
+    },
+    {
+      "id": "printenv",
+      "name": "Variables environnement",
+      "type": "single",
+      "command": "printenv",
+      "description": "Affiche toutes les variables d'environnement"
+    },
+    {
+      "id": "history",
+      "name": "Historique commandes",
+      "type": "single",
+      "command": "history",
+      "description": "Affiche l'historique des commandes exécutées"
+    },
+    {
+      "id": "reboot",
+      "name": "Redémarrer système",
+      "type": "single",
+      "command": "reboot",
+      "description": "Redémarre le système "
+    },
+    {
+      "id": "ls",
+      "name": "Lister fichiers",
+      "type": "single",
+      "command": "ls",
+      "description": "Affiche la liste des fichiers et répertoires"
+    },
+    {
+      "id": "leds1",
+      "name": "leds on",
+      "type": "single",
+      "command": "scos-leds on all",
+      "description": "all leds on",
+      "expectedResponse": "#"
+    },
+    {
+      "id": "leds2",
+      "name": "leds off",
+      "type": "single",
+      "command": "scos-leds off all",
+      "description": "all leds off",
+      "expectedResponse": "#"
+    },
+    {
+      "id": "ledsOffandON",
+      "name": "Test LEDs cycle",
+      "type": "single",
+      "command": "scos-leds off all && sleep 2 && scos-leds on all",
+      "description": "Tester LEDs avec cycle off/on",
+      "expectedResponse": "#"
+    },
+    {
+      "id": "usb",
+      "name": "CHECK USBS",
+      "type": "single",
+      "command": "scos-storage -b usb test -p P1",
+      "description": "tester USB",
+      "expectedResponse": "USB:P1:2:OK"
+    },
+    {
+      "id": "uptime",
+      "name": "Uptime système",
+      "type": "single",
+      "command": "uptime",
+      "description": "Affiche le temps de fonctionnement du système",
+      "expectedResponse": "up"
+    },
+    {
+      "id": "sequence_check_system",
+      "name": "Vérification complète système",
+      "type": "sequence",
+      "description": "Séquence complète de vérification de l'état du système",
+      "steps": [
+        {
+          "command": "free -h",
+          "expectedResponse": "Mem:",
+          "timeout": 5000,
+          "description": "Vérifier l'utilisation de la mémoire"
+        },
+        {
+          "command": "df -h",
+          "expectedResponse": "Filesystem",
+          "timeout": 5000,
+          "description": "Vérifier l'espace disque"
+        },
+        {
+          "command": "ps aux",
+          "expectedResponse": "USER",
+          "timeout": 10000,
+          "description": "Lister les processus en cours"
+        },
+        {
+          "command": "scos-sensors temp",
+          "expectedResponse": "Temperature",
+          "timeout": 5000,
+          "description": "Vérifier les températures"
+        }
+      ]
+    },
+    {
+      "id": "sequence_led_test",
+      "name": "Test complet LEDs",
+      "type": "sequence",
+      "description": "Séquence de test des LEDs",
+      "steps": [
+        {
+          "command": "scos-leds off all",
+          "expectedResponse": "#",
+          "timeout": 3000,
+          "description": "Éteindre toutes les LEDs"
+        },
+        {
+          "command": "sleep 2",
+          "expectedResponse": "#",
+          "timeout": 3000,
+          "description": "Attendre 2 secondes"
+        },
+        {
+          "command": "scos-leds on all",
+          "expectedResponse": "#",
+          "timeout": 3000,
+          "description": "Allumer toutes les LEDs"
+        },
+        {
+          "command": "sleep 1",
+          "expectedResponse": "#",
+          "timeout": 2000,
+          "description": "Attendre 1 seconde"
+        },
+        {
+          "command": "scos-leds off all",
+          "expectedResponse": "#",
+          "timeout": 3000,
+          "description": "Éteindre toutes les LEDs"
+        }
+      ]
+    },
+    {
+      "id": "sequence_wifi_check",
+      "name": "Diagnostic WiFi complet",
+      "type": "sequence",
+      "description": "Séquence de diagnostic complet des interfaces WiFi",
+      "steps": [
+        {
+          "command": "scos-wifi show wl0",
+          "expectedResponse": "wl0",
+          "timeout": 8000,
+          "description": "Vérifier interface wl0"
+        },
+        {
+          "command": "scos-wifi show 2.4GHz",
+          "expectedResponse": "2.4GHz",
+          "timeout": 8000,
+          "description": "Vérifier WiFi 2.4GHz"
+        },
+        {
+          "command": "scos-wifi show 5GHz",
+          "expectedResponse": "5GHz",
+          "timeout": 8000,
+          "description": "Vérifier WiFi 5GHz"
+        },
+        {
+          "command": "iwconfig",
+          "expectedResponse": "wlan",
+          "timeout": 5000,
+          "description": "Vérifier configuration sans fil"
+        }
+      ]
+    },
+    {
+      "id": "sequence_system_info",
+      "name": "Informations système complètes",
+      "type": "sequence",
+      "description": "Récupère toutes les informations système",
+      "steps": [
+        {
+          "command": "uname -a",
+          "expectedResponse": "Linux",
+          "timeout": 3000,
+          "description": "Version du noyau"
+        },
+        {
+          "command": "uptime",
+          "expectedResponse": "up",
+          "timeout": 3000,
+          "description": "Temps de fonctionnement"
+        },
+        {
+          "command": "whoami",
+          "expectedResponse": "root",
+          "timeout": 2000,
+          "description": "Utilisateur actuel"
+        },
+        {
+          "command": "pwd",
+          "expectedResponse": "/",
+          "timeout": 2000,
+          "description": "Répertoire courant"
+        }
+      ]
+    }
+  ]
+}
