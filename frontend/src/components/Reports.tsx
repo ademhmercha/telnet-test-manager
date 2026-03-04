@@ -37,32 +37,14 @@ const Reports: React.FC = () => {
     posteId: '',
     produitId: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    statusFilter: 'all'
   });
 
   const [postes, setPostes] = useState<any[]>([]);
   const [produits, setProduits] = useState<any[]>([]);
   const [slots, setSlots] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  
   const permissions = usePermissions(user);
-
-  // Filtrer les rapports selon le terme de recherche
-  const filteredReports = reports.filter(report => {
-    if (!searchTerm) return true;
-    
-    // Rechercher dans le nom du produit si disponible
-    const produit = produits.find(p => p.id === report.deviceInfo?.produitId);
-    const produitName = produit?.nom || '';
-    
-    // Rechercher aussi dans l'adresse IP et l'ID du rapport
-    const searchTermLower = searchTerm.toLowerCase();
-    return (
-      produitName.toLowerCase().includes(searchTermLower) ||
-      report.deviceInfo?.adresse?.toLowerCase().includes(searchTermLower) ||
-      report.id?.toLowerCase().includes(searchTermLower)
-    );
-  });
 
   // Utilisation de useCallback pour éviter les recréations de fonctions à chaque rendu
   const loadReports = useCallback(async () => {
@@ -119,7 +101,8 @@ const Reports: React.FC = () => {
         parseInt(generateForm.posteId),
         parseInt(generateForm.produitId),
         generateForm.startDate || undefined,
-        generateForm.endDate || undefined
+        generateForm.endDate || undefined,
+        generateForm.statusFilter !== 'all' ? generateForm.statusFilter : undefined
       );
       
       await loadReports();
@@ -129,7 +112,8 @@ const Reports: React.FC = () => {
         posteId: '',
         produitId: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        statusFilter: 'all'
       });
       
       if (response?.report) {
@@ -196,24 +180,31 @@ const Reports: React.FC = () => {
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background-color: #f5f5f5; }
         .chart-container { width: 400px; margin: 20px auto; }
-        .log-entry.event .log-message {
-            color: #856404;
-        }
         .logs-in-table {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ecf0f1;
+            border: 1px solid #e2e8f0;
             border-radius: 4px;
-            background: #f8f9fa;
+            background: #f8fafc;
+            font-family: 'Consolas', monospace;
         }
-        .logs-in-table .log-entry {
-            padding: 8px;
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            padding: 5px 8px;
             font-size: 11px;
-            border-bottom: 1px solid #ecf0f1;
+            border-bottom: 1px solid #f1f5f9;
         }
-        .logs-in-table .log-entry:last-child {
-            border-bottom: none;
+        .log-entry:last-child { border-bottom: none; }
+        .log-dir {
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-size: 10px;
         }
+        .log-entry.cmd .log-dir  { color: #1d4ed8; }
+        .log-entry.resp .log-dir { color: #15803d; }
+        .log-entry.err .log-dir  { color: #dc2626; }
+        .log-entry.other         { color: #64748b; }
     </style>
 </head>
 <body>
@@ -255,24 +246,20 @@ const Reports: React.FC = () => {
                         : 'N/A';
                     const statusClass = test.status.toLowerCase();
                     
-                    const logsHTML = test.logs && Array.isArray(test.logs) && test.logs.length > 0 
+                    const logsHTML = test.logs && Array.isArray(test.logs) && test.logs.length > 0
                         ? test.logs.map((log: any) => {
                             const logStr = String(log);
-                            const timeMatch = logStr.match(/\[(.*?)\]/);
-                            const time = timeMatch ? timeMatch[1] : '';
-                            const message = logStr.replace(/\[.*?\]\s*/, '');
-                            
-                            let logClass = 'info';
-                            if (logStr.includes('SUCCESS')) logClass = 'success';
-                            else if (logStr.includes('FAIL') || logStr.includes('Erreur')) logClass = 'failure';
-                            else if (logStr.includes('Événement')) logClass = 'event';
-                            
-                            return `<div class="log-entry ${logClass}">
-                                        <span class="log-time">${time}</span>
-                                        <span class="log-message">${message}</span>
-                                    </div>`;
+                            const content = logStr.replace(/^\[[^\]]+\]\s*/, '');
+                            if (content.startsWith('→ ')) {
+                              return `<div class="log-entry cmd"><span class="log-dir">(pc→gw)</span> <span class="log-message">${content.slice(2)}</span></div>`;
+                            } else if (content.startsWith('Réponse: ')) {
+                              return `<div class="log-entry resp"><span class="log-dir">(gw→pc)</span> <span class="log-message">${content.slice(9)}</span></div>`;
+                            } else if (content.toLowerCase().includes('erreur') || content.toLowerCase().includes('error')) {
+                              return `<div class="log-entry err"><span class="log-dir">(!)</span> <span class="log-message">${content}</span></div>`;
+                            }
+                            return `<div class="log-entry other"><span class="log-message">${content}</span></div>`;
                           }).join('')
-                        : '<div class="log-entry info"><span class="log-message">Aucun log disponible</span></div>';
+                        : '<div class="log-entry other"><span class="log-message">Aucun log</span></div>';
                     
                     return `
                         <tr>
@@ -331,15 +318,6 @@ const Reports: React.FC = () => {
       <div className="reports-header">
         <h1>Rapports de Tests</h1>
         <div className="header-actions">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Rechercher par produit, adresse IP ou ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
           {permissions.canRunTests() && (
             <button 
               className="btn btn-primary" 
@@ -362,10 +340,10 @@ const Reports: React.FC = () => {
         <div className="loading">Chargement des rapports...</div>
       ) : (
         <div className="reports-list">
-          {filteredReports.length === 0 ? (
+          {reports.length === 0 ? (
             <div className="empty-state">
               <h3>Aucun rapport trouvé</h3>
-              <p>{searchTerm ? 'Aucun rapport ne correspond à votre recherche.' : 'Générez votre premier rapport pour voir les résultats des tests.'}</p>
+              <p>Générez votre premier rapport pour voir les résultats des tests.</p>
             </div>
           ) : (
             <div className="table-responsive">
@@ -375,21 +353,17 @@ const Reports: React.FC = () => {
                     <th>Date</th>
                     <th>Appareil</th>
                     <th>Produit</th>
-                    <th>Statut</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredReports.map(report => {
+                  {reports.map(report => {
                     const produit = produits.find(p => p.id === report.deviceInfo?.produitId);
                     return (
                       <tr key={report.id}>
                         <td>{new Date(report.createdAt).toLocaleDateString('fr-FR')}</td>
                         <td>{report.deviceInfo?.adresse}:{report.deviceInfo?.port}</td>
                         <td>{produit?.nom || 'N/A'}</td>
-                        <td className={report.summary?.successRate >= 50 ? 'success' : 'failure'}>
-                          {report.summary?.successRate}% succès
-                        </td>
                         <td>
                           <div className="action-buttons">
                             <button 
@@ -479,6 +453,14 @@ const Reports: React.FC = () => {
                 <label>Date fin</label>
                 <input type="date" value={generateForm.endDate} onChange={(e) => setGenerateForm({...generateForm, endDate: e.target.value})} />
               </div>
+              <div className="form-group">
+                <label>Inclure les tests</label>
+                <select value={generateForm.statusFilter} onChange={(e) => setGenerateForm({...generateForm, statusFilter: e.target.value})}>
+                  <option value="all">Tous les tests</option>
+                  <option value="success">✔ Pass seulement</option>
+                  <option value="fail">✖ Fail seulement</option>
+                </select>
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowGenerateModal(false)}>Annuler</button>
@@ -511,11 +493,49 @@ const Reports: React.FC = () => {
                 <h3>Logs des tests</h3>
                 <div className="logs-viewer">
                   {selectedReport.tests?.map((test, i) => (
-                    <div key={i} className="test-block">
-                      <h4>{test.commandId} - <span className={test.status === 'SUCCESS' ? 'success' : 'failure'}>{test.status}</span></h4>
-                      <pre className="log-content">
-                        {test.logs?.join('\n') || 'Aucun log'}
-                      </pre>
+                    <div key={i} className={`test-block ${test.status === 'SUCCESS' ? 'test-block-success' : 'test-block-fail'}`}>
+                      <h4>
+                        {test.commandId}
+                        <span className={`test-status-badge ${test.status === 'SUCCESS' ? 'badge-success' : 'badge-fail'}`}>
+                          {test.status === 'SUCCESS' ? '✔ Pass' : '✖ Fail'}
+                        </span>
+                      </h4>
+                      <div className="log-lines">
+                        {(test.logs || []).length === 0
+                          ? <div className="log-empty">Aucun log</div>
+                          : (test.logs as string[]).map((line, j) => {
+                              const tsMatch = line.match(/^\[([^\]]+)\]\s*/);
+                              const content = tsMatch ? line.slice(tsMatch[0].length) : line;
+                              if (content.startsWith('→ ')) {
+                                return (
+                                  <div key={j} className="log-row log-cmd">
+                                    <span className="log-dir">(pc→gw)</span>
+                                    <span className="log-text">{content.slice(2)}</span>
+                                  </div>
+                                );
+                              } else if (content.startsWith('Réponse: ')) {
+                                return (
+                                  <div key={j} className="log-row log-resp">
+                                    <span className="log-dir">(gw→pc)</span>
+                                    <span className="log-text">{content.slice(9)}</span>
+                                  </div>
+                                );
+                              } else if (content.toLowerCase().includes('erreur') || content.toLowerCase().includes('error')) {
+                                return (
+                                  <div key={j} className="log-row log-err">
+                                    <span className="log-dir">(!)</span>
+                                    <span className="log-text">{content}</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={j} className="log-row log-other">
+                                  <span className="log-text">{content}</span>
+                                </div>
+                              );
+                            })
+                        }
+                      </div>
                     </div>
                   ))}
                 </div>

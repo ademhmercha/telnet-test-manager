@@ -444,6 +444,98 @@
   border: 1px solid #1e293b;
 }
 
+/* ─── Status filter buttons ─────────────────────────────────────────────────── */
+.status-filter {
+  display: flex;
+  gap: 4px;
+}
+
+.filter-btn {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.filter-btn.active,
+.filter-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border-deep); }
+
+.filter-btn.filter-pass.active { background: #f0fdf4; color: var(--success); border-color: #86efac; }
+.filter-btn.filter-fail.active { background: var(--fail-bg); color: var(--fail); border-color: #fca5a5; }
+
+/* ─── Log lines inside test block ───────────────────────────────────────────── */
+.test-block-success { border-left: 3px solid var(--success); }
+.test-block-fail    { border-left: 3px solid var(--fail); }
+
+.test-block h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-status-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.badge-success { background: #dcfce7; color: var(--success); }
+.badge-fail    { background: #fee2e2; color: var(--fail); }
+
+.log-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.75rem;
+}
+
+.log-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.log-dir {
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  padding-top: 1px;
+}
+
+.log-cmd  { background: #eff6ff; }
+.log-cmd  .log-dir  { color: #1d4ed8; }
+.log-cmd  .log-text { color: #1e3a8a; }
+
+.log-resp { background: #f0fdf4; }
+.log-resp .log-dir  { color: #15803d; }
+.log-resp .log-text { color: #14532d; }
+
+.log-err  { background: #fef2f2; }
+.log-err  .log-dir  { color: var(--fail); }
+.log-err  .log-text { color: #991b1b; }
+
+.log-other { color: var(--text-muted); padding: 2px 8px; }
+
+.log-text { flex: 1; word-break: break-all; line-height: 1.5; }
+
+.log-empty {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  font-style: italic;
+  padding: 4px 8px;
+}
+
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .reports-container { padding: 1rem; }

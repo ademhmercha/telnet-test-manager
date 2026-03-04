@@ -200,6 +200,33 @@ app.post('/telnet-commands', authenticateToken, requirePermission('write'), (req
   }
 });
 
+app.put('/telnet-commands/:id', authenticateToken, requirePermission('write'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type, command, description, expectedResponse, expectedEvents } = req.body;
+    const data = readTelnetCommands();
+
+    const index = data.commands.findIndex(c => c.id === id);
+    if (index === -1) return res.status(404).json({ error: `Commande "${id}" introuvable` });
+
+    data.commands[index] = {
+      ...data.commands[index],
+      name: name ?? data.commands[index].name,
+      type: type ?? data.commands[index].type,
+      command: command ?? data.commands[index].command,
+      description: description ?? data.commands[index].description,
+      expectedResponse: expectedResponse || undefined,
+      expectedEvents: expectedEvents?.length ? expectedEvents : undefined,
+    };
+
+    writeTelnetCommands(data);
+    addAuditLog('UPDATE_TELNET_COMMAND', req, { commandId: id });
+    res.json({ message: 'Commande mise à jour', command: data.commands[index] });
+  } catch (e) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 app.delete('/telnet-commands/:id', authenticateToken, requireRole('admin'), (req, res) => {
   try {
     const { id } = req.params;
@@ -616,12 +643,14 @@ app.get('/reports', authenticateToken, requirePermission('read'), (req, res) => 
 
 app.post('/reports/generate', authenticateToken, requirePermission('run_tests'), (req, res) => {
   try {
-    const { slotId, posteId, produitId, startDate, endDate } = req.body;
+    const { slotId, posteId, produitId, startDate, endDate, statusFilter } = req.body;
     if (!slotId || !posteId || !produitId) return res.status(400).json({ error: 'Paramètres manquants' });
 
     let results = database.testResults.filter(r => r.slotId == slotId && r.posteId == posteId && r.produitId == produitId);
     if (startDate) results = results.filter(r => new Date(r.startTime) >= new Date(startDate));
     if (endDate)   results = results.filter(r => new Date(r.endTime || r.startTime) <= new Date(endDate));
+    if (statusFilter === 'success') results = results.filter(r => r.status === 'SUCCESS');
+    if (statusFilter === 'fail')    results = results.filter(r => r.status === 'FAIL');
 
     const reportId  = `RPT-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Date.now()}`;
     const slot      = database.slots.find(s => s.id == slotId);

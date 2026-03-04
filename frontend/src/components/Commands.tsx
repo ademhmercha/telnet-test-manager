@@ -52,6 +52,7 @@ const Commands: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<TelnetCommand | null>(null);
@@ -81,11 +82,27 @@ const Commands: React.FC = () => {
 
   const openModal = () => {
     setForm(emptyForm);
+    setEditingId(null);
+    setShowModal(true);
+  };
+
+  const openEditModal = (cmd: TelnetCommand) => {
+    setForm({
+      id: cmd.id,
+      name: cmd.name,
+      type: cmd.type === 'sequence' ? 'single' : cmd.type,
+      command: cmd.command || '',
+      description: cmd.description || '',
+      expectedResponse: cmd.expectedResponse || '',
+      expectedEvents: cmd.expectedEvents?.join(', ') || '',
+    });
+    setEditingId(cmd.id);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
+    setEditingId(null);
     setError('');
   };
 
@@ -98,7 +115,7 @@ const Commands: React.FC = () => {
     });
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!form.name.trim() || !form.command.trim()) {
       setError('Le nom et la commande sont requis.');
       return;
@@ -112,22 +129,33 @@ const Commands: React.FC = () => {
         type: form.type,
         command: form.command.trim(),
         description: form.description.trim(),
+        expectedResponse: form.type === 'single' && form.expectedResponse.trim() ? form.expectedResponse.trim() : undefined,
+        expectedEvents: form.type === 'monitoring' && form.expectedEvents.trim()
+          ? form.expectedEvents.split(',').map(e => e.trim()).filter(Boolean)
+          : undefined,
       };
-      if (form.type === 'single' && form.expectedResponse.trim()) {
-        body.expectedResponse = form.expectedResponse.trim();
-      }
-      if (form.type === 'monitoring' && form.expectedEvents.trim()) {
-        body.expectedEvents = form.expectedEvents.split(',').map(e => e.trim()).filter(Boolean);
-      }
 
-      const res = await fetch('http://localhost:3002/telnet-commands', {
-        method: 'POST',
-        headers: apiHeaders(),
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setCommands(prev => [...prev, data.command]);
+      if (editingId) {
+        // Modifier
+        const res = await fetch(`http://localhost:3002/telnet-commands/${editingId}`, {
+          method: 'PUT',
+          headers: apiHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+        setCommands(prev => prev.map(c => c.id === editingId ? data.command : c));
+      } else {
+        // Ajouter
+        const res = await fetch('http://localhost:3002/telnet-commands', {
+          method: 'POST',
+          headers: apiHeaders(),
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+        setCommands(prev => [...prev, data.command]);
+      }
       closeModal();
     } catch (err: any) {
       setError(err.message);
@@ -242,6 +270,12 @@ const Commands: React.FC = () => {
                         <td>
                           <div className="action-buttons">
                             <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => openEditModal(cmd)}
+                            >
+                              Modifier
+                            </button>
+                            <button
                               className="btn btn-danger btn-sm"
                               onClick={() => setConfirmDelete(cmd)}
                             >
@@ -268,7 +302,7 @@ const Commands: React.FC = () => {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Nouvelle commande</h2>
+              <h2>{editingId ? 'Modifier la commande' : 'Nouvelle commande'}</h2>
               <button className="btn-close" onClick={closeModal}>✕</button>
             </div>
             <div className="modal-body">
@@ -358,8 +392,8 @@ const Commands: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeModal}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
-                {saving ? 'Enregistrement...' : 'Ajouter'}
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Enregistrement...' : (editingId ? 'Enregistrer' : 'Ajouter')}
               </button>
             </div>
           </div>

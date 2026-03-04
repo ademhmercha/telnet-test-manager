@@ -3,6 +3,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Reports from './components/Reports';
 import Commands from './components/Commands';
+import MultiTest from './components/MultiTest';
 import './App.css';
 
 interface User {
@@ -14,7 +15,7 @@ interface User {
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'reports' | 'commands'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'reports' | 'commands' | 'multitest'>('dashboard');
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -68,6 +69,12 @@ function App() {
             >
               Commandes
             </button>
+            <button
+              className={`nav-link ${currentView === 'multitest' ? 'active' : ''}`}
+              onClick={() => setCurrentView('multitest')}
+            >
+              Multi-Test
+            </button>
           </div>
         </div>
         <div className="nav-right">
@@ -101,6 +108,7 @@ function App() {
             {currentView === 'dashboard' && <Dashboard />}
             {currentView === 'reports' && <Reports />}
             {currentView === 'commands' && <Commands />}
+            {currentView === 'multitest' && <MultiTest />}
           </main>
         </>
       ) : (

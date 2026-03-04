@@ -212,8 +212,8 @@ export const reportService = {
     return response.data;
   },
 
-  generateReport: async (slotId: number, posteId: number, produitId: number, startDate?: string, endDate?: string): Promise<{ message: string; report: any }> => {
-    const response = await api.post('/reports/generate', { slotId, posteId, produitId, startDate, endDate });
+  generateReport: async (slotId: number, posteId: number, produitId: number, startDate?: string, endDate?: string, statusFilter?: string): Promise<{ message: string; report: any }> => {
+    const response = await api.post('/reports/generate', { slotId, posteId, produitId, startDate, endDate, statusFilter });
     return response.data;
   },
 

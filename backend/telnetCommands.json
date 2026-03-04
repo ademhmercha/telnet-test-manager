@@ -5,7 +5,7 @@
       "name": "WiFi Interface wl0",
       "type": "single",
       "command": "scos-wifi show wl0",
-      "description": "Affiche la configuration WiFi de l'interface wl0"
+      "description": "Affiche la configuration WiFi l'interface wl0"
     },
     {
       "id": "wifi-2.4ghz",
@@ -34,7 +34,11 @@
       "type": "monitoring",
       "command": "scos-keys monitor",
       "description": "Active le monitoring des touches/clés du système",
-      "expectedEvents": ["KEY_WLAN:PRESSED", "KEY_WPS_BUTTON:PRESSED", "KEY_RESTART:PRESSED"]
+      "expectedEvents": [
+        "KEY_WLAN:PRESSED",
+        "KEY_WPS_BUTTON:PRESSED",
+        "KEY_RESTART:PRESSED"
+      ]
     },
     {
       "id": "events-monitor",

@@ -35,7 +35,7 @@ async function executeBuiltinSequence(connection, steps, testId) {
       };
       let stepSuccess = true;
       if (isMonitoringCommand(commandObj)) {
-        stepSuccess = await executeMonitoringCommand(connection, commandObj, testId, step.duration || 60000);
+        stepSuccess = await executeMonitoringCommand(connection, commandObj, testId, step.duration || 15000);
       } else {
         await executeStandardCommand(connection, commandObj, testId);
       }
@@ -175,7 +175,6 @@ async function run() {
     postStep(testId, 1, 'RUNNING', 'Tentative de connexion au serveur');
     await connection.connect(connectionParams);
     postStep(testId, 1, 'SUCCESS', 'Tentative de connexion au serveur');
-    postLog(testId, `Connexion établie avec ${slot.adresse}:${slot.port}`);
 
     // Step 4 – Execute
     postStep(testId, 3, 'RUNNING', 'Exécution de la commande / séquence');
@@ -225,7 +224,7 @@ async function executeSingleCommand(connection, commandId, telnetCommands, testI
     const monitorDuration =
       (typeof command.duration === 'number' && command.duration > 0 && command.duration) ||
       (typeof command.timeout === 'number' && command.timeout > 0 && command.timeout) ||
-      60000;
+      15000;
 
     return await executeMonitoringCommand(connection, command, testId, monitorDuration);
   } else {
@@ -251,12 +250,11 @@ async function executeSequence(connection, commands, telnetCommands, testId, slo
     }
 
     postStep(testId, i, 'RUNNING', command.description || command.command);
-    postLog(testId, `Étape ${i + 1}/${commands.length}: ${command.description || command.command}`);
 
     try {
       let stepSuccess = true;
       if (isMonitoringCommand(command)) {
-        stepSuccess = await executeMonitoringCommand(connection, command, testId, step.duration || 60000);
+        stepSuccess = await executeMonitoringCommand(connection, command, testId, step.duration || 15000);
       } else {
         await executeStandardCommand(connection, command, testId);
       }
@@ -273,13 +271,7 @@ async function executeSequence(connection, commands, telnetCommands, testId, slo
     }
   }
 
-  if (hadError) {
-    postLog(testId, 'Séquence terminée avec erreurs');
-    return false;
-  } else {
-    postLog(testId, 'Séquence terminée avec succès');
-    return true;
-  }
+  return !hadError;
 }
 
 // ─── Standard command execution ───────────────────────────────────────────────
@@ -342,7 +334,7 @@ async function executeStandardCommand(connection, command, testId) {
   } catch (err) {
     // reboot often closes the connection immediately; treat this as success
     if (isReboot) {
-      postLog(testId, `Commande reboot envoyée. La connexion peut se fermer pendant le redémarrage (considéré comme succès). Détail: ${err.message}`);
+      postLog(testId, `reboot → connexion fermée`);
       return '';
     }
     throw err;
@@ -360,13 +352,13 @@ function isMonitoringCommand(command) {
     ));
 }
 
-async function executeMonitoringCommand(connection, command, testId, duration = 60000) {
+async function executeMonitoringCommand(connection, command, testId, duration = 15000) {
   return new Promise((resolve, reject) => {
     let buffer = '';
     let active = true;
     const receivedEvents = [];
 
-    postLog(testId, `Monitoring démarré (durée: ${duration}ms) – commande: ${command.command}`);
+    postLog(testId, `→ ${command.command}`);
 
     const handleData = (data) => {
       try {
@@ -384,7 +376,7 @@ async function executeMonitoringCommand(connection, command, testId, duration = 
             type: 'monitoringEvent',
             testId,
             event: { timestamp: new Date().toISOString(), data: trimmed, command: command.command },
-            log: `[${new Date().toISOString()}] Monitoring: ${trimmed}`
+            log: `[${new Date().toISOString()}] ${trimmed}`
           });
         });
       } catch (e) {
@@ -408,9 +400,6 @@ async function executeMonitoringCommand(connection, command, testId, duration = 
       if (!active) return;
       active = false;
       connection.removeListener('data', handleData);
-      postLog(testId, 'Monitoring terminé (durée écoulée)');
-
-      // Vérification des événements attendus
       if (command.expectedEvents && command.expectedEvents.length > 0) {
         const missing = command.expectedEvents.filter(expected =>
           !receivedEvents.some(received => received.includes(expected))
@@ -419,7 +408,6 @@ async function executeMonitoringCommand(connection, command, testId, duration = 
           postLog(testId, `Événements manquants: ${missing.join(', ')}`);
           resolve(false);
         } else {
-          postLog(testId, `Tous les événements attendus reçus: ${command.expectedEvents.join(', ')}`);
           resolve(true);
         }
       } else {
