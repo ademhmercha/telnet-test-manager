@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Reports from './components/Reports';
+import Commands from './components/Commands';
 import './App.css';
 
 interface User {
@@ -13,7 +14,7 @@ interface User {
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'reports'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'reports' | 'commands'>('dashboard');
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -61,6 +62,12 @@ function App() {
             >
               Rapports
             </button>
+            <button
+              className={`nav-link ${currentView === 'commands' ? 'active' : ''}`}
+              onClick={() => setCurrentView('commands')}
+            >
+              Commandes
+            </button>
           </div>
         </div>
         <div className="nav-right">
@@ -91,7 +98,9 @@ function App() {
         <>
           {renderNavigation()}
           <main className="main-content">
-            {currentView === 'dashboard' ? <Dashboard /> : <Reports />}
+            {currentView === 'dashboard' && <Dashboard />}
+            {currentView === 'reports' && <Reports />}
+            {currentView === 'commands' && <Commands />}
           </main>
         </>
       ) : (

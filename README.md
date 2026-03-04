@@ -15,7 +15,7 @@ Cette version 0 est une **simulation statique** qui permet de valider :
 ## 🏗️ Architecture
 
 ```
-windsurf-project-2/
+telnet web server/
 ├── backend/                 # API Node.js/Express
 │   ├── server.js           # Serveur principal
 │   ├── database.json       # Base de données mockée

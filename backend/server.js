@@ -151,13 +151,73 @@ app.get('/references', authenticateToken, requirePermission('read'), auditLog('V
   res.json(result);
 });
 
+const TELNET_COMMANDS_PATH = path.join(__dirname, 'telnetCommands.json');
+
+function readTelnetCommands() {
+  return JSON.parse(fs.readFileSync(TELNET_COMMANDS_PATH, 'utf8'));
+}
+
+function writeTelnetCommands(data) {
+  fs.writeFileSync(TELNET_COMMANDS_PATH, JSON.stringify(data, null, 2));
+}
+
 app.get('/telnet-commands', authenticateToken, (req, res) => {
   try {
-    const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'telnetCommands.json'), 'utf8'));
+    const data = readTelnetCommands();
     res.json({ message: 'Commandes Telnet disponibles', commands: data.commands });
   } catch (e) {
     console.error('Erreur lecture telnetCommands.json:', e);
     res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+app.post('/telnet-commands', authenticateToken, requirePermission('write'), (req, res) => {
+  try {
+    const { id, name, type, command, description, expectedResponse, expectedEvents } = req.body;
+
+    if (!id || !name || !type || !command) {
+      return res.status(400).json({ error: 'Champs requis: id, name, type, command' });
+    }
+
+    const data = readTelnetCommands();
+
+    if (data.commands.find(c => c.id === id)) {
+      return res.status(409).json({ error: `Une commande avec l'id "${id}" existe déjà` });
+    }
+
+    const newCommand = { id, name, type, command, description: description || '' };
+    if (expectedResponse) newCommand.expectedResponse = expectedResponse;
+    if (Array.isArray(expectedEvents) && expectedEvents.length > 0) newCommand.expectedEvents = expectedEvents;
+
+    data.commands.push(newCommand);
+    writeTelnetCommands(data);
+
+    addAuditLog('CREATE_TELNET_COMMAND', req, { commandId: id });
+    res.status(201).json({ message: 'Commande ajoutée', command: newCommand });
+  } catch (e) {
+    console.error('Erreur ajout commande:', e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+app.delete('/telnet-commands/:id', authenticateToken, requireRole('admin'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = readTelnetCommands();
+
+    const index = data.commands.findIndex(c => c.id === id);
+    if (index === -1) {
+      return res.status(404).json({ error: `Commande "${id}" introuvable` });
+    }
+
+    data.commands.splice(index, 1);
+    writeTelnetCommands(data);
+
+    addAuditLog('DELETE_TELNET_COMMAND', req, { commandId: id });
+    res.json({ message: 'Commande supprimée' });
+  } catch (e) {
+    console.error('Erreur suppression commande:', e);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
