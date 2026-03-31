@@ -137,12 +137,36 @@ export const posteService = {
     const response = await api.get('/postes');
     return response.data;
   },
+  createPoste: async (data: Omit<Poste, 'id'>): Promise<{ poste: Poste }> => {
+    const response = await api.post('/postes', data);
+    return response.data;
+  },
+  updatePoste: async (id: number, data: Partial<Omit<Poste, 'id'>>): Promise<{ poste: Poste }> => {
+    const response = await api.put(`/postes/${id}`, data);
+    return response.data;
+  },
+  deletePoste: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/postes/${id}`);
+    return response.data;
+  },
 };
 
 export const produitService = {
   getProduits: async (posteId?: number): Promise<Produit[]> => {
     const params = posteId ? { posteId } : {};
     const response = await api.get('/produits', { params });
+    return response.data;
+  },
+  createProduit: async (data: Omit<Produit, 'id'>): Promise<{ produit: Produit }> => {
+    const response = await api.post('/produits', data);
+    return response.data;
+  },
+  updateProduit: async (id: number, data: Partial<Omit<Produit, 'id'>>): Promise<{ produit: Produit }> => {
+    const response = await api.put(`/produits/${id}`, data);
+    return response.data;
+  },
+  deleteProduit: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/produits/${id}`);
     return response.data;
   },
 };
@@ -153,13 +177,37 @@ export const slotService = {
     const response = await api.get('/slots', { params });
     return response.data;
   },
+  createSlot: async (data: Omit<Slot, 'id'>): Promise<{ slot: Slot }> => {
+    const response = await api.post('/slots', data);
+    return response.data;
+  },
+  updateSlot: async (id: number, data: Partial<Omit<Slot, 'id'>>): Promise<{ slot: Slot }> => {
+    const response = await api.put(`/slots/${id}`, data);
+    return response.data;
+  },
+  deleteSlot: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/slots/${id}`);
+    return response.data;
+  },
 };
 
 export const referenceService = {
   getReferences: async (produitId?: number): Promise<Reference[]> => {
-    const response = await api.get('/references', { 
-      params: produitId ? { produitId } : {} 
+    const response = await api.get('/references', {
+      params: produitId ? { produitId } : {}
     });
+    return response.data;
+  },
+  createReference: async (data: Omit<Reference, 'id'>): Promise<{ reference: Reference }> => {
+    const response = await api.post('/references', data);
+    return response.data;
+  },
+  updateReference: async (id: number, data: Partial<Omit<Reference, 'id'>>): Promise<{ reference: Reference }> => {
+    const response = await api.put(`/references/${id}`, data);
+    return response.data;
+  },
+  deleteReference: async (id: number): Promise<{ message: string }> => {
+    const response = await api.delete(`/references/${id}`);
     return response.data;
   },
 };

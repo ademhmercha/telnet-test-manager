@@ -1,210 +1,194 @@
-# Application de Test Telnet - Version 0 (POC)
+# Telnet Test Manager
 
-Application web professionnelle de test de services Telnet (simulation uniquement).
-
-## 📋 Description
-
-Cette version 0 est une **simulation statique** qui permet de valider :
-- L'interface utilisateur professionnelle
-- Le workflow de test
-- L'architecture technique
-- L'expérience utilisateur
-
-**⚠️ Important** : Aucun vrai service Telnet n'est utilisé - toutes les données sont simulées.
-
-## 🏗️ Architecture
-
-```
-telnet web server/
-├── backend/                 # API Node.js/Express
-│   ├── server.js           # Serveur principal
-│   ├── database.json       # Base de données mockée
-│   └── package.json        # Dépendances backend
-├── frontend/               # Application React
-│   ├── src/
-│   │   ├── components/     # Composants React
-│   │   ├── services/       # Services API
-│   │   ├── types/          # Types TypeScript
-│   │   └── App.tsx         # Application principale
-│   └── package.json        # Dépendances frontend
-└── README.md              # Documentation
-```
-
-## 🚀 Démarrage rapide
-
-### Prérequis
-
-- Node.js (v14 ou supérieur)
-- npm ou yarn
-
-### 1. Installation des dépendances
-
-```bash
-# Backend
-cd backend
-npm install
-
-# Frontend (dans un autre terminal)
-cd frontend
-npm install
-```
-
-### 2. Démarrage de l'application
-
-```bash
-# Démarrer le backend (port 3001)
-cd backend
-npm start
-
-# Démarrer le frontend (port 3000)
-cd frontend
-npm start
-```
-
-### 3. Accès à l'application
-
-- Frontend : http://localhost:3000
-- Backend API : http://localhost:3002
-- Identifiants de démonstration : `admin` / `admin`
-
-## 🔐 Authentification
-
-- **Login** : admin
-- **Mot de passe** : admin
-- **Token JWT** : Valide 24 heures
-- **Redirection automatique** vers le dashboard après connexion
-
-## 📡 API Endpoints
-
-### Authentification
-- `POST /login` - Connexion avec identifiants statiques
-
-### Données
-- `GET /postes` - Liste des postes de travail
-- `GET /produits?posteId=X` - Produits filtrés par poste
-- `GET /slots?produitId=X` - Slots filtrés par produit
-
-### Tests
-- `POST /run-test` - Lancer un test simulé
-- `GET /test-results` - Historique des résultats de tests
-
-### Santé
-- `GET /health` - Vérification du statut du serveur
-
-## 🎯 Fonctionnalités
-
-### 🔐 Page de Login
-- Formulaire d'authentification propre et professionnel
-- Gestion des erreurs
-- Indicateur de chargement
-- Design moderne avec gradient
-
-### 🖥️ Dashboard Principal
-- **Sélecteurs dépendants** : Poste → Produit → Slot
-- **Lancement de test** : Simulation en temps réel (5 secondes)
-- **Affichage des étapes** : Progression du test avec statuts
-- **Historique** : Derniers résultats de tests
-- **Design responsive** : Adapté mobile/desktop
-
-### 📊 Simulation de Test
-1. Initialisation de la connexion
-2. Tentative de connexion au serveur
-3. Authentification Telnet
-4. Exécution des commandes de test
-5. Analyse des résultats
-
-## 🎨 Interface Utilisateur
-
-- **Design professionnel** : Épuré et moderne
-- **Couleurs cohérentes** : Bleu principal (#667eea)
-- **Messages d'erreur clairs** : Feedback utilisateur
-- **Indicateurs de chargement** : Pendant les tests
-- **Responsive design** : Compatible mobile/tablette
-
-## 🔧 Technologies Utilisées
-
-### Backend
-- **Node.js** : Runtime JavaScript
-- **Express** : Framework web
-- **JWT** : Authentification par token
-- **CORS** : Partage de ressources cross-origin
-- **File System** : Base de données JSON statique
-
-### Frontend
-- **React 18** : Bibliothèque UI
-- **TypeScript** : Typage statique
-- **Axios** : Client HTTP
-- **CSS3** : Styles modernes
-
-## 📈 Évolutions Possibles (V1)
-
-### 🔐 Sécurité Avancée
-- Base de données réelle (MongoDB/PostgreSQL)
-- Gestion des utilisateurs et rôles
-- Mots de passe hashés
-- Refresh tokens
-
-### 🌐 Vrai Service Telnet
-- Intégration de librairie Telnet réelle
-- Configuration des connexions
-- Gestion des timeouts
-- Logs détaillés
-
-### 📊 Fonctionnalités Étendues
-- Tests en lot
-- Planning des tests
-- Notifications email
-- Export des résultats
-- Tableaux de bord avancés
-
-### 🚀 Performance
-- WebSocket pour temps réel
-- Cache des résultats
-- Pagination des données
-- Optimisation des requêtes
-
-## 🐛 Dépannage
-
-### Problèmes Communs
-
-**Port déjà utilisé**
-```bash
-# Changer le port du backend
-PORT=3002 npm start
-
-# Ou tuer le processus existant
-npx kill-port 3001
-```
-
-**CORS errors**
-- Vérifier que le backend tourne sur le port 3001
-- Le frontend doit appeler `http://localhost:3001`
-
-**Token expiré**
-- Déconnexion et reconnexion
-- Les tokens expirent après 24 heures
-
-### Logs
-
-**Backend** : Console Node.js avec détails des requêtes
-**Frontend** : Outils de développement du navigateur (onglet Network)
-
-## 📝 Notes de Développement
-
-### Architecture Scalable
-- Séparation claire des responsabilités
-- Services réutilisables
-- Types TypeScript pour la robustesse
-- Code commenté et maintenable
-
-### Bonnes Pratiques
-- Gestion des erreurs centralisée
-- Validation des entrées
-- Sécurité des tokens
-- Interface utilisateur accessible
-
-
+Application web de test automatisé sur équipements réseau via Telnet.
 
 ---
 
-**Version 0.1.0** - Proof of Concept / Soft Test
+## Aperçu
+
+**Telnet Test Manager** est une plateforme web permettant d'exécuter, monitorer et rapporter des tests Telnet réels sur des équipements réseau (routeurs, switchs, passerelles embarquées). Elle offre une interface unifiée pour lancer des commandes individuelles ou des séquences de test sur un ou plusieurs slots simultanément.
+
+---
+
+## Fonctionnalités
+
+| Fonctionnalité | Description |
+|---|---|
+| **Dashboard** | Lancement de tests unitaires ou séquences avec suivi en temps réel |
+| **Multi-Test** | Exécution simultanée de N tests sur différents slots du même équipement |
+| **Commandes** | CRUD complet des commandes Telnet (single, monitoring, séquence) |
+| **Rapports** | Génération, visualisation et export PDF des résultats de tests |
+| **Contrôle d'accès** | Authentification JWT avec rôles (admin / testeur / observateur) |
+
+---
+
+## Architecture
+
+```
+telnet-test-manager/
+├── backend/
+│   ├── server.js              # API REST Express + authentification JWT
+│   ├── testWorker.js          # Worker Thread — exécution Telnet isolée
+│   ├── database.json          # Persistance JSON (postes, produits, slots, résultats)
+│   ├── telnetCommands.json    # Catalogue des commandes Telnet
+│   └── reports/               # Rapports générés (JSON)
+│
+└── frontend/
+    └── src/
+        ├── components/
+        │   ├── Dashboard.tsx  # Test unitaire / séquence
+        │   ├── MultiTest.tsx  # Tests parallèles multi-slots
+        │   ├── Reports.tsx    # Gestion des rapports
+        │   └── Commands.tsx   # Gestion des commandes
+        ├── services/
+        │   └── api.ts         # Client HTTP Axios
+        └── hooks/
+            └── usePermissions.ts
+```
+
+---
+
+## Stack technique
+
+**Backend**
+- Node.js + Express
+- Worker Threads (isolation par test)
+- JWT (authentification)
+- Bibliothèque `telnet-client` (connexion Telnet réelle)
+
+**Frontend**
+- React 18 + TypeScript
+- Axios
+- CSS custom properties (design system unifié)
+
+---
+
+## Installation
+
+### Prérequis
+- Node.js v16+
+- Accès réseau à l'équipement Telnet cible
+
+### 1. Backend
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+### 2. Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+---
+
+## Accès
+
+| URL | Description |
+|---|---|
+| `http://localhost:3000` | Interface web |
+| `http://localhost:3002` | API REST |
+
+**Identifiants par défaut**
+
+| Utilisateur | Mot de passe | Rôle |
+|---|---|---|
+| `admin` | `admin` | Administrateur |
+
+---
+
+## API — Endpoints principaux
+
+### Authentification
+```
+POST   /login                          Connexion, retourne un token JWT
+```
+
+### Configuration
+```
+GET    /postes                         Liste des postes
+GET    /produits?posteId=X             Produits d'un poste
+GET    /slots?produitId=X              Slots d'un produit
+```
+
+### Tests
+```
+POST   /run-test                       Lancer un test (commande unique)
+POST   /run-test-sequence              Lancer une séquence de commandes
+GET    /test-results/:testId           Résultat d'un test par ID
+GET    /test-results                   Historique complet
+```
+
+### Commandes Telnet
+```
+GET    /telnet-commands                Liste des commandes
+POST   /telnet-commands                Créer une commande
+PUT    /telnet-commands/:id            Modifier une commande
+DELETE /telnet-commands/:id            Supprimer une commande (admin)
+```
+
+### Rapports
+```
+GET    /reports                        Liste des rapports
+POST   /reports/generate               Générer un rapport
+GET    /reports/:id                    Consulter un rapport
+DELETE /reports/:id                    Supprimer un rapport
+```
+
+---
+
+## Types de commandes
+
+| Type | Description |
+|---|---|
+| `single` | Commande exécutée une fois, réponse attendue immédiate |
+| `monitoring` | Écoute continue du flux Telnet pendant N secondes |
+| `sequence` | Ensemble de commandes exécutées dans l'ordre |
+
+---
+
+## Flux d'exécution d'un test
+
+```
+Frontend          Backend (server.js)       Worker Thread (testWorker.js)
+   │                     │                           │
+   │── POST /run-test ──>│                           │
+   │                     │── spawn Worker ──────────>│
+   │<── { testId } ──────│                           │── connect Telnet
+   │                     │                           │── authenticate
+   │── GET /test-results/│<─── step events ──────────│── execute command
+   │       :testId ──────│                           │── collect response
+   │<── { steps, logs } ─│<─── completed ────────────│
+```
+
+---
+
+## Dépannage
+
+**Port déjà utilisé**
+```bash
+npx kill-port 3002
+```
+
+**Connexion Telnet échoue**
+- Vérifier que l'équipement est joignable : `ping <adresse>`
+- Vérifier que le port Telnet est ouvert (par défaut 23)
+- Vérifier les identifiants configurés dans `testWorker.js`
+
+**Token expiré**
+- Se déconnecter et se reconnecter — le token JWT est valide 24h
+
+---
+
+## Versioning
+
+| Version | Description |
+|---|---|
+| 0.1.0 | Release initiale — Dashboard, Rapports, authentification JWT |
+| 0.2.0 | Multi-Test parallèle, Commandes CRUD, séquences de test |
+| 0.3.0 | Logs simplifiés (pc→gw / gw→pc), filtres rapports, modifier commandes |

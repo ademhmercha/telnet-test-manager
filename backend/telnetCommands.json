@@ -152,8 +152,7 @@
       "name": "leds off",
       "type": "single",
       "command": "scos-leds off all",
-      "description": "all leds off",
-      "expectedResponse": "#"
+      "description": "all leds off"
     },
     {
       "id": "ledsOffandON",

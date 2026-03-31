@@ -223,23 +223,16 @@ User → Frontend → Backend → Worker → Telnet (écoute continue)
 ##  Débogage
 
 ### Logs Backend
-- **Worker démarré** : `🚀 Worker démarré avec les données`
-- **Connexion** : `✅ Connexion réussie !`
-- **Séquence** : `🔄 Séquence détectée dans telnetCommands.json`
-- **Étape** : `📍 Étape 1/3: Description`
+- **Worker démarré** : ` Worker démarré avec les données`
+- **Connexion** : ` Connexion réussie !`
+- **Séquence** : ` Séquence détectée dans telnetCommands.json`
+- **Étape** : ` Étape 1/3: Description`
 
 ### Logs Frontend
 - **Progression** : État de chaque étape
 - **Événements** : Monitoring en temps réel
 - **Erreurs** : Messages détaillés
 
-## Bonnes Pratiques
-
-1. **Descriptions claires** pour chaque étape
-2. **Timeouts appropriés** selon la commande
-3. **expectedResponse** précis pour la validation
-4. **Tests unitaires** pour chaque séquence
-5. **Logs détaillés** pour le débogage
 
 ---
 

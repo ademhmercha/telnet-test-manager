@@ -289,7 +289,7 @@ const Dashboard: React.FC = () => {
       
       // Afficher un message de succès
       const successMsg = document.createElement('div');
-      successMsg.textContent = '✅ Test arrêté avec succès!';
+      successMsg.textContent = ' Test arrêté avec succès!';
       successMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #28a745; color: white; padding: 15px 25px; border-radius: 8px; z-index: 9999; font-weight: bold;';
       document.body.appendChild(successMsg);
       
@@ -745,7 +745,7 @@ const Dashboard: React.FC = () => {
                   ))}
                 </select>
                 <small className="command-description">
-                  💡 {telnetCommands.find(c => c.id === selectedCommand)?.description}
+                   {telnetCommands.find(c => c.id === selectedCommand)?.description}
                 </small>
                 {telnetCommands.find(c => c.id === selectedCommand)?.type === 'monitoring' && (
                   <div style={{ marginTop: '8px' }}>

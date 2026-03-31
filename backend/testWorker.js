@@ -1,7 +1,5 @@
 const { isMainThread, parentPort, workerData } = require('worker_threads');
 const { Telnet } = require('telnet-client');
-const fs = require('fs');
-const path = require('path');
 
 if (isMainThread) {
   throw new Error('Ce script doit être exécuté en tant que worker thread');
@@ -103,34 +101,17 @@ async function run() {
     telnetCommandsList
   } = workerData;
 
-  let database;
-  try {
-    database = JSON.parse(fs.readFileSync(path.join(__dirname, 'database.json'), 'utf8'));
-  } catch (e) {
-    postCompleted(testId, false, `Impossible de lire database.json: ${e.message}`);
-    return;
-  }
-
-  // *** FIX: database.slots is an ARRAY, not an object ***
-  const slot = Array.isArray(database.slots)
-    ? database.slots.find(s => s.id == slotId)
-    : Object.values(database.slots).find(s => s.id == slotId);
-
+  // Le slot est transmis directement depuis server.js via workerData
+  const slot = workerData.slot || null;
   if (!slot) {
     postCompleted(testId, false, `Slot non trouvé (slotId=${slotId})`);
     return;
   }
 
-  // telnetCommands list can come from server.js (preferred), otherwise fall back to file
+  // La liste des commandes Telnet est transmise depuis server.js
   let telnetCommands = { commands: [] };
   if (Array.isArray(telnetCommandsList)) {
     telnetCommands = { commands: telnetCommandsList };
-  } else {
-    try {
-      telnetCommands = JSON.parse(fs.readFileSync(path.join(__dirname, 'telnetCommands.json'), 'utf8'));
-    } catch (e) {
-      postLog(testId, `Avertissement: impossible de lire telnetCommands.json: ${e.message}`);
-    }
   }
 
   // Support both legacy workerData format and the new server.js format
