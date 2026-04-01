@@ -10,12 +10,17 @@ async function connectDB() {
 // ── Schemas ───────────────────────────────────────────────────────────────────
 
 const UserSchema = new mongoose.Schema({
-  id:          { type: Number, required: true, unique: true },
-  username:    { type: String, required: true, unique: true },
-  password:    { type: String, required: true },
-  role:        { type: String, required: true },
-  email:       String,
-  permissions: [String]
+  id:               { type: Number, required: true, unique: true },
+  username:         { type: String, required: true, unique: true },
+  password:         { type: String, required: true },
+  role:             { type: String, required: true },
+  email:            String,
+  permissions:      [String],
+  statut:           { type: String, default: 'actif' },
+  lastLogin:        String,
+  loginTimestamp:   String,   // heure de connexion en cours (pour calculer la durée)
+  totalTimeMinutes: { type: Number, default: 0 }, // cumul total du temps passé
+  createdAt:        { type: String, default: () => new Date().toISOString() }
 }, { collection: 'users' });
 
 const PosteSchema = new mongoose.Schema({

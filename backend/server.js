@@ -144,6 +144,9 @@ app.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: '24h' }
     );
 
+    const now = new Date().toISOString();
+    await User.updateOne({ id: user.id }, { $set: { lastLogin: now, loginTimestamp: now } });
+
     const fakeReq = {
       user,
       method: 'POST',
@@ -171,6 +174,22 @@ app.post('/login', loginLimiter, async (req, res) => {
 });
 
 app.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (userId) {
+      const userDoc = await User.findOne({ id: userId }, { loginTimestamp: 1, totalTimeMinutes: 1 }).lean();
+      if (userDoc?.loginTimestamp) {
+        const sessionMs  = Date.now() - new Date(userDoc.loginTimestamp).getTime();
+        const sessionMin = Math.max(0, sessionMs / 60000);
+        await User.updateOne(
+          { id: userId },
+          { $inc: { totalTimeMinutes: sessionMin }, $unset: { loginTimestamp: '' } }
+        );
+      }
+    }
+  } catch (e) {
+    console.error('Erreur calcul temps session:', e);
+  }
   await addAuditLog('LOGOUT', req);
   res.json({ message: 'Déconnexion enregistrée' });
 });
@@ -788,54 +807,388 @@ app.post('/stop-monitoring', authenticateToken, requirePermission('run_tests'), 
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
+const ROLE_PERMISSIONS = {
+  admin:    ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
+  engineer: ['read','write','run_tests']
+};
+
+// Audit logs avec pagination + filtres
 app.get('/admin/audit-logs', authenticateToken, requireRole('admin'), requirePermission('audit'), async (req, res) => {
   try {
-    const logs = await AuditLog.find({}, { _id: 0, __v: 0 }).sort({ timestamp: -1 }).lean();
-    res.json({ message: "Logs d'audit", logs, total: logs.length });
+    const { search, action, username, limit = 100, offset = 0 } = req.query;
+    const filter = {};
+    if (action)   filter.action   = new RegExp(action,   'i');
+    if (username) filter.username = new RegExp(username, 'i');
+    if (search)   filter.$or = [
+      { action:   new RegExp(search, 'i') },
+      { username: new RegExp(search, 'i') },
+      { url:      new RegExp(search, 'i') }
+    ];
+    const [logs, total] = await Promise.all([
+      AuditLog.find(filter, { _id: 0, __v: 0 })
+        .sort({ timestamp: -1 })
+        .skip(parseInt(offset))
+        .limit(parseInt(limit))
+        .lean(),
+      AuditLog.countDocuments(filter)
+    ]);
+    res.json({ logs, total });
   } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-app.get('/admin/users', authenticateToken, requireRole('admin'), requirePermission('manage_users'), auditLog('VIEW_USERS'), async (req, res) => {
+// Liste users
+app.get('/admin/users', authenticateToken, requireRole('admin'), requirePermission('manage_users'), async (req, res) => {
   try {
     const users = await User.find({}, { _id: 0, __v: 0, password: 0 }).lean();
-    res.json({ message: 'Utilisateurs', users, total: users.length });
+    res.json({ users, total: users.length });
   } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-app.get('/admin/stats', authenticateToken, requireRole('admin'), requirePermission('audit'), auditLog('VIEW_STATS'), async (req, res) => {
+// Créer un user
+app.post('/admin/users', authenticateToken, requireRole('admin'), requirePermission('manage_users'), async (req, res) => {
   try {
-    const [total, successful, failed, pending, totalUsers] = await Promise.all([
+    const { username, password, role, email } = req.body;
+    if (!username || !password || !role) {
+      return res.status(400).json({ error: 'username, password et role sont requis' });
+    }
+    if (!['admin','engineer'].includes(role)) {
+      return res.status(400).json({ error: 'Rôle invalide (admin ou engineer)' });
+    }
+    const existing = await User.findOne({ username });
+    if (existing) return res.status(409).json({ error: `L'utilisateur "${username}" existe déjà` });
+
+    const last  = await User.findOne({}, { id: 1 }).sort({ id: -1 }).lean();
+    const newId = (last?.id || 0) + 1;
+    const hashed = await bcrypt.hash(String(password), 10);
+
+    const user = await User.create({
+      id: newId, username, password: hashed, role,
+      email: email || '',
+      permissions: ROLE_PERMISSIONS[role],
+      statut: 'actif',
+      createdAt: new Date().toISOString()
+    });
+
+    await addAuditLog('CREATE_USER', req, { newUserId: newId, username, role });
+    const { password: _, _id, __v, ...safe } = user.toObject();
+    res.status(201).json({ message: 'Utilisateur créé', user: safe });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Modifier un user (role, email, statut)
+app.put('/admin/users/:id', authenticateToken, requireRole('admin'), requirePermission('manage_users'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { role, email, statut } = req.body;
+
+    // Empêche un admin de se désactiver lui-même
+    if (id === req.user.id && statut === 'inactif') {
+      return res.status(400).json({ error: 'Impossible de désactiver votre propre compte' });
+    }
+
+    const update = {};
+    if (email  !== undefined) update.email  = email;
+    if (statut !== undefined) update.statut = statut;
+    if (role   !== undefined) {
+      if (!['admin','engineer'].includes(role)) {
+        return res.status(400).json({ error: 'Rôle invalide' });
+      }
+      update.role        = role;
+      update.permissions = ROLE_PERMISSIONS[role];
+    }
+
+    const updated = await User.findOneAndUpdate({ id }, { $set: update }, { new: true, lean: true });
+    if (!updated) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+    await addAuditLog('UPDATE_USER', req, { targetUserId: id, changes: Object.keys(update) });
+    const { password, _id, __v, ...safe } = updated;
+    res.json({ message: 'Utilisateur mis à jour', user: safe });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Reset mot de passe
+app.post('/admin/users/:id/reset-password', authenticateToken, requireRole('admin'), requirePermission('manage_users'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Mot de passe trop court (min 6 caractères)' });
+    }
+    const hashed = await bcrypt.hash(String(newPassword), 10);
+    const updated = await User.findOneAndUpdate({ id }, { $set: { password: hashed } });
+    if (!updated) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    await addAuditLog('RESET_PASSWORD', req, { targetUserId: id });
+    res.json({ message: 'Mot de passe réinitialisé' });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Supprimer un user
+app.delete('/admin/users/:id', authenticateToken, requireRole('admin'), requirePermission('manage_users'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'Impossible de supprimer votre propre compte' });
+    }
+    const deleted = await User.findOneAndDelete({ id });
+    if (!deleted) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    await addAuditLog('DELETE_USER', req, { deletedUserId: id, username: deleted.username });
+    res.json({ message: 'Utilisateur supprimé' });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Statistiques enrichies
+app.get('/admin/stats', authenticateToken, requireRole('admin'), requirePermission('audit'), async (req, res) => {
+  try {
+    const now = new Date();
+    const since7d = new Date(now - 7 * 24 * 3600 * 1000).toISOString();
+
+    const [total, successful, failed, stopped, pending, totalUsers, activeUsers,
+           totalCommands, totalReports, recentTests] = await Promise.all([
       TestResult.countDocuments(),
       TestResult.countDocuments({ status: 'SUCCESS' }),
       TestResult.countDocuments({ status: 'FAIL' }),
+      TestResult.countDocuments({ status: 'STOPPED' }),
       TestResult.countDocuments({ status: 'PENDING' }),
-      User.countDocuments()
+      User.countDocuments(),
+      User.countDocuments({ statut: 'actif' }),
+      TelnetCommand.countDocuments(),
+      Report.countDocuments(),
+      TestResult.find({ startTime: { $gte: since7d } }, { startTime: 1, status: 1, _id: 0 }).lean()
     ]);
+
     const lastTest = await TestResult.findOne({}, { startTime: 1 }).sort({ startTime: -1 }).lean();
 
-    res.json({
-      message: 'Statistiques',
-      stats: {
-        totalTests:      total,
-        successfulTests: successful,
-        failedTests:     failed,
-        pendingTests:    pending,
-        totalUsers,
-        activeUsers:     totalUsers,
-        systemUptime:    process.uptime(),
-        lastTest:        lastTest?.startTime || null
+    // Activité par jour sur 7 jours
+    const dayMap = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now - i * 24 * 3600 * 1000);
+      dayMap[d.toISOString().slice(0, 10)] = { date: d.toISOString().slice(0, 10), total: 0, success: 0, fail: 0 };
+    }
+    recentTests.forEach(t => {
+      const day = t.startTime?.slice(0, 10);
+      if (dayMap[day]) {
+        dayMap[day].total++;
+        if (t.status === 'SUCCESS') dayMap[day].success++;
+        if (t.status === 'FAIL')    dayMap[day].fail++;
       }
+    });
+
+    res.json({
+      stats: {
+        totalTests: total, successfulTests: successful, failedTests: failed,
+        stoppedTests: stopped, pendingTests: pending,
+        successRate: total > 0 ? Math.round(successful / total * 100) : 0,
+        totalUsers, activeUsers, totalCommands, totalReports,
+        activeWorkers: activeWorkers.size,
+        systemUptime: process.uptime(),
+        lastTest: lastTest?.startTime || null,
+        memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+      },
+      activity: Object.values(dayMap)
     });
   } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
 });
 
-app.get('/admin/system-logs', authenticateToken, requireRole('admin'), requirePermission('view_logs'), auditLog('VIEW_SYSTEM_LOGS'), (req, res) => {
+// Tests admin (tous, avec filtres + pagination)
+app.get('/admin/tests', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { status, limit = 50, offset = 0, startDate, endDate } = req.query;
+    const filter = {};
+    if (status && status !== 'all') filter.status = status.toUpperCase();
+    if (startDate) filter.startTime = { $gte: new Date(startDate).toISOString() };
+    if (endDate)   filter.startTime = { ...(filter.startTime || {}), $lte: new Date(endDate).toISOString() };
+
+    const [tests, total] = await Promise.all([
+      TestResult.find(filter, { _id: 0, __v: 0, logs: 0 })
+        .sort({ startTime: -1 })
+        .skip(parseInt(offset))
+        .limit(parseInt(limit))
+        .lean(),
+      TestResult.countDocuments(filter)
+    ]);
+    res.json({ tests, total });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Forcer arrêt d'un test (admin)
+app.post('/admin/tests/:id/stop', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const testId = parseInt(req.params.id);
+    const worker = activeWorkers.get(testId);
+    if (worker) { worker.terminate(); activeWorkers.delete(testId); }
+    const endTime = new Date().toISOString();
+    await TestResult.updateOne(
+      { id: testId },
+      { $set: { status: 'STOPPED', endTime }, $push: { logs: `[${endTime}] Arrêté par admin: ${req.user.username}` } }
+    );
+    await addAuditLog('ADMIN_FORCE_STOP_TEST', req, { testId });
+    res.json({ message: 'Test arrêté' });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Supprimer un test (admin)
+app.delete('/admin/tests/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const deleted = await TestResult.findOneAndDelete({ id });
+    if (!deleted) return res.status(404).json({ error: 'Test non trouvé' });
+    await addAuditLog('DELETE_TEST', req, { testId: id });
+    res.json({ message: 'Test supprimé' });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// Suppression en masse des tests
+app.delete('/admin/tests', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { status, before } = req.body;
+    const filter = {};
+    if (status && status !== 'all') filter.status = status.toUpperCase();
+    if (before)  filter.startTime = { $lte: new Date(before).toISOString() };
+    if (!Object.keys(filter).length) {
+      return res.status(400).json({ error: 'Filtre requis (status ou before)' });
+    }
+    const result = await TestResult.deleteMany(filter);
+    await addAuditLog('BULK_DELETE_TESTS', req, { filter, deleted: result.deletedCount });
+    res.json({ message: `${result.deletedCount} test(s) supprimé(s)` });
+  } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+});
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+app.get('/admin/analytics', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { period = '30' } = req.query; // jours
+    const days   = parseInt(period) || 30;
+    const since  = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+
+    // ── Produits les plus testés ──────────────────────────────────────────────
+    const testsByProduct = await TestResult.aggregate([
+      { $match: { startTime: { $gte: since } } },
+      { $group: {
+          _id: '$produitId',
+          total:   { $sum: 1 },
+          success: { $sum: { $cond: [{ $eq: ['$status','SUCCESS'] }, 1, 0] } },
+          fail:    { $sum: { $cond: [{ $eq: ['$status','FAIL'] }, 1, 0] } }
+      }},
+      { $sort: { total: -1 } },
+      { $limit: 8 }
+    ]);
+
+    // Récupère les noms des produits
+    const produitIds = testsByProduct.map(p => p._id).filter(Boolean);
+    const produits   = await Produit.find({ id: { $in: produitIds } }, { id:1, nom:1, _id:0 }).lean();
+    const prodMap    = Object.fromEntries(produits.map(p => [p.id, p.nom]));
+
+    const productStats = testsByProduct.map(p => ({
+      produitId:   p._id,
+      nom:         prodMap[p._id] || `Produit #${p._id}`,
+      total:       p.total,
+      success:     p.success,
+      fail:        p.fail,
+      successRate: p.total > 0 ? Math.round(p.success / p.total * 100) : 0
+    }));
+
+    // ── Tests par utilisateur (via audit logs RUN_TEST / RUN_SEQUENCE) ────────
+    const testsByUser = await AuditLog.aggregate([
+      { $match: {
+          timestamp: { $gte: since },
+          action:    { $in: ['RUN_TEST','RUN_SEQUENCE'] }
+      }},
+      { $group: { _id: '$username', tests: { $sum: 1 } } },
+      { $sort: { tests: -1 } }
+    ]);
+
+    // ── Nombre de sessions par user dans la période (via audit logs LOGIN) ────
+    const loginCountAgg = await AuditLog.aggregate([
+      { $match: { timestamp: { $gte: since }, action: 'LOGIN' } },
+      { $group: { _id: '$username', sessions: { $sum: 1 } } }
+    ]);
+    const sessionCountMap = Object.fromEntries(loginCountAgg.map(u => [u._id, u.sessions]));
+
+    // ── Temps total cumulé stocké directement sur le User ────────────────────
+    // On récupère tous les users actifs + session en cours (loginTimestamp présent)
+    const allUsers = await User.find(
+      {},
+      { username:1, role:1, statut:1, totalTimeMinutes:1, loginTimestamp:1, _id:0 }
+    ).lean();
+
+    // Pour les users actuellement connectés, on ajoute le temps depuis loginTimestamp
+    const allUsernamesSet = new Set([
+      ...testsByUser.map(u => u._id),
+      ...allUsers.map(u => u.username)
+    ]);
+
+    const userMeta = Object.fromEntries(allUsers.map(u => {
+      let minutes = u.totalTimeMinutes || 0;
+      if (u.loginTimestamp) {
+        const activeMs = Date.now() - new Date(u.loginTimestamp).getTime();
+        if (activeMs > 0 && activeMs < 24 * 3600 * 1000) {
+          minutes += activeMs / 60000;
+        }
+      }
+      return [u.username, { ...u, currentTotalMinutes: minutes }];
+    }));
+
+    const userStats = [...allUsernamesSet]
+      .filter(Boolean)
+      .map(username => {
+        const t = testsByUser.find(u => u._id === username);
+        const m = userMeta[username];
+        return {
+          username,
+          role:         m?.role   || '?',
+          statut:       m?.statut || 'actif',
+          totalTests:   t?.tests  || 0,
+          sessions:     sessionCountMap[username] || 0,
+          totalMinutes: Math.round(m?.currentTotalMinutes || 0)
+        };
+      })
+      .filter(u => u.totalTests > 0 || u.totalMinutes > 0)
+      .sort((a, b) => b.totalTests - a.totalTests);
+
+    // ── Activité quotidienne par statut (14 jours) ────────────────────────────
+    const since14 = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
+    const daily   = await TestResult.find(
+      { startTime: { $gte: since14 } },
+      { startTime:1, status:1, _id:0 }
+    ).lean();
+
+    const dayMap = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 3600 * 1000).toISOString().slice(0,10);
+      dayMap[d] = { date: d, total: 0, success: 0, fail: 0 };
+    }
+    daily.forEach(t => {
+      const day = t.startTime?.slice(0,10);
+      if (dayMap[day]) {
+        dayMap[day].total++;
+        if (t.status === 'SUCCESS') dayMap[day].success++;
+        if (t.status === 'FAIL')    dayMap[day].fail++;
+      }
+    });
+
+    res.json({
+      period:       days,
+      productStats,
+      userStats,
+      dailyActivity: Object.values(dayMap)
+    });
+  } catch (e) {
+    console.error('Analytics error:', e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+app.get('/admin/system-logs', authenticateToken, requireRole('admin'), requirePermission('view_logs'), async (req, res) => {
   res.json({
     message: 'Logs système',
     logs: [
-      { timestamp: new Date().toISOString(),               level: 'INFO',    message: 'Système opérationnel',              component: 'system' },
-      { timestamp: new Date(Date.now()-60000).toISOString(),  level: 'INFO',    message: 'Connexion utilisateur établie',     component: 'auth' },
-      { timestamp: new Date(Date.now()-120000).toISOString(), level: 'WARNING', message: 'Test terminé avec avertissements',  component: 'test-engine' }
+      { timestamp: new Date().toISOString(),                 level: 'INFO',    message: 'Système opérationnel',             component: 'system' },
+      { timestamp: new Date(Date.now()-60000).toISOString(), level: 'INFO',    message: 'Connexion utilisateur établie',    component: 'auth' },
+      { timestamp: new Date(Date.now()-120000).toISOString(),level: 'WARNING', message: 'Test terminé avec avertissements', component: 'test-engine' }
     ],
     total: 3
   });

@@ -1,4 +1,7 @@
-/* ─── Design System (same tokens as Dashboard) ──────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   Reports — Enterprise
+   ══════════════════════════════════════════════════════════════ */
+
 :root {
   --bg:          #f1f5f9;
   --surface:     #ffffff;
@@ -18,7 +21,7 @@
   --shadow-md:   0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
 }
 
-/* ─── Container ─────────────────────────────────────────────────────────────── */
+/* ── Container ─────────────────────────────────────────────── */
 .reports-container {
   padding: 1.5rem 2rem;
   max-width: 1440px;
@@ -28,7 +31,7 @@
   gap: 1.25rem;
 }
 
-/* ─── Page Header ───────────────────────────────────────────────────────────── */
+/* ── Page Header ───────────────────────────────────────────── */
 .reports-header {
   display: flex;
   justify-content: space-between;
@@ -58,26 +61,7 @@
   flex-wrap: wrap;
 }
 
-.search-container { display: flex; }
-
-.search-input {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.8rem;
-  outline: none;
-  min-width: 240px;
-  transition: border-color 0.15s;
-}
-
-.search-input:focus {
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 3px rgba(100,116,139,0.12);
-}
-
-/* ─── Buttons ───────────────────────────────────────────────────────────────── */
+/* ── Buttons ───────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -90,66 +74,28 @@
   transition: background 0.15s, opacity 0.15s, border-color 0.15s;
   border: 1px solid transparent;
   white-space: nowrap;
-  text-decoration: none;
 }
 
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn-primary:hover:not(:disabled) { background: #1e293b; }
 
-.btn-secondary {
-  background: var(--surface);
-  color: var(--text-muted);
-  border-color: var(--border);
-}
+.btn-secondary { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--bg); color: var(--text); border-color: var(--border-deep); }
 
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg);
-  color: var(--text);
-  border-color: var(--border-deep);
-}
+.btn-info { background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+.btn-info:hover:not(:disabled) { background: var(--bg); color: var(--text); border-color: var(--border-deep); }
 
-.btn-info {
-  background: var(--surface);
-  color: var(--text-muted);
-  border-color: var(--border);
-}
+.btn-danger { background: var(--fail-bg); color: var(--fail); border-color: #fca5a5; }
+.btn-danger:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; }
 
-.btn-info:hover:not(:disabled) {
-  background: var(--bg);
-  color: var(--text);
-  border-color: var(--border-deep);
-}
-
-.btn-danger {
-  background: var(--fail-bg);
-  color: var(--fail);
-  border-color: #fca5a5;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #fee2e2;
-  border-color: #f87171;
-}
-
-.btn-sm {
-  padding: 0.3rem 0.625rem;
-  font-size: 0.75rem;
-}
+.btn-sm { padding: 0.3rem 0.625rem; font-size: 0.75rem; }
 
 .btn-close {
   background: none;
   border: none;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
   color: var(--text-faint);
   padding: 0.25rem 0.375rem;
@@ -157,13 +103,9 @@
   line-height: 1;
   transition: color 0.15s, background 0.15s;
 }
+.btn-close:hover { background: var(--bg); color: var(--text); }
 
-.btn-close:hover {
-  background: var(--bg);
-  color: var(--text);
-}
-
-/* ─── State: Error / Loading / Empty ────────────────────────────────────────── */
+/* ── State ─────────────────────────────────────────────────── */
 .error-message {
   display: flex;
   justify-content: space-between;
@@ -176,47 +118,27 @@
   font-size: 0.875rem;
   gap: 1rem;
 }
-
 .error-message button {
-  background: none;
-  border: none;
-  color: var(--fail);
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0;
-  flex-shrink: 0;
+  background: none; border: none; color: var(--fail);
+  cursor: pointer; font-size: 0.8rem; font-weight: 600; padding: 0; flex-shrink: 0;
 }
 
 .loading {
-  text-align: center;
-  padding: 3rem;
-  color: var(--text-faint);
-  font-size: 0.875rem;
+  text-align: center; padding: 3rem;
+  color: var(--text-faint); font-size: 0.875rem;
 }
 
 .empty-state {
-  text-align: center;
-  padding: 3rem;
+  text-align: center; padding: 3rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
+.empty-state h3 { margin: 0 0 0.5rem; font-size: 0.95rem; color: var(--text); }
+.empty-state p  { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
 
-.empty-state h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.95rem;
-  color: var(--text);
-}
-
-.empty-state p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-/* ─── Reports List / Table ──────────────────────────────────────────────────── */
+/* ── Reports list / table ──────────────────────────────────── */
 .reports-list {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -254,20 +176,26 @@
 }
 
 .reports-table tbody tr:hover td { background: var(--bg); }
-
 .reports-table tbody tr:last-child td { border-bottom: none; }
 
-.action-buttons {
-  display: flex;
-  gap: 0.375rem;
-  flex-wrap: wrap;
+.rpt-date { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.rpt-mono { font-family: 'Consolas', monospace; font-size: 0.78rem; color: var(--text); }
+
+/* Result pill (✔ N / ✖ N) */
+.result-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
+.rp-pass { color: var(--success); }
+.rp-sep  { color: var(--text-faint); }
+.rp-fail { color: var(--fail); }
 
-/* Status text in table cells */
-.success { color: var(--success); font-weight: 600; }
-.failure { color: var(--fail);    font-weight: 600; }
+.action-buttons { display: flex; gap: 0.375rem; flex-wrap: wrap; }
 
-/* ─── Modal ─────────────────────────────────────────────────────────────────── */
+/* ── Modal ─────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -286,13 +214,12 @@
   max-width: 560px;
   width: 90%;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
 }
 
-.modal-large {
-  max-width: 860px;
-}
+.modal-xl { max-width: 900px; }
 
 .modal-header {
   display: flex;
@@ -300,16 +227,12 @@
   align-items: center;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.modal-body { padding: 1.25rem 1.5rem; }
+.rview-title-block { display: flex; align-items: baseline; gap: 0.6rem; }
+.rview-title-block h2 { margin: 0; font-size: 0.875rem; font-weight: 700; color: var(--text); }
+.rview-id { font-size: 0.7rem; color: var(--text-faint); font-family: 'Consolas', monospace; }
 
 .modal-footer {
   display: flex;
@@ -317,12 +240,177 @@
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-/* ─── Form (inside modal) ───────────────────────────────────────────────────── */
-.form-group {
-  margin-bottom: 1rem;
+/* ── Report view — info strip ──────────────────────────────── */
+.rview-strip {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
 }
+
+.rview-cell {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rview-cell:last-child { border-right: none; }
+
+.rview-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rview-val {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rview-val.mono { font-family: 'Consolas', monospace; }
+
+/* ── Report view — body / tests ────────────────────────────── */
+.rview-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; }
+
+.rview-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+/* ── Test block ────────────────────────────────────────────── */
+.rview-test {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.rview-test-pass { border-left: 3px solid var(--success); }
+.rview-test-fail { border-left: 3px solid var(--fail); }
+
+.rview-test-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.rview-test-num {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  flex-shrink: 0;
+  width: 22px;
+}
+
+.rview-test-name {
+  flex: 1;
+  font-family: 'Consolas', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rview-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.rview-badge-pass { background: #dcfce7; color: var(--success); }
+.rview-badge-fail { background: #fee2e2; color: var(--fail); }
+
+/* ── Transcript ────────────────────────────────────────────── */
+.rview-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+}
+
+.rview-log {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+
+.rview-log-dir {
+  font-family: 'Consolas', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.rview-log-text {
+  font-family: 'Consolas', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  word-break: break-all;
+  flex: 1;
+}
+
+.rview-log-cmd  { background: #eff6ff; }
+.rview-log-cmd  .rview-log-dir  { color: #1d4ed8; }
+.rview-log-cmd  .rview-log-text { color: #1e3a8a; }
+
+.rview-log-resp { background: #f0fdf4; }
+.rview-log-resp .rview-log-dir  { color: #15803d; }
+.rview-log-resp .rview-log-text { color: #14532d; }
+
+.rview-log-err  { background: #fef2f2; }
+.rview-log-err  .rview-log-dir  { color: var(--fail); }
+.rview-log-err  .rview-log-text { color: #991b1b; }
+
+.rview-log-other .rview-log-text { color: var(--text-muted); }
+
+.rview-log-empty {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 4px 8px;
+}
+
+/* ── Form ──────────────────────────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.form-group { margin-bottom: 1rem; }
 
 .form-group label {
   display: block;
@@ -334,8 +422,7 @@
 }
 
 .form-group select,
-.form-group input[type="date"],
-.form-group input[type="text"] {
+.form-group input[type="date"] {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
@@ -361,199 +448,18 @@
   cursor: not-allowed;
 }
 
-/* ─── Report View Modal (logs / summary) ────────────────────────────────────── */
-.report-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-.summary-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.875rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.summary-card .label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.summary-card .value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.summary-card .value.success { color: var(--success); }
-.summary-card .value.failure { color: var(--fail); }
-
-.logs-section h3 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.logs-viewer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 420px;
-  overflow-y: auto;
-}
-
-.test-block {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.875rem;
-}
-
-.test-block h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text);
-  font-family: 'Consolas', monospace;
-}
-
-.log-content {
-  background: #0f172a;
-  color: #94a3b8;
-  border-radius: var(--radius);
-  padding: 0.75rem;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.75rem;
-  line-height: 1.6;
-  max-height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-  margin: 0;
-  border: 1px solid #1e293b;
-}
-
-/* ─── Status filter buttons ─────────────────────────────────────────────────── */
-.status-filter {
-  display: flex;
-  gap: 4px;
-}
-
-.filter-btn {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-
-.filter-btn.active,
-.filter-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border-deep); }
-
-.filter-btn.filter-pass.active { background: #f0fdf4; color: var(--success); border-color: #86efac; }
-.filter-btn.filter-fail.active { background: var(--fail-bg); color: var(--fail); border-color: #fca5a5; }
-
-/* ─── Log lines inside test block ───────────────────────────────────────────── */
-.test-block-success { border-left: 3px solid var(--success); }
-.test-block-fail    { border-left: 3px solid var(--fail); }
-
-.test-block h4 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.test-status-badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.badge-success { background: #dcfce7; color: var(--success); }
-.badge-fail    { background: #fee2e2; color: var(--fail); }
-
-.log-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: 8px;
-  font-family: 'Consolas', monospace;
-  font-size: 0.75rem;
-}
-
-.log-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.log-dir {
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
-  font-size: 0.68rem;
-  padding-top: 1px;
-}
-
-.log-cmd  { background: #eff6ff; }
-.log-cmd  .log-dir  { color: #1d4ed8; }
-.log-cmd  .log-text { color: #1e3a8a; }
-
-.log-resp { background: #f0fdf4; }
-.log-resp .log-dir  { color: #15803d; }
-.log-resp .log-text { color: #14532d; }
-
-.log-err  { background: #fef2f2; }
-.log-err  .log-dir  { color: var(--fail); }
-.log-err  .log-text { color: #991b1b; }
-
-.log-other { color: var(--text-muted); padding: 2px 8px; }
-
-.log-text { flex: 1; word-break: break-all; line-height: 1.5; }
-
-.log-empty {
-  color: var(--text-faint);
-  font-size: 0.78rem;
-  font-style: italic;
-  padding: 4px 8px;
-}
-
-/* ─── Responsive ────────────────────────────────────────────────────────────── */
+/* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .reports-container { padding: 1rem; }
-
-  .reports-header { flex-direction: column; align-items: stretch; }
-
-  .header-actions { flex-direction: column; align-items: stretch; }
-
-  .search-input { min-width: unset; width: 100%; }
-
+  .reports-container  { padding: 1rem; }
+  .reports-header     { flex-direction: column; align-items: stretch; }
+  .header-actions     { flex-direction: column; align-items: stretch; }
   .reports-table th,
-  .reports-table td { padding: 0.5rem 0.75rem; }
-
-  .action-buttons { flex-direction: column; }
-
-  .modal { width: 95%; }
-
-  .modal-footer { flex-direction: column-reverse; }
-
-  .modal-footer .btn { width: 100%; }
+  .reports-table td   { padding: 0.5rem 0.75rem; }
+  .action-buttons     { flex-direction: column; }
+  .modal              { width: 95%; }
+  .modal-footer       { flex-direction: column-reverse; }
+  .modal-footer .btn  { width: 100%; }
+  .rview-strip        { flex-wrap: wrap; }
+  .rview-cell         { min-width: 50%; }
+  .form-row           { grid-template-columns: 1fr; }
 }

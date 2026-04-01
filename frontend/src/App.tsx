@@ -5,6 +5,7 @@ import Reports from './components/Reports';
 import Commands from './components/Commands';
 import MultiTest from './components/MultiTest';
 import Configuration from './components/Configuration';
+import AdminPanel from './components/AdminPanel';
 import './App.css';
 
 interface User {
@@ -14,7 +15,7 @@ interface User {
 }
 
 // Pages disponibles selon le rôle
-type ViewId = 'dashboard' | 'reports' | 'commands' | 'multitest' | 'configuration';
+type ViewId = 'dashboard' | 'reports' | 'commands' | 'multitest' | 'configuration' | 'admin';
 
 interface NavItem {
   id: ViewId;
@@ -28,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'commands',      label: 'Commandes',       roles: ['admin', 'engineer'] },
   { id: 'multitest',     label: 'Multi-Test',      roles: ['admin', 'engineer'] },
   { id: 'configuration', label: 'Configuration',   roles: ['admin'] },
+  { id: 'admin',         label: 'Administration',  roles: ['admin'] },
 ];
 
 function App() {
@@ -54,7 +56,18 @@ function App() {
     setCurrentView('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      try {
+        await fetch('http://localhost:3002/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch {
+        // on continue même si l'appel échoue
+      }
+    }
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     setUser(null);
@@ -120,6 +133,7 @@ function App() {
             {safeView === 'commands'      && <Commands />}
             {safeView === 'multitest'     && <MultiTest />}
             {safeView === 'configuration' && <Configuration />}
+            {safeView === 'admin'         && <AdminPanel />}
           </main>
         </>
       ) : (
