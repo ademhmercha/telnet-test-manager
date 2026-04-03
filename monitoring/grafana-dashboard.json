@@ -1,21 +1,21 @@
 {
   "title": "Telnet Test Manager - Monitoring",
-  "uid": "telnet-monitoring-v2",
+  "uid": "telnet-monitoring-v3",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "30s",
   "panels": [
     {
       "id": 1,
-      "title": "Prometheus UP",
+      "title": "Backend UP",
       "type": "stat",
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "up{job=\"prometheus\"}",
-          "legendFormat": "Prometheus"
+          "expr": "up{job=\"backend\"}",
+          "legendFormat": "Backend"
         }
       ],
       "options": { "colorMode": "background", "graphMode": "none" },
@@ -34,15 +34,15 @@
     },
     {
       "id": 2,
-      "title": "Total Métriques collectées",
+      "title": "Tests Telnet lancés",
       "type": "stat",
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "count({__name__=~\".+\"})",
-          "legendFormat": "Total séries"
+          "expr": "telnet_tests_launched_total",
+          "legendFormat": "Tests"
         }
       ],
       "fieldConfig": {
@@ -54,14 +54,14 @@
     },
     {
       "id": 3,
-      "title": "Requêtes HTTP Prometheus",
+      "title": "Requêtes HTTP backend (total)",
       "type": "stat",
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(prometheus_http_requests_total)",
+          "expr": "sum(http_requests_total)",
           "legendFormat": "Requêtes"
         }
       ],
@@ -74,14 +74,14 @@
     },
     {
       "id": 4,
-      "title": "RAM Prometheus (MB)",
+      "title": "RAM Backend (MB)",
       "type": "stat",
       "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "process_resident_memory_bytes{job=\"prometheus\"} / 1024 / 1024",
+          "expr": "process_resident_memory_bytes{job=\"backend\"} / 1024 / 1024",
           "legendFormat": "RAM"
         }
       ],
@@ -95,15 +95,15 @@
     },
     {
       "id": 5,
-      "title": "Requêtes HTTP par endpoint (taux / 5min)",
+      "title": "Taux de requêtes HTTP backend (par route)",
       "type": "timeseries",
       "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "rate(prometheus_http_requests_total[5m])",
-          "legendFormat": "{{handler}} ({{code}})"
+          "expr": "rate(http_requests_total[5m])",
+          "legendFormat": "{{method}} {{route}} ({{status}})"
         }
       ],
       "fieldConfig": {
@@ -118,36 +118,82 @@
     },
     {
       "id": 6,
-      "title": "Mémoire Prometheus (MB)",
+      "title": "Durée moyenne des requêtes HTTP (ms)",
       "type": "timeseries",
       "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "process_resident_memory_bytes{job=\"prometheus\"} / 1024 / 1024",
-          "legendFormat": "RAM (MB)"
+          "expr": "rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) * 1000",
+          "legendFormat": "{{route}}"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "MB", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "palette-classic" }
+        }
       }
     },
     {
       "id": 7,
-      "title": "CPU Prometheus (%)",
+      "title": "RAM Backend (MB) - historique",
       "type": "timeseries",
       "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "rate(process_cpu_seconds_total{job=\"prometheus\"}[5m]) * 100",
-          "legendFormat": "CPU %"
+          "expr": "process_resident_memory_bytes{job=\"backend\"} / 1024 / 1024",
+          "legendFormat": "RAM Backend (MB)"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percent", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "MB",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Tests Telnet lancés - historique",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "expr": "rate(telnet_tests_launched_total[5m])",
+          "legendFormat": "Tests / seconde"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Connexions WebSocket actives",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "expr": "websocket_active_connections",
+          "legendFormat": "WebSocket actifs"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        }
       }
     }
   ],

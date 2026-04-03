@@ -8,6 +8,38 @@ const rateLimit  = require('express-rate-limit');
 const path       = require('path');
 const { Worker } = require('worker_threads');
 const { WebSocketServer } = require('ws');
+const promClient = require('prom-client');
+
+// ─── Prometheus Metrics ───────────────────────────────────────────────────────
+const register = new promClient.Registry();
+promClient.collectDefaultMetrics({ register });
+
+const httpRequestsTotal = new promClient.Counter({
+  name: 'http_requests_total',
+  help: 'Nombre total de requêtes HTTP',
+  labelNames: ['method', 'route', 'status'],
+  registers: [register]
+});
+
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Durée des requêtes HTTP en secondes',
+  labelNames: ['method', 'route', 'status'],
+  buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5],
+  registers: [register]
+});
+
+const testsLaunched = new promClient.Counter({
+  name: 'telnet_tests_launched_total',
+  help: 'Nombre total de tests Telnet lancés',
+  registers: [register]
+});
+
+const activeWebSockets = new promClient.Gauge({
+  name: 'websocket_active_connections',
+  help: 'Nombre de connexions WebSocket actives',
+  registers: [register]
+});
 
 const {
   connectDB,
@@ -505,6 +537,7 @@ function broadcastMonitoringEvent(testId, event) {
 // ─── /run-test ────────────────────────────────────────────────────────────────
 
 app.post('/run-test', authenticateToken, requirePermission('run_tests'), async (req, res) => {
+  testsLaunched.inc();
   const { slotId, posteId, produitId, commandId, commands, monitorDurationMs } = req.body;
 
   if (!slotId || !posteId || !produitId) {
@@ -1267,9 +1300,26 @@ app.delete('/reports/:id', authenticateToken, requirePermission('run_tests'), as
   } catch (e) { res.status(500).json({ message: 'Erreur serveur' }); }
 });
 
+// ─── Metrics middleware ───────────────────────────────────────────────────────
+
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on('finish', () => {
+    const route = req.route ? req.route.path : req.path;
+    httpRequestsTotal.inc({ method: req.method, route, status: res.statusCode });
+    end({ method: req.method, route, status: res.statusCode });
+  });
+  next();
+});
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (req, res) => res.json({ status: 'OK', timestamp: new Date().toISOString() }));
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
