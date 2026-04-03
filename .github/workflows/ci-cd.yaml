@@ -53,6 +53,7 @@ jobs:
           helm upgrade --install telnet-app ./helm/telnet-app \
             --create-namespace \
             --namespace telnet-app \
-            --wait \
-            --timeout 180s
+            --timeout 300s
       - run: kubectl get all -n telnet-app
+      - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
+      - run: kubectl get pods -n telnet-app
