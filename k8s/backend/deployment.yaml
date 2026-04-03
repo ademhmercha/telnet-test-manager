@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: telnet-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      hostNetwork: true
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command: ['sh', '-c', 'until nc -z mongodb-service 27017; do echo waiting for mongodb; sleep 2; done']
+      containers:
+        - name: backend
+          image: telnet-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          volumeMounts:
+            - name: reports-storage
+              mountPath: /app/reports
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: reports-storage
+          persistentVolumeClaim:
+            claimName: backend-pvc

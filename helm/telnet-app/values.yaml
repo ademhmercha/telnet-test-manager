@@ -1,0 +1,71 @@
+replicaCount:
+  backend: 2
+  frontend: 1
+  mongodb: 1
+
+image:
+  backend:
+    name: telnet-backend
+    tag: latest
+    pullPolicy: Never
+  frontend:
+    name: telnet-frontend
+    tag: latest
+    pullPolicy: Never
+  mongodb:
+    name: mongo
+    tag: "7"
+    pullPolicy: IfNotPresent
+
+service:
+  backend:
+    port: 3002
+  frontend:
+    port: 80
+  mongodb:
+    port: 27017
+
+ingress:
+  host: telnet-app.local
+
+config:
+  nodeEnv: production
+  port: "3002"
+  mongodbHost: mongodb-service
+  mongodbPort: "27017"
+  mongodbDb: telnet-db
+
+secrets:
+  jwtSecret: "telnet-jwt-secret-2024"
+  mongodbUri: "mongodb://admin:admin123@mongodb-service:27017/telnet-db?authSource=admin"
+  mongoRootUsername: "admin"
+  mongoRootPassword: "admin123"
+
+persistence:
+  backend:
+    size: 1Gi
+  mongodb:
+    size: 2Gi
+
+resources:
+  backend:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "300m"
+  frontend:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+  mongodb:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"

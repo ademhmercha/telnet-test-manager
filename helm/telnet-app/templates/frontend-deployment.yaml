@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.frontend }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.image.frontend.name }}:{{ .Values.image.frontend.tag }}"
+          imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.frontend.port }}
+          resources:
+            requests:
+              memory: {{ .Values.resources.frontend.requests.memory | quote }}
+              cpu: {{ .Values.resources.frontend.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.resources.frontend.limits.memory | quote }}
+              cpu: {{ .Values.resources.frontend.limits.cpu | quote }}

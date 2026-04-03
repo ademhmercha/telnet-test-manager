@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: telnet-app
+data:
+  NODE_ENV: production
+  PORT: "3002"
+  MONGODB_HOST: mongodb-service
+  MONGODB_PORT: "27017"
+  MONGODB_DB: telnet-db

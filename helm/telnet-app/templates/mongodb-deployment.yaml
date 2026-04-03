@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.mongodb }}
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.image.mongodb.name }}:{{ .Values.image.mongodb.tag }}"
+          imagePullPolicy: {{ .Values.image.mongodb.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.mongodb.port }}
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_INITDB_DATABASE
+              value: {{ .Values.config.mongodbDb }}
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: /data/db
+          resources:
+            requests:
+              memory: {{ .Values.resources.mongodb.requests.memory | quote }}
+              cpu: {{ .Values.resources.mongodb.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.resources.mongodb.limits.memory | quote }}
+              cpu: {{ .Values.resources.mongodb.limits.cpu | quote }}
+      volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc

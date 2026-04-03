@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: telnet-db
+    networks:
+      - telnet-network
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "3002:3002"
+    environment:
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/telnet-db?authSource=admin
+      JWT_SECRET: telnet-jwt-secret-2024
+      PORT: "3002"
+      ALLOWED_ORIGIN: http://localhost:3000
+    volumes:
+      - ./backend/reports:/app/reports
+    depends_on:
+      - mongodb
+    networks:
+      - telnet-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - telnet-network
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+
+networks:
+  telnet-network:
+    driver: bridge

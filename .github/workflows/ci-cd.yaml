@@ -1,0 +1,56 @@
+name: CI/CD Telnet Test Manager
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: cd backend && npm ci
+      - run: cd backend && npm test --if-present
+      - run: docker build -t telnet-backend:${{ github.sha }} ./backend
+
+  ci-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci
+      - run: cd frontend && npm run build
+      - run: docker build -t telnet-frontend:${{ github.sha }} ./frontend
+
+  deploy:
+    needs: [ci-backend, ci-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: medyagh/setup-minikube@master
+        with:
+          driver: docker
+      - run: minikube addons enable ingress
+      - run: |
+          eval $(minikube docker-env)
+          docker build -t telnet-backend:latest ./backend
+          docker build -t telnet-frontend:latest ./frontend
+      - run: |
+          helm upgrade --install telnet-app ./helm/telnet-app \
+            --create-namespace \
+            --namespace telnet-app \
+            --wait \
+            --timeout 180s
+      - run: kubectl get all -n telnet-app

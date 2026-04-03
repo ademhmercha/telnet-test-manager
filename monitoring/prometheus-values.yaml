@@ -1,0 +1,9 @@
+server:
+  service:
+    type: NodePort
+
+alertmanager:
+  enabled: false
+
+pushgateway:
+  enabled: false
