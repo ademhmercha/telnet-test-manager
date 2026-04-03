@@ -1,5 +1,5 @@
 # DevOps — Telnet Test Manager
-## Documentation complète pour présentation jury PFE
+## Documentation complète — Présentation jury PFE
 
 ---
 
@@ -11,7 +11,7 @@
 4. [Déploiement avec Helm](#4-déploiement-avec-helm)
 5. [Monitoring avec Prometheus et Grafana](#5-monitoring-avec-prometheus-et-grafana)
 6. [Pipeline CI/CD avec GitHub Actions](#6-pipeline-cicd-avec-github-actions)
-7. [Comment tester avant la jury](#7-comment-tester-avant-la-jury)
+7. [Comment tester — Scénario jury](#7-comment-tester--scénario-jury)
 8. [Questions fréquentes jury](#8-questions-fréquentes-jury)
 
 ---
@@ -31,35 +31,56 @@ GitHub (code source)
     ▼
 GitHub Actions (CI/CD Pipeline)
     │
-    ├── ci-backend  → teste + build image Docker backend
-    ├── ci-frontend → teste + build image Docker frontend
-    ├── deploy      → déploie sur Kubernetes via Helm
-    └── monitoring  → installe Prometheus + Grafana
+    ├── [1] ci-backend  → installe deps, teste, build image Docker
+    ├── [2] ci-frontend → installe deps, build React, build image Docker
+    ├── [3] deploy      → déploie sur Kubernetes (Minikube) via Helm
+    └── [4] monitoring  → installe Prometheus + Grafana via Helm
                                │
                                ▼
-                        Kubernetes (Minikube)
+                    Kubernetes — Namespace: telnet-app
                                │
-               ┌───────────────┼───────────────┐
-               ▼               ▼               ▼
-           MongoDB          Backend         Frontend
-           (base de         (Node.js        (React +
-            données)         Express)        Nginx)
-                                     │
-                               ┌─────┴─────┐
-                               ▼           ▼
-                          Prometheus    Grafana
-                          (collecte   (dashboards
-                           métriques)  visuels)
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                   ▼
+       MongoDB              Backend             Frontend
+       (mongo:7)        (Node.js/Express)    (React + Nginx)
+       Port 27017           Port 3002            Port 80
+       PVC: 2Gi             PVC: 1Gi          replicas: 1
+       replicas: 1          replicas: 2
+                               │
+                        expose /metrics
+                               │
+                    Kubernetes — Namespace: monitoring
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+               Prometheus             Grafana
+           (collecte métriques)   (dashboards visuels)
+               Port 9090              Port 3001
 ```
 
-### Pourquoi cette architecture ?
+### Services exposés
 
-L'application Telnet Test Manager est composée de 3 couches distinctes :
-- **Frontend** : interface React pour les techniciens et ingénieurs
-- **Backend** : API REST Node.js/Express qui gère la logique métier et la connexion Telnet
-- **Base de données** : MongoDB pour stocker les utilisateurs, tests, séquences et rapports
+| Service | URL locale | Description |
+|---|---|---|
+| Application | http://localhost:3000 | Interface React |
+| Backend API | http://localhost:3002 | API REST Node.js |
+| Métriques | http://localhost:3002/metrics | Endpoint Prometheus |
+| Prometheus | http://localhost:9090 | Collecte métriques |
+| Grafana | http://localhost:3001 | Dashboards visuels |
 
-Séparer ces couches en conteneurs indépendants permet de les déployer, mettre à jour et scaler individuellement sans affecter les autres.
+### Stack technologique
+
+| Couche | Technologie | Version |
+|---|---|---|
+| Frontend | React + TypeScript | 18 |
+| Backend | Node.js + Express | 20 |
+| Base de données | MongoDB | 7 |
+| Conteneurs | Docker | 29 |
+| Orchestration | Kubernetes (Minikube) | 1.35 |
+| Package K8s | Helm | 4.1 |
+| Métriques | Prometheus | latest |
+| Dashboards | Grafana | latest |
+| CI/CD | GitHub Actions | — |
 
 ---
 
@@ -67,94 +88,104 @@ Séparer ces couches en conteneurs indépendants permet de les déployer, mettre
 
 ### Qu'est-ce que Docker ?
 
-Docker est un outil qui permet d'emballer une application avec toutes ses dépendances dans un **conteneur**. Un conteneur est un environnement isolé et portable qui tourne de la même façon partout : sur ton PC, sur un serveur, sur le cloud.
+Docker permet d'emballer une application avec **toutes ses dépendances** dans un conteneur isolé et portable. L'application fonctionne de façon identique sur n'importe quelle machine : PC de dev, serveur de prod, pipeline CI/CD.
 
-**Analogie** : un conteneur Docker c'est comme une boîte hermétique qui contient l'application + tout ce dont elle a besoin pour fonctionner. Tu déplaces la boîte, l'application fonctionne exactement pareil.
+**Analogie** : un conteneur Docker c'est comme une boîte hermétique qui contient l'application et tout ce dont elle a besoin. Tu déplaces la boîte, l'application fonctionne exactement pareil.
 
-### Pourquoi Docker dans ce projet ?
+**Problème résolu** : "ça marche sur ma machine mais pas sur la tienne" — Docker élimine ce problème.
 
-- **Portabilité** : l'app fonctionne identiquement en dev, en test et en production
-- **Isolation** : le backend n'interfère pas avec le frontend, ni avec la base de données
-- **Reproductibilité** : plus de problème "ça marche sur ma machine mais pas sur la tienne"
-- **Déploiement simplifié** : une seule commande pour tout lancer
+---
 
 ### Dockerfile Backend (`backend/Dockerfile`)
 
 ```dockerfile
-FROM node:20-alpine        # image de base légère (Alpine Linux = ~5MB vs Ubuntu ~100MB)
-WORKDIR /app               # répertoire de travail dans le conteneur
-COPY package*.json ./      # copie les fichiers de dépendances en premier (cache Docker)
-RUN npm ci --only=production  # installe seulement les dépendances de production
-COPY . .                   # copie le code source
-EXPOSE 3002                # documente le port utilisé
-CMD ["node", "server.js"]  # commande de démarrage
+FROM node:20-alpine        # image légère Alpine (~150MB vs ~1GB pour node:20)
+WORKDIR /app
+COPY package*.json ./      # copier d'abord pour profiter du cache Docker
+RUN npm ci --only=production  # seulement les dépendances de production
+COPY . .
+EXPOSE 3002
+CMD ["node", "server.js"]
 ```
 
-**Justification des choix :**
-- `node:20-alpine` : image légère (~150MB) vs `node:20` (~1GB). Alpine Linux est minimaliste et sécurisé.
-- `npm ci` au lieu de `npm install` : plus rapide, reproductible, respecte exactement le `package-lock.json`
-- `--only=production` : n'installe pas les devDependencies (mocha, nodemon, etc.) → image plus petite et sécurisée
+**Justifications :**
+- `node:20-alpine` : Alpine Linux est minimaliste (~5MB), image finale ~150MB au lieu de ~1GB
+- `npm ci` : plus rapide et reproductible que `npm install`, respecte exactement `package-lock.json`
+- `--only=production` : exclut les devDependencies (nodemon, etc.) → image plus petite et sécurisée
+- L'ordre des instructions exploite le **cache Docker** : les dépendances ne se réinstallent que si `package.json` change
+
+---
 
 ### Dockerfile Frontend (`frontend/Dockerfile`) — Multi-stage build
 
 ```dockerfile
-# ÉTAPE 1 : construction
+# ÉTAPE 1 : construction (builder)
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build          # compile React → fichiers HTML/CSS/JS statiques
+RUN npm run build       # compile React → HTML/CSS/JS statiques
 
 # ÉTAPE 2 : production
-FROM nginx:alpine          # serveur web ultra-léger
-COPY --from=builder /app/build /usr/share/nginx/html  # copie seulement le build
+FROM nginx:alpine       # serveur web ultra-léger
+COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
 **Pourquoi le multi-stage build ?**
-- L'étape 1 utilise Node.js (lourd) pour compiler le code React
-- L'étape 2 ne garde que les fichiers compilés servis par Nginx (léger)
-- Résultat : image finale ~25MB au lieu de ~500MB si on gardait Node.js
-- Le code source et les outils de dev ne sont PAS dans l'image de production → sécurité
+- Étape 1 (builder) : utilise Node.js pour compiler le code React
+- Étape 2 : ne contient **que** les fichiers compilés + Nginx
+- Résultat : image finale ~25MB au lieu de ~500MB
+- Le code source et les outils de build **ne sont pas** dans l'image de production → sécurité
+
+---
 
 ### Nginx (`frontend/nginx.conf`)
 
 Nginx joue le rôle de **reverse proxy** :
-- Sert les fichiers React statiques
-- Redirige les requêtes `/api/*` vers le backend sur le port 3002
-- Gère le cache pour les assets (images, CSS, JS)
+- Sert les fichiers statiques React
+- Redirige `/api/*` vers le backend sur le port 3002
+- Gère le cache long (1 an) pour les assets
 - Ajoute des headers de sécurité (X-Frame-Options, X-Content-Type-Options)
 
 ```nginx
 location /api/ {
-    proxy_pass http://backend:3002/;   # redirige vers le conteneur backend
+    proxy_pass http://backend:3002/;  # backend = nom du service Docker
 }
 ```
 
+---
+
 ### Docker Compose (`docker-compose.yml`)
 
-Docker Compose permet de gérer plusieurs conteneurs ensemble avec un seul fichier de configuration.
+Une seule commande pour démarrer toute l'infrastructure :
 
-```
+```bash
 docker compose up -d
 ```
 
-Cette commande démarre **5 services** automatiquement :
+**5 services démarrés automatiquement :**
 
 | Service | Image | Port | Rôle |
 |---|---|---|---|
 | mongodb | mongo:7 | 27017 | Base de données |
-| backend | build local | 3002 | API REST |
+| backend | build local | 3002 | API REST + /metrics |
 | frontend | build local | 3000 | Interface web |
 | prometheus | prom/prometheus | 9090 | Collecte métriques |
-| grafana | grafana/grafana | 3001 | Dashboards visuels |
+| grafana | grafana/grafana | 3001 | Dashboards |
 
-**Réseau Docker** : tous les conteneurs sont sur le même réseau `telnet-network`. Ils se parlent par leur nom de service (ex: `backend` parle à `mongodb` via `mongodb:27017`).
+**Réseau Docker** : tous les services sont sur le même réseau `telnet-network`. Ils communiquent par leur nom de service (ex: backend → `mongodb:27017`).
 
-**Volumes** : les données MongoDB et Grafana sont persistées dans des volumes Docker. Si le conteneur redémarre, les données ne sont pas perdues.
+**Volumes persistants** : les données MongoDB et Grafana survivent aux redémarrages des conteneurs.
+
+**Provisioning automatique** : Prometheus et Grafana sont préconfigurés au démarrage via des fichiers montés en volumes :
+- `monitoring/prometheus.yml` → targets à scraper
+- `monitoring/grafana-datasources.yaml` → connexion Prometheus automatique
+- `monitoring/grafana-dashboards.yaml` → chargement automatique du dashboard
+- `monitoring/grafana-dashboard.json` → dashboard custom Telnet Test Manager
 
 ---
 
@@ -162,74 +193,74 @@ Cette commande démarre **5 services** automatiquement :
 
 ### Qu'est-ce que Kubernetes ?
 
-Kubernetes (K8s) est un système d'orchestration de conteneurs. Là où Docker fait tourner des conteneurs, Kubernetes les **gère à grande échelle** : démarrage automatique, redémarrage en cas de crash, load balancing, scaling...
+Kubernetes (K8s) est un système d'**orchestration de conteneurs**. Là où Docker fait tourner des conteneurs sur une machine, Kubernetes les gère à grande échelle : démarrage automatique, redémarrage en cas de crash, load balancing, scaling.
 
-**Analogie** : Docker c'est un camion de livraison. Kubernetes c'est le système logistique complet qui gère des milliers de camions, s'assure que les livraisons arrivent, remplace un camion en panne, répartit la charge...
+**Analogie** : Docker c'est un camion de livraison. Kubernetes c'est le système logistique complet qui gère des milliers de camions — remplace un camion en panne, répartit la charge, garantit les livraisons.
 
-### Pourquoi Kubernetes dans ce projet ?
-
-- **Haute disponibilité** : si un pod backend crash, K8s en redémarre un autre automatiquement
-- **Scaling** : on peut passer de 2 à 10 replicas backend en une commande
-- **Déploiement sans interruption** : rolling update (mise à jour progressive sans downtime)
+**Pourquoi Kubernetes dans ce projet ?**
+- **Haute disponibilité** : si un pod backend crash → K8s en redémarre un autre automatiquement
+- **Scaling** : passer de 2 à 10 replicas backend en une commande
+- **Rolling update** : mise à jour sans interruption de service
 - **Gestion déclarative** : on décrit l'état souhaité, K8s s'assure que l'état réel correspond
+
+---
 
 ### Minikube
 
-Minikube est une version locale de Kubernetes qui tourne dans un conteneur Docker. Il simule un cluster K8s sur ta machine sans avoir besoin de serveurs réels.
+Minikube est une version locale de Kubernetes qui tourne dans un conteneur Docker. Il simule un vrai cluster K8s sur ta machine sans avoir besoin de serveurs cloud.
 
 ```
 Machine Windows
     └── Docker Desktop
             └── Minikube (conteneur Docker)
-                    └── Kubernetes
-                            ├── Pod: backend (x2)
-                            ├── Pod: frontend (x1)
-                            ├── Pod: mongodb (x1)
-                            ├── Pod: prometheus (x1)
-                            └── Pod: grafana (x1)
+                    └── Kubernetes cluster
+                            ├── Namespace: telnet-app
+                            │       ├── Pod backend  (x2)
+                            │       ├── Pod frontend (x1)
+                            │       └── Pod mongodb  (x1)
+                            └── Namespace: monitoring
+                                    ├── Pod prometheus
+                                    └── Pod grafana
 ```
 
-### Concepts Kubernetes utilisés dans ce projet
+---
+
+### Concepts Kubernetes utilisés
 
 #### Namespace
-Espace de noms qui isole les ressources. On utilise `telnet-app` pour l'application et `monitoring` pour Prometheus/Grafana. Comme des dossiers qui séparent les ressources.
+Espace de noms qui isole les ressources. `telnet-app` pour l'application, `monitoring` pour la supervision. Comme des dossiers séparés dans le cluster.
 
 #### Pod
 La plus petite unité Kubernetes. Contient un ou plusieurs conteneurs. Un Pod backend = un conteneur Node.js qui tourne.
 
 #### Deployment
-Gère un groupe de Pods identiques. Assure qu'il y a toujours le bon nombre de replicas en vie.
+Gère un groupe de Pods identiques. Assure qu'il y a toujours le bon nombre de replicas.
 
 ```yaml
-replicas: 2   # K8s s'assure qu'il y a toujours 2 Pods backend
+replicas: 2   # K8s maintient toujours 2 Pods backend en vie
 ```
 
 Si un Pod crash → K8s en crée un nouveau automatiquement.
 
 #### Service
-Expose les Pods sur le réseau. Les Pods ont des IPs qui changent, le Service a une IP stable.
-
-```
-Requête HTTP → Service (IP stable) → Pod1 ou Pod2 (load balancing)
-```
+Expose les Pods sur le réseau avec une IP stable. Les Pods ont des IPs qui changent, le Service a une IP fixe → load balancing automatique entre les replicas.
 
 #### PersistentVolumeClaim (PVC)
-Réserve de l'espace disque persistant pour les conteneurs. MongoDB utilise 2Gi pour stocker les données. Même si le Pod redémarre, les données restent.
+Réserve de l'espace disque persistant. MongoDB utilise 2Gi, backend 1Gi pour les rapports. Les données survivent aux redémarrages de Pods.
 
 #### ConfigMap & Secret
-- **ConfigMap** : variables de configuration non sensibles (NODE_ENV, PORT, MONGODB_HOST)
+- **ConfigMap** : variables non sensibles (NODE_ENV, PORT, MONGODB_HOST)
 - **Secret** : données sensibles encodées en base64 (JWT_SECRET, mots de passe MongoDB)
 
 #### Ingress
-Point d'entrée unique pour l'application. Route le trafic vers le bon service selon l'URL.
-
+Point d'entrée unique. Route le trafic selon l'URL :
 ```
-http://telnet-app.local/      → Service frontend
-http://telnet-app.local/api/  → Service backend
+http://telnet-app.local/      → Service frontend (port 80)
+http://telnet-app.local/api/  → Service backend  (port 3002)
 ```
 
 #### InitContainer
-Conteneur qui s'exécute avant le conteneur principal. Le backend attend que MongoDB soit prêt avant de démarrer.
+Conteneur qui s'exécute **avant** le conteneur principal. Le backend attend que MongoDB soit prêt :
 
 ```yaml
 initContainers:
@@ -238,8 +269,8 @@ initContainers:
     command: ['sh', '-c', 'until nc -z mongodb-service 27017; do sleep 2; done']
 ```
 
-#### Probes (Health Checks)
-- **livenessProbe** : K8s vérifie si le conteneur est vivant. S'il ne répond pas → redémarre.
+#### Health Checks (Probes)
+- **livenessProbe** : K8s vérifie si le conteneur est vivant. S'il ne répond pas → redémarrage automatique.
 - **readinessProbe** : K8s vérifie si le conteneur est prêt à recevoir du trafic.
 
 ```yaml
@@ -253,46 +284,65 @@ livenessProbe:
 
 ---
 
+### Structure des fichiers K8s
+
+```
+k8s/
+├── namespace.yaml
+├── configmap.yaml
+├── secret.yaml
+├── mongodb/
+│   ├── pvc.yaml            → Stockage 2Gi
+│   ├── deployment.yaml
+│   └── service.yaml        → ClusterIP port 27017
+├── backend/
+│   ├── pvc.yaml            → Stockage rapports 1Gi
+│   ├── deployment.yaml     → 2 replicas, initContainer, probes
+│   └── service.yaml        → ClusterIP port 3002
+├── frontend/
+│   ├── deployment.yaml     → 1 replica
+│   └── service.yaml        → ClusterIP port 80
+└── ingress.yaml            → Routing HTTP telnet-app.local
+```
+
+---
+
 ## 4. Déploiement avec Helm
 
 ### Qu'est-ce que Helm ?
 
-Helm est le **gestionnaire de paquets** pour Kubernetes. Au lieu d'écrire des dizaines de fichiers YAML manuellement, Helm utilise des templates paramétrables.
+Helm est le **gestionnaire de paquets** pour Kubernetes. Au lieu de maintenir des dizaines de fichiers YAML manuellement, Helm utilise des templates paramétrables.
 
-**Analogie** : Helm c'est comme `npm` pour Node.js ou `pip` pour Python, mais pour les applications Kubernetes.
+**Analogie** : Helm c'est comme `npm` pour Node.js — il gère les dépendances, les versions, et simplifie le déploiement.
+
+**Problème résolu** : pour déployer en dev (1 replica) et en prod (5 replicas), sans Helm on maintient 2 copies de chaque fichier YAML. Avec Helm, on change juste les valeurs.
+
+---
 
 ### Structure du chart Helm
 
 ```
 helm/telnet-app/
-├── Chart.yaml          → métadonnées (nom, version, description)
-├── values.yaml         → valeurs par défaut paramétrables
-└── templates/
-    ├── configmap.yaml       → variables de config
-    ├── secret.yaml          → secrets encodés
-    ├── mongodb-pvc.yaml     → stockage MongoDB
-    ├── mongodb-deployment.yaml
-    ├── mongodb-service.yaml
-    ├── backend-pvc.yaml     → stockage backend (rapports)
-    ├── backend-deployment.yaml
-    ├── backend-service.yaml
-    ├── frontend-deployment.yaml
-    ├── frontend-service.yaml
-    └── ingress.yaml         → point d'entrée HTTP
+├── Chart.yaml          → métadonnées (nom: telnet-app, version: 0.3.0)
+├── values.yaml         → toutes les valeurs paramétrables
+└── templates/          → 12 templates (configmap, secret, mongodb, backend, frontend, ingress)
 ```
 
-### Pourquoi Helm plutôt que des YAML bruts ?
+### Valeurs paramétrables (`values.yaml`)
 
-**Sans Helm** : si tu veux changer le nombre de replicas, tu modifies 1 fichier. Mais si tu veux déployer dans 3 environnements différents (dev, staging, prod) avec des configs différentes → tu maintiens 3 copies de chaque fichier.
+```yaml
+replicaCount:
+  backend: 2      # changer à 5 pour scaler en prod
+  frontend: 1
 
-**Avec Helm** : un seul `values.yaml` par environnement.
-
-```bash
-# Déploiement production
-helm upgrade --install telnet-app ./helm/telnet-app \
-  --namespace telnet-app \
-  --set replicaCount.backend=5 \
-  --set resources.backend.limits.memory=512Mi
+resources:
+  backend:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "300m"
 ```
 
 ### Commande de déploiement
@@ -305,8 +355,15 @@ helm upgrade --install telnet-app ./helm/telnet-app \
 ```
 
 - `upgrade --install` : met à jour si existe, installe sinon (idempotent)
-- `--create-namespace` : crée le namespace s'il n'existe pas
-- `--timeout 300s` : attend 5 minutes max pour que tout soit prêt
+- `--create-namespace` : crée le namespace automatiquement
+- `--timeout 300s` : attend 5 minutes max
+
+### Scaler à la demande
+
+```bash
+helm upgrade telnet-app ./helm/telnet-app \
+  --set replicaCount.backend=5
+```
 
 ---
 
@@ -314,57 +371,81 @@ helm upgrade --install telnet-app ./helm/telnet-app \
 
 ### Pourquoi le monitoring ?
 
-Sans monitoring, si l'application ralentit ou tombe, on le découvre quand l'utilisateur signale le problème. Avec monitoring, on voit les problèmes **avant** qu'ils impactent les utilisateurs.
+Sans monitoring : on découvre les problèmes quand l'utilisateur se plaint.
+Avec monitoring : on voit les problèmes **avant** qu'ils impactent les utilisateurs.
 
-### Prometheus
+---
 
-**Rôle** : collecte et stocke les métriques de l'infrastructure.
-
-**Fonctionnement** : Prometheus "scrape" (interroge) les endpoints `/metrics` toutes les 15 secondes et stocke les données en séries temporelles.
-
-**Ce qu'il collecte** :
-- Utilisation CPU des pods
-- Utilisation mémoire
-- Nombre de requêtes HTTP
-- Temps de réponse
-- État des pods (up/down)
-
-### Grafana
-
-**Rôle** : visualise les métriques Prometheus sous forme de dashboards.
-
-**Accès** : http://localhost:3001
-- Login : `admin`
-- Mot de passe : `admin123`
-
-**Datasource** : configurée automatiquement via `monitoring/grafana-datasources.yaml`. Prometheus est déjà connecté à Grafana au premier démarrage.
-
-### Dashboards disponibles (à importer)
-
-| Dashboard | ID | Contenu |
-|---|---|---|
-| Node Exporter Full | 1860 | CPU, RAM, réseau, disque |
-| Kubernetes Cluster | 3119 | État du cluster K8s |
-| Prometheus Stats | 3662 | Métriques Prometheus lui-même |
-
-Pour importer : Grafana → Dashboards → New → Import → entrer l'ID → Load
-
-### Architecture monitoring dans Docker Compose
+### Architecture monitoring
 
 ```
-Backend (port 3002)
-    │  /metrics endpoint
+Backend Node.js
+    │  expose GET /metrics (format Prometheus)
     ▼
-Prometheus (port 9090)
-    │  scrape toutes les 15s
-    │  stocke les données
+Prometheus
+    │  scrape /metrics toutes les 15 secondes
+    │  stocke en séries temporelles
     ▼
-Grafana (port 3001)
+Grafana
     │  requête PromQL
-    │  affiche les graphes
+    │  affiche les graphes en temps réel
     ▼
-Navigateur (dashboard)
+Dashboard "Telnet Test Manager - Monitoring"
 ```
+
+---
+
+### Endpoint `/metrics` du backend
+
+Implémenté avec `prom-client` — bibliothèque officielle Prometheus pour Node.js.
+
+**Métriques custom exposées :**
+
+| Métrique | Type | Description |
+|---|---|---|
+| `http_requests_total` | Counter | Requêtes par route/méthode/status |
+| `http_request_duration_seconds` | Histogram | Durée des requêtes |
+| `telnet_tests_launched_total` | Counter | Tests Telnet lancés |
+| `websocket_active_connections` | Gauge | Connexions WebSocket actives |
+
+**Métriques Node.js automatiques :** CPU, RAM, heap, event loop lag, garbage collector.
+
+---
+
+### Prometheus (`monitoring/prometheus.yml`)
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:3002']
+    metrics_path: '/metrics'
+```
+
+---
+
+### Grafana — Provisioning automatique
+
+Le dashboard et la datasource sont chargés **automatiquement** au démarrage de Docker Compose via des fichiers de configuration montés en volumes. Aucune action manuelle nécessaire.
+
+**Dashboard "Telnet Test Manager - Monitoring" contient :**
+- Statut Backend UP/DOWN
+- Compteur Tests Telnet lancés (monte à chaque test)
+- Total requêtes HTTP backend
+- RAM backend en temps réel
+- Graphe requêtes HTTP par route
+- Durée moyenne des réponses (ms)
+- Historique RAM
+- Connexions WebSocket actives
+
+**Accès** : http://localhost:3001 — `admin` / `admin123`
 
 ---
 
@@ -372,10 +453,12 @@ Navigateur (dashboard)
 
 ### Qu'est-ce que CI/CD ?
 
-- **CI (Continuous Integration)** : à chaque `git push`, le code est automatiquement testé et les images Docker sont construites
-- **CD (Continuous Deployment)** : si les tests passent, le code est automatiquement déployé
+- **CI (Continuous Integration)** : à chaque `git push`, le code est automatiquement testé et les images Docker construites
+- **CD (Continuous Deployment)** : si les tests passent, le code est déployé automatiquement
 
-**But** : détecter les erreurs le plus tôt possible et déployer de façon fiable et répétable.
+**But** : détecter les erreurs tôt et déployer de façon fiable, répétable, sans intervention humaine.
+
+---
 
 ### Vue d'ensemble de la pipeline
 
@@ -383,115 +466,103 @@ Navigateur (dashboard)
 git push origin main
         │
         ▼
-GitHub Actions déclenche la pipeline
+GitHub Actions se déclenche automatiquement
         │
-        ├── [Job 1] ci-backend (parallèle)
-        │       ├── checkout du code
-        │       ├── installation des dépendances npm
-        │       ├── exécution des tests
-        │       └── build de l'image Docker backend
+        ├── [Job 1] ci-backend      ──┐ en parallèle
+        │   ├── npm ci               │
+        │   ├── npm test             │
+        │   └── docker build         │
+        │                            │
+        ├── [Job 2] ci-frontend    ──┘
+        │   ├── npm ci
+        │   ├── npm run build (CI=false)
+        │   └── docker build
         │
-        ├── [Job 2] ci-frontend (parallèle)
-        │       ├── checkout du code
-        │       ├── installation des dépendances npm
-        │       ├── build React (npm run build)
-        │       └── build de l'image Docker frontend
+        │   (si les 2 jobs CI réussissent)
         │
-        └── (si ci-backend ET ci-frontend réussissent)
+        ▼
+        [Job 3] deploy
+        ├── setup Minikube
+        ├── build images dans Minikube
+        ├── helm upgrade --install
+        └── kubectl wait (pods prêts)
                 │
                 ▼
-        [Job 3] deploy
-                ├── démarrage Minikube
-                ├── build des images dans Minikube
-                ├── helm upgrade --install
-                ├── kubectl get all (vérification)
-                └── kubectl wait (attente pods prêts)
-                        │
-                        ▼
-                [Job 4] monitoring
-                        ├── démarrage Minikube
-                        ├── ajout repos Helm (prometheus, grafana)
-                        ├── helm install prometheus
-                        ├── helm install grafana
-                        └── kubectl get pods (vérification)
+        [Job 4] monitoring
+        ├── setup Minikube
+        ├── helm install prometheus
+        ├── helm install grafana
+        └── kubectl get pods -n monitoring
 ```
 
-### Fichier de pipeline (`.github/workflows/ci-cd.yaml`)
+---
+
+### Déclencheurs
 
 ```yaml
 on:
   push:
-    branches: [main, develop]   # déclenché sur push vers main ou develop
+    branches: [main, develop]
   pull_request:
-    branches: [main]            # déclenché sur PR vers main
+    branches: [main]
 ```
 
-**Déclencheurs** : la pipeline se lance automatiquement à chaque push sur `main` ou `develop`, et à chaque Pull Request vers `main`.
+---
 
-### Points clés de la configuration
+### Points clés
 
-**Cache npm** : les dépendances npm sont mises en cache entre les runs. Gain de temps significatif (30s → 5s pour npm install).
-
+**Cache npm** — évite de retélécharger les dépendances à chaque run :
 ```yaml
 - uses: actions/setup-node@v4
   with:
     node-version: '18'
     cache: 'npm'
-    cache-dependency-path: backend/package-lock.json
 ```
 
-**CI: false pour React** : par défaut, `npm run build` traite les warnings ESLint comme des erreurs en mode CI. On désactive ce comportement.
-
+**CI=false pour React** — empêche ESLint de bloquer le build :
 ```yaml
 - run: cd frontend && npm run build
   env:
     CI: false
 ```
 
-**Minikube dans GitHub Actions** : on utilise `medyagh/setup-minikube@master` pour créer un cluster K8s éphémère directement dans le runner GitHub Actions (une VM Ubuntu).
-
 **Séquençage des jobs** :
-
 ```yaml
 deploy:
-  needs: [ci-backend, ci-frontend]  # attend que CI passe
-  if: github.ref == 'refs/heads/main'  # seulement sur main, pas sur develop
+  needs: [ci-backend, ci-frontend]
+  if: github.ref == 'refs/heads/main'
 
 monitoring:
-  needs: [deploy]  # attend que deploy réussisse
-  if: github.ref == 'refs/heads/main'
+  needs: [deploy]
 ```
-
-### Résultat de la pipeline
-
-Quand tout est vert ✅ :
-- Code testé automatiquement
-- Images Docker construites
-- Application déployée sur Kubernetes
-- Monitoring installé
-
-Durée totale : ~3-5 minutes
 
 ---
 
-## 7. Comment tester avant la jury
+### Résultat d'une pipeline réussie
 
-### Option A — Test avec Docker Compose (le plus simple)
+```
+✅ ci-backend   (~1 min)
+✅ ci-frontend  (~2 min)
+✅ deploy       (~3 min)
+✅ monitoring   (~3 min)
+─────────────────────────
+Total : ~3-5 minutes
+```
 
-**Prérequis** : Docker Desktop ouvert
+À chaque push : code testé, images buildées, app déployée, monitoring installé. **Zéro intervention manuelle.**
+
+---
+
+## 7. Comment tester — Scénario jury
+
+### Lancer l'infrastructure
 
 ```bash
-# 1. Se placer dans le projet
-cd "c:\Users\ademh\Desktop\telnet  web server"
-
-# 2. Lancer tous les services
 docker compose up -d
-
-# 3. Vérifier que tout tourne
 docker compose ps
 ```
 
-Résultat attendu :
+Résultat attendu — 5 conteneurs **running** :
 ```
 NAME         STATUS    PORTS
 mongodb      running   0.0.0.0:27017->27017/tcp
@@ -501,89 +572,57 @@ prometheus   running   0.0.0.0:9090->9090/tcp
 grafana      running   0.0.0.0:3001->3000/tcp
 ```
 
-**URLs à montrer à la jury :**
+---
 
-| Ce que tu montres | URL |
-|---|---|
-| Application principale | http://localhost:3000 |
-| API backend | http://localhost:3002/health |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 |
+### URLs à montrer à la jury
 
-**Pour arrêter :**
+| Ce que tu montres | URL | Credentials |
+|---|---|---|
+| Application | http://localhost:3000 | selon les comptes |
+| API health | http://localhost:3002/health | — |
+| Métriques backend | http://localhost:3002/metrics | — |
+| Prometheus targets | http://localhost:9090/targets | — |
+| Grafana dashboard | http://localhost:3001 | admin / admin123 |
+
+---
+
+### Ordre de démonstration (10 min)
+
+**1. Architecture (2 min)**
+- Montre le schéma dans ce README
+- "5 services démarrent avec une seule commande"
+
+**2. Docker Compose (1 min)**
+- Lance `docker compose up -d` en direct
+- Montre `docker compose ps` → 5 conteneurs UP
+
+**3. Application (2 min)**
+- http://localhost:3000 → connexion → lancer un test Telnet
+
+**4. Métriques backend (1 min)**
+- http://localhost:3002/metrics → métriques en format texte Prometheus
+- "C'est ce format que Prometheus collecte automatiquement toutes les 15 secondes"
+
+**5. Prometheus (1 min)**
+- http://localhost:9090/targets → backend UP + prometheus UP
+- Tape `telnet_tests_launched_total` → Execute → voir le compteur
+
+**6. Grafana (2 min)**
+- http://localhost:3001 → dashboard chargé automatiquement
+- Montre Backend UP, RAM, Requêtes HTTP
+- Lance un test dans l'app → retour Grafana → le compteur monte en direct
+
+**7. CI/CD (1 min)**
+- GitHub → Actions → 4 jobs verts ✅
+- "À chaque push, tout est automatisé sans intervention humaine"
+
+---
+
+### Arrêter l'infrastructure
+
 ```bash
 docker compose down
 ```
-
-**Pour tout effacer (données incluses) :**
-```bash
-docker compose down -v
-```
-
----
-
-### Option B — Test avec Minikube + Helm (Kubernetes complet)
-
-**Prérequis** : Docker Desktop ouvert + Minikube installé
-
-```powershell
-# 1. Démarrer Minikube
-minikube start --driver=docker --memory=4096 --cpus=2
-
-# 2. Configurer Docker pour utiliser Minikube
-& minikube -p minikube docker-env --shell powershell | Invoke-Expression
-
-# 3. Build les images dans Minikube
-docker build -t telnet-backend:latest ./backend
-docker build -t telnet-frontend:latest ./frontend
-
-# 4. Déployer l'application
-helm upgrade --install telnet-app ./helm/telnet-app `
-  --create-namespace --namespace telnet-app --timeout 300s
-
-# 5. Vérifier les pods
-kubectl get pods -n telnet-app
-
-# 6. Installer le monitoring
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo update
-helm upgrade --install prometheus prometheus-community/prometheus `
-  -n monitoring --create-namespace -f monitoring/prometheus-values.yaml
-helm upgrade --install grafana grafana/grafana `
-  -n monitoring -f monitoring/grafana-values.yaml
-
-# 7. Ouvrir Grafana
-minikube service grafana -n monitoring
-```
-
----
-
-### Scénario de démonstration jury (10 minutes)
-
-**Minute 1-2 : Montrer l'architecture**
-- Ouvrir ce README et expliquer le schéma
-- "Notre application est composée de 3 services : frontend React, backend Node.js, MongoDB. Chacun tourne dans un conteneur Docker indépendant."
-
-**Minute 3-4 : Docker Compose**
-- Lancer `docker compose up -d` en direct
-- Montrer `docker compose ps` → tous les conteneurs UP
-- "Avec une seule commande, on démarre toute l'infrastructure."
-
-**Minute 5-6 : Application**
-- Ouvrir http://localhost:3000
-- Se connecter, montrer les fonctionnalités
-- "L'application est accessible, les données sont stockées dans MongoDB."
-
-**Minute 7-8 : Monitoring**
-- Ouvrir http://localhost:9090 → Prometheus
-- Montrer `up` dans la barre de recherche → voir les métriques
-- Ouvrir http://localhost:3001 → Grafana
-- Importer dashboard 1860 → montrer les graphes
-
-**Minute 9-10 : Pipeline CI/CD**
-- Ouvrir GitHub → Actions → montrer les jobs verts
-- "À chaque push, cette pipeline teste le code, construit les images Docker, et déploie automatiquement. Aucune intervention manuelle."
 
 ---
 
@@ -591,57 +630,80 @@ minikube service grafana -n monitoring
 
 **Q : Pourquoi Docker et pas déployer directement sur le serveur ?**
 
-R : Docker garantit que l'application fonctionne identiquement partout. Sans Docker, on peut avoir des problèmes de versions Node.js, de dépendances manquantes, de configuration différente entre les environnements. Docker élimine ces problèmes.
-
-**Q : Quelle est la différence entre Docker et Kubernetes ?**
-
-R : Docker fait tourner des conteneurs sur une seule machine. Kubernetes orchestre des conteneurs sur plusieurs machines. Kubernetes ajoute la haute disponibilité, le scaling automatique, et la gestion des pannes.
-
-**Q : Pourquoi Helm plutôt que des fichiers YAML Kubernetes directement ?**
-
-R : Helm permet de paramétrer les déploiements. Si on veut déployer en prod avec 5 replicas et en dev avec 1 replica, avec Helm on change juste une valeur. Sans Helm, on doit maintenir plusieurs copies des fichiers YAML.
-
-**Q : Comment fonctionne la CI/CD ?**
-
-R : Quand on fait `git push`, GitHub Actions déclenche automatiquement la pipeline. Elle teste le code, construit les images Docker, et déploie sur Kubernetes. Si un test échoue, le déploiement est bloqué. Ça garantit que seul du code fonctionnel arrive en production.
-
-**Q : Que se passe-t-il si le backend tombe ?**
-
-R : Kubernetes détecte que le Pod ne répond plus via les health checks (livenessProbe). Il redémarre automatiquement le Pod. Comme on a 2 replicas du backend, l'autre Pod continue à servir les requêtes pendant le redémarrage. L'utilisateur ne voit rien.
-
-**Q : Comment Grafana sait-il où trouver Prometheus ?**
-
-R : La datasource est configurée automatiquement via le fichier `monitoring/grafana-datasources.yaml`. Quand Grafana démarre, il lit ce fichier et crée la connexion vers Prometheus. Aucune configuration manuelle nécessaire.
-
-**Q : Pourquoi deux replicas pour le backend et un seul pour le frontend ?**
-
-R : Le backend fait des connexions Telnet réseau et gère la logique métier — c'est le composant le plus sollicité, donc on le scale à 2. Le frontend sert juste des fichiers statiques depuis Nginx, une seule instance suffit.
-
-**Q : Quelle est la différence entre ConfigMap et Secret dans Kubernetes ?**
-
-R : Les deux stockent des données de configuration. La différence est que les Secrets sont encodés en base64 et destinés aux données sensibles (mots de passe, tokens JWT). Les ConfigMaps sont pour les données non sensibles (port, environnement, nom de host).
-
-**Q : Pourquoi utiliser Alpine Linux pour les images Docker ?**
-
-R : Alpine Linux est une distribution ultra-légère (~5MB). Ça réduit la taille des images Docker (backend ~150MB vs ~500MB avec Ubuntu), diminue la surface d'attaque pour la sécurité, et accélère les téléchargements.
+R : Docker garantit que l'application fonctionne identiquement partout. Sans Docker, on peut avoir des problèmes de versions Node.js différentes, de dépendances manquantes, de configuration différente entre les environnements. Docker élimine ces problèmes — une image buildée une fois fonctionne partout.
 
 ---
 
-## Résumé des technologies DevOps utilisées
+**Q : Quelle est la différence entre Docker et Kubernetes ?**
+
+R : Docker fait tourner des conteneurs sur une seule machine. Kubernetes orchestre des conteneurs sur plusieurs machines. Kubernetes ajoute la haute disponibilité, le scaling automatique, et la gestion des pannes. Dans ce projet, on utilise les deux : Docker pour construire les images, Kubernetes pour les déployer et les gérer.
+
+---
+
+**Q : Pourquoi Helm plutôt que des fichiers YAML Kubernetes directement ?**
+
+R : Helm permet de paramétrer les déploiements. Pour déployer en prod avec 5 replicas et en dev avec 1, avec Helm on change juste une valeur dans `values.yaml`. Sans Helm, on maintient plusieurs copies des fichiers YAML ce qui est source d'erreurs.
+
+---
+
+**Q : Comment fonctionne la CI/CD ?**
+
+R : À chaque `git push`, GitHub Actions déclenche la pipeline automatiquement. Elle teste le code, construit les images Docker, déploie sur Kubernetes et installe le monitoring. Si un test échoue, le déploiement est bloqué. Ça garantit que seul du code fonctionnel arrive en production.
+
+---
+
+**Q : Que se passe-t-il si le backend tombe ?**
+
+R : Kubernetes détecte que le Pod ne répond plus via la `livenessProbe` sur l'endpoint `/health`. Il redémarre automatiquement le Pod. Comme on a 2 replicas backend, l'autre Pod continue à servir les requêtes pendant le redémarrage. L'utilisateur ne voit rien.
+
+---
+
+**Q : Comment Grafana sait-il où trouver Prometheus ?**
+
+R : La datasource est configurée automatiquement via `monitoring/grafana-datasources.yaml`. Quand Grafana démarre, il lit ce fichier et crée la connexion vers Prometheus. Le dashboard est aussi chargé automatiquement via `monitoring/grafana-dashboards.yaml`. Aucune configuration manuelle.
+
+---
+
+**Q : Pourquoi deux replicas pour le backend et un seul pour le frontend ?**
+
+R : Le backend gère la logique métier, les connexions Telnet et les requêtes API — c'est le composant le plus sollicité, on le scale à 2 pour la disponibilité. Le frontend sert uniquement des fichiers statiques depuis Nginx, une instance suffit largement.
+
+---
+
+**Q : Qu'est-ce que le provisioning automatique Grafana ?**
+
+R : Normalement il faut importer manuellement le dashboard dans Grafana à chaque redémarrage. Grâce au provisioning, des fichiers YAML et JSON sont montés dans le conteneur Grafana au démarrage. Grafana les lit et configure automatiquement la datasource Prometheus et charge le dashboard. Zéro action manuelle.
+
+---
+
+**Q : Quelle est la différence entre ConfigMap et Secret dans Kubernetes ?**
+
+R : Les deux stockent des données de configuration. Les Secrets sont encodés en base64 et destinés aux données sensibles (mots de passe, tokens JWT). Les ConfigMaps sont pour les données non sensibles (port, environnement). K8s peut restreindre l'accès aux Secrets via RBAC.
+
+---
+
+**Q : Pourquoi utiliser Alpine Linux pour les images Docker ?**
+
+R : Alpine Linux est une distribution minimaliste (~5MB). Ça réduit la taille des images (backend ~150MB au lieu de ~1GB), diminue la surface d'attaque pour la sécurité, et accélère les déploiements.
+
+---
+
+## Résumé des technologies DevOps
 
 | Technologie | Rôle | Justification |
 |---|---|---|
 | **Docker** | Conteneurisation | Portabilité, isolation, reproductibilité |
-| **Docker Compose** | Multi-conteneurs local | Simplicité, test local rapide |
+| **Docker Compose** | Multi-conteneurs local | Démarrage en une commande |
 | **Kubernetes** | Orchestration | Haute dispo, scaling, self-healing |
 | **Minikube** | K8s local | Test K8s sans infrastructure cloud |
 | **Helm** | Package manager K8s | Templates, versioning, paramétrage |
 | **Prometheus** | Collecte métriques | Standard industrie, open-source |
-| **Grafana** | Visualisation | Dashboards riches, datasources multiples |
-| **GitHub Actions** | CI/CD | Intégré à GitHub, gratuit, YAML natif |
+| **prom-client** | SDK métriques Node.js | Officiel Prometheus, métriques custom |
+| **Grafana** | Visualisation | Dashboards riches, provisioning auto |
+| **GitHub Actions** | CI/CD | Intégré GitHub, gratuit, YAML natif |
 | **Nginx** | Reverse proxy | Léger, performant, proxy transparent |
-| **MongoDB** | Base de données | Schéma flexible, adapté aux données variables |
+| **MongoDB** | Base de données | Schéma flexible, adapté NoSQL |
 
 ---
 
-*Documentation générée pour le projet Telnet Test Manager — PFE 2026*
+*Telnet Test Manager — PFE 2026*

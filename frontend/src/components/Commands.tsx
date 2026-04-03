@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './Commands.css';
 
 interface TelnetCommand {
@@ -18,7 +19,7 @@ interface FormState {
   command: string;
   description: string;
   expectedResponse: string;
-  expectedEvents: string;   // comma-separated, only for monitoring
+  expectedEvents: string;
 }
 
 const emptyForm: FormState = {
@@ -48,6 +49,9 @@ function apiHeaders() {
 }
 
 const Commands: React.FC = () => {
+  // @ts-ignore
+  const { t: _t } = useTranslation();
+  const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   const [commands, setCommands] = useState<TelnetCommand[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -74,7 +78,7 @@ const Commands: React.FC = () => {
       const data = await res.json();
       setCommands(data.commands || []);
     } catch {
-      setError('Impossible de charger les commandes.');
+      setError(t('commands.loadError'));
     } finally {
       setLoading(false);
     }
@@ -109,7 +113,6 @@ const Commands: React.FC = () => {
   const handleFormChange = (field: keyof FormState, value: string) => {
     setForm(prev => {
       const next = { ...prev, [field]: value };
-      // Auto-generate ID from name
       if (field === 'name') next.id = slugify(value);
       return next;
     });
@@ -117,7 +120,7 @@ const Commands: React.FC = () => {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.command.trim()) {
-      setError('Le nom et la commande sont requis.');
+      setError(t('commands.nameRequired'));
       return;
     }
     setSaving(true);
@@ -136,24 +139,22 @@ const Commands: React.FC = () => {
       };
 
       if (editingId) {
-        // Modifier
         const res = await fetch(`http://localhost:3002/telnet-commands/${editingId}`, {
           method: 'PUT',
           headers: apiHeaders(),
           body: JSON.stringify(body),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+        if (!res.ok) throw new Error(data.error || t('common.serverError'));
         setCommands(prev => prev.map(c => c.id === editingId ? data.command : c));
       } else {
-        // Ajouter
         const res = await fetch('http://localhost:3002/telnet-commands', {
           method: 'POST',
           headers: apiHeaders(),
           body: JSON.stringify(body),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+        if (!res.ok) throw new Error(data.error || t('common.serverError'));
         setCommands(prev => [...prev, data.command]);
       }
       closeModal();
@@ -172,7 +173,7 @@ const Commands: React.FC = () => {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Erreur serveur');
+        throw new Error(data.error || t('common.serverError'));
       }
       setCommands(prev => prev.filter(c => c.id !== cmd.id));
       setConfirmDelete(null);
@@ -198,19 +199,21 @@ const Commands: React.FC = () => {
     <div className="commands-container">
       {/* Header */}
       <div className="commands-header">
-        <h1>Commandes Telnet</h1>
+        <h1>{t('commands.title')}</h1>
         <div className="header-actions">
           <div className="search-container">
             <input
               className="search-input"
-              placeholder="Rechercher..."
+              placeholder={t('common.search')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <button className="btn btn-primary" onClick={openModal}>
-            + Ajouter une commande
-          </button>
+          {isAdmin && (
+            <button className="btn btn-primary" onClick={openModal}>
+              {t('commands.addCommand')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -222,27 +225,27 @@ const Commands: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="loading">Chargement...</div>
+        <div className="loading">{t('common.loading')}</div>
       ) : (
         <div className="commands-list">
           <div className="table-responsive">
             <table className="commands-table">
               <thead>
                 <tr>
-                  <th>Nom</th>
-                  <th>ID</th>
-                  <th>Type</th>
-                  <th>Commande</th>
-                  <th>Description</th>
-                  <th>Expected</th>
-                  {isAdmin && <th>Actions</th>}
+                  <th>{t('commands.colName')}</th>
+                  <th>{t('commands.colId')}</th>
+                  <th>{t('commands.colType')}</th>
+                  <th>{t('commands.colCommand')}</th>
+                  <th>{t('commands.colDescription')}</th>
+                  <th>{t('commands.colExpected')}</th>
+                  {isAdmin && <th>{t('commands.colActions')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                      Aucune commande trouvée
+                      {t('commands.noCommands')}
                     </td>
                   </tr>
                 ) : (
@@ -273,13 +276,13 @@ const Commands: React.FC = () => {
                               className="btn btn-secondary btn-sm"
                               onClick={() => openEditModal(cmd)}
                             >
-                              Modifier
+                              {t('common.edit')}
                             </button>
                             <button
                               className="btn btn-danger btn-sm"
                               onClick={() => setConfirmDelete(cmd)}
                             >
-                              Supprimer
+                              {t('common.delete')}
                             </button>
                           </div>
                         </td>
@@ -291,18 +294,18 @@ const Commands: React.FC = () => {
             </table>
           </div>
           <div className="commands-footer">
-            {filtered.length} commande{filtered.length !== 1 ? 's' : ''}
-            {search && ` (filtrées sur "${search}")`}
+            {t('commands.count', { count: filtered.length })}
+            {search && ` ${t('commands.filteredOn', { search })}`}
           </div>
         </div>
       )}
 
-      {/* Add modal */}
+      {/* Add/Edit modal */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingId ? 'Modifier la commande' : 'Nouvelle commande'}</h2>
+              <h2>{editingId ? t('commands.editCommand') : t('commands.newCommand')}</h2>
               <button className="btn-close" onClick={closeModal}>✕</button>
             </div>
             <div className="modal-body">
@@ -312,7 +315,7 @@ const Commands: React.FC = () => {
                 </div>
               )}
               <div className="form-group">
-                <label>Nom *</label>
+                <label>{t('commands.fieldName')}</label>
                 <input
                   type="text"
                   value={form.name}
@@ -321,7 +324,7 @@ const Commands: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>ID (auto-généré)</label>
+                <label>{t('commands.fieldId')}</label>
                 <input
                   type="text"
                   value={form.id}
@@ -330,17 +333,17 @@ const Commands: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Type *</label>
+                <label>{t('commands.fieldType')}</label>
                 <select
                   value={form.type}
                   onChange={e => handleFormChange('type', e.target.value)}
                 >
-                  <option value="single">Single — commande unique</option>
-                  <option value="monitoring">Monitoring — écoute en continu</option>
+                  <option value="single">{t('commands.typeSingle')}</option>
+                  <option value="monitoring">{t('commands.typeMonitoring')}</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Commande shell *</label>
+                <label>{t('commands.fieldShellCommand')}</label>
                 <input
                   type="text"
                   value={form.command}
@@ -350,7 +353,7 @@ const Commands: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Description</label>
+                <label>{t('commands.fieldDescription')}</label>
                 <input
                   type="text"
                   value={form.description}
@@ -360,7 +363,7 @@ const Commands: React.FC = () => {
               </div>
               {form.type === 'single' && (
                 <div className="form-group">
-                  <label>Réponse attendue <span className="muted">(optionnel)</span></label>
+                  <label>{t('commands.fieldExpectedResponse')} <span className="muted">({t('common.optional')})</span></label>
                   <input
                     type="text"
                     value={form.expectedResponse}
@@ -369,14 +372,13 @@ const Commands: React.FC = () => {
                     style={{ fontFamily: 'Consolas, monospace' }}
                   />
                   <small style={{ color: 'var(--text-faint)', fontSize: '0.72rem', marginTop: '0.25rem', display: 'block' }}>
-                    Le test échoue si la réponse ne contient pas cette sous-chaîne.
+                    {t('commands.hintExpectedResponse')}
                   </small>
                 </div>
               )}
-
               {form.type === 'monitoring' && (
                 <div className="form-group">
-                  <label>Événements attendus <span className="muted">(optionnel)</span></label>
+                  <label>{t('commands.fieldExpectedEvents')} <span className="muted">({t('common.optional')})</span></label>
                   <input
                     type="text"
                     value={form.expectedEvents}
@@ -385,15 +387,15 @@ const Commands: React.FC = () => {
                     style={{ fontFamily: 'Consolas, monospace' }}
                   />
                   <small style={{ color: 'var(--text-faint)', fontSize: '0.72rem', marginTop: '0.25rem', display: 'block' }}>
-                    Séparer par des virgules. Le test échoue si ces événements ne sont pas reçus.
+                    {t('commands.hintExpectedEvents')}
                   </small>
                 </div>
               )}
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeModal}>Annuler</button>
+              <button className="btn btn-secondary" onClick={closeModal}>{t('common.cancel')}</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Enregistrement...' : (editingId ? 'Enregistrer' : 'Ajouter')}
+                {saving ? t('commands.saving') : (editingId ? t('common.save') : t('common.add'))}
               </button>
             </div>
           </div>
@@ -405,21 +407,21 @@ const Commands: React.FC = () => {
         <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Confirmer la suppression</h2>
+              <h2>{t('common.confirmDelete')}</h2>
               <button className="btn-close" onClick={() => setConfirmDelete(null)}>✕</button>
             </div>
             <div className="modal-body">
               <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text)' }}>
-                Supprimer la commande <strong>{confirmDelete.name}</strong> ?
+                {t('commands.deleteConfirm', { name: confirmDelete.name })}
               </p>
               <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Cette action est irréversible.
+                {t('common.irreversible')}
               </p>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Annuler</button>
+              <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>{t('common.cancel')}</button>
               <button className="btn btn-danger" onClick={() => handleDelete(confirmDelete)}>
-                Supprimer
+                {t('common.delete')}
               </button>
             </div>
           </div>

@@ -188,6 +188,7 @@
 .login-main {
   flex: 1;
   background: #f8fafc;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;

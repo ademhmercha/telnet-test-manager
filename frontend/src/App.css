@@ -124,6 +124,60 @@
   border: 1px solid rgba(16,185,129,0.25);
 }
 
+/* Language switcher */
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: 1px solid #374151;
+  color: #9ca3af;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all 0.15s;
+}
+
+.lang-btn:hover {
+  border-color: #6b7280;
+  color: #e5e7eb;
+}
+
+.lang-btn-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+/* Login page language switcher */
+.login-lang-switcher {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+}
+
+.login-lang-switcher .lang-btn {
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.login-lang-switcher .lang-btn:hover {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.login-lang-switcher .lang-btn-active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
 .nav-logout {
   height: 52px;
   padding: 0 1rem;

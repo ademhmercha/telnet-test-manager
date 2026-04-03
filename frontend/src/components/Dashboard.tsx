@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { posteService, produitService, slotService, testService, referenceService, TestRunResponse } from '../services/api';
 import { Poste, Produit, Slot, TestStep, TestResult, Reference, User } from '../services/api';
 import { usePermissions } from '../hooks/usePermissions';
@@ -60,11 +61,11 @@ function getStatusIcon(status: string) {
 }
 
 // Fonction utilitaire pour obtenir le libellé de statut
-function getStatusLabel(status: string) {
-  if (status === 'SUCCESS') return 'Succès';
-  if (status === 'FAIL') return 'Échec';
-  if (status === 'STOPPED') return 'Arrêté';
-  return 'En cours';
+function getStatusLabel(status: string, t: (key: string) => string) {
+  if (status === 'SUCCESS') return t('status.success');
+  if (status === 'FAIL') return t('status.fail');
+  if (status === 'STOPPED') return t('status.stopped');
+  return t('status.inProgress');
 }
 
 function getLogLevel(logLine: string): 'info' | 'warn' | 'error' | 'default' {
@@ -86,6 +87,9 @@ function getProgressPercent(steps: TestStep[], status: ActiveTest['status']): nu
 
 // Composant principal du Tableau de Bord
 const Dashboard: React.FC = () => {
+  // @ts-ignore
+  const { t: _t } = useTranslation();
+  const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   // État utilisateur et permissions
   const [user, setUser] = useState<User | null>(null);
   const permissions = usePermissions(user);
@@ -930,7 +934,7 @@ const Dashboard: React.FC = () => {
                       )}
                       <span className={getStatusClass(test.status)}>
                         <span className="status-icon">{getStatusIcon(test.status)}</span>
-                        <span>{getStatusLabel(test.status)}</span>
+                        <span>{getStatusLabel(test.status, t)}</span>
                       </span>
                     </div>
                   </div>
@@ -1098,7 +1102,7 @@ const Dashboard: React.FC = () => {
                     <td>
                       <span className={`status-pill ${getStatusClass(result.status)}`}>
                         <span className="status-icon">{getStatusIcon(result.status)}</span>
-                        <span>{getStatusLabel(result.status)}</span>
+                        <span>{getStatusLabel(result.status, t)}</span>
                       </span>
                     </td>
                     <td>{new Date(result.startTime).toLocaleString()}</td>
@@ -1145,7 +1149,7 @@ const Dashboard: React.FC = () => {
                     <span className="detail-label">Statut:</span>
                     <span className={`status-pill ${getStatusClass(selectedResult.status)}`}>
                       <span className="status-icon">{getStatusIcon(selectedResult.status)}</span>
-                      <span>{getStatusLabel(selectedResult.status)}</span>
+                      <span>{getStatusLabel(selectedResult.status, t)}</span>
                     </span>
                   </div>
                   <div className="detail-item">

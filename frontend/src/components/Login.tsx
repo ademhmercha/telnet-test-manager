@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authService } from '../services/api';
+import LanguageSwitcher from './LanguageSwitcher';
 import './Login.css';
 
 interface LoginProps {
@@ -7,6 +9,9 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  // @ts-ignore
+  const { t: _t } = useTranslation();
+  const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   const [username, setUsername]       = useState('');
   const [password, setPassword]       = useState('');
   const [showPwd, setShowPwd]         = useState(false);
@@ -25,7 +30,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError('Veuillez remplir tous les champs');
+      setError(t('login.fillFields'));
       triggerShake();
       return;
     }
@@ -37,12 +42,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       sessionStorage.setItem('user', JSON.stringify(response.user));
       onLogin(response.user, response.token);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Identifiants incorrects');
+      setError(err.response?.data?.error || t('login.badCredentials'));
       triggerShake();
     } finally {
       setLoading(false);
     }
   };
+
+  const adminPerms: string[] = (_t as any)('login.adminPerms', { returnObjects: true }) as string[];
+  const engineerPerms: string[] = (_t as any)('login.engineerPerms', { returnObjects: true }) as string[];
 
   return (
     <div className="login-root">
@@ -61,34 +69,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           <div className="aside-headline">
-            <h1>Plateforme de test<br />& supervision</h1>
-            <p>Accès centralisé aux équipements réseau. Exécutez, suivez et rapportez vos tests Telnet.</p>
+            <h1>{t('login.platform')}</h1>
+            <p>{t('login.platformDesc')}</p>
           </div>
 
           <div className="aside-roles">
-            <div className="aside-role-title">Niveaux d'accès</div>
+            <div className="aside-role-title">{t('login.accessLevels')}</div>
 
             <div className="aside-role-card">
               <div className="role-card-header">
-                <span className="role-badge role-admin">Administrateur</span>
+                <span className="role-badge role-admin">{t('login.adminRole')}</span>
               </div>
               <ul className="role-perms">
-                <li>Tableau de bord &amp; tests</li>
-                <li>Commandes Telnet — CRUD complet</li>
-                <li>Génération &amp; consultation des rapports</li>
-                <li>Configuration (postes, produits, slots)</li>
-                <li>Multi-Test &amp; audit logs</li>
+                {adminPerms.map((perm, i) => <li key={i}>{perm}</li>)}
               </ul>
             </div>
 
             <div className="aside-role-card">
               <div className="role-card-header">
-                <span className="role-badge role-engineer">Ingénieur</span>
+                <span className="role-badge role-engineer">{t('login.engineerRole')}</span>
               </div>
               <ul className="role-perms">
-                <li>Tableau de bord &amp; exécution des tests</li>
-                <li>Consultation des commandes Telnet</li>
-                <li>Génération &amp; consultation des rapports</li>
+                {engineerPerms.map((perm, i) => <li key={i}>{perm}</li>)}
               </ul>
             </div>
           </div>
@@ -100,22 +102,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <path d="M5 7l1.5 1.5L9.5 5" stroke="#4ade80" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </span>
-            Authentification sécurisée · JWT · Bcrypt
+            {t('login.secureAuth')}
           </div>
         </div>
       </aside>
 
       {/* ── Right panel (form) ───────────────────────────────────────────── */}
       <main className="login-main">
+        <div className="login-lang-switcher">
+          <LanguageSwitcher />
+        </div>
         <div className={`login-form-wrap ${isShaking ? 'shake' : ''}`}>
           <div className="form-header">
-            <h2>Connexion</h2>
-            <p>Entrez vos identifiants pour accéder à la plateforme</p>
+            <h2>{t('login.title')}</h2>
+            <p>{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="field-group">
-              <label htmlFor="username">Nom d'utilisateur</label>
+              <label htmlFor="username">{t('login.username')}</label>
               <input
                 ref={usernameRef}
                 id="username"
@@ -129,7 +134,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="field-group">
-              <label htmlFor="password">Mot de passe</label>
+              <label htmlFor="password">{t('login.password')}</label>
               <div className="pwd-wrap">
                 <input
                   id="password"
@@ -145,7 +150,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   className="pwd-toggle"
                   onClick={() => setShowPwd(v => !v)}
                   tabIndex={-1}
-                  aria-label={showPwd ? 'Masquer' : 'Afficher'}
+                  aria-label={showPwd ? t('login.hidePwd') : t('login.showPwd')}
                 >
                   {showPwd ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -174,10 +179,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             <button type="submit" className="login-btn" disabled={loading}>
               {loading ? (
-                <><span className="btn-spinner" /> Connexion en cours…</>
+                <><span className="btn-spinner" /> {t('login.signingIn')}</>
               ) : (
                 <>
-                  Se connecter
+                  {t('login.signin')}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                   </svg>
@@ -187,7 +192,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </form>
 
           <div className="form-footer">
-            Telnet Test Manager · v1.0 · Accès restreint
+            {t('login.restricted')}
           </div>
         </div>
       </main>

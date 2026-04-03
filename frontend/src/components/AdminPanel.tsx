@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import './AdminPanel.css';
 
 const API = 'http://localhost:3002';
@@ -34,19 +35,14 @@ function fmtUptime(s: number) {
 
 type TabId = 'overview' | 'users' | 'tests' | 'auditlogs' | 'analytics';
 
-const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'overview',  label: 'Vue d\'ensemble', icon: '◈' },
-  { id: 'users',     label: 'Utilisateurs',    icon: '◉' },
-  { id: 'tests',     label: 'Tests',           icon: '◎' },
-  { id: 'auditlogs', label: 'Audit Logs',      icon: '◆' },
-  { id: 'analytics', label: 'Analytiques',     icon: '◑' },
-];
-
 // ══════════════════════════════════════════════════════════════════════════════
 // OVERVIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
 const Overview: React.FC = () => {
+  // @ts-ignore
+  const { t: _t } = useTranslation();
+  const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   const [data, setData]     = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
@@ -61,18 +57,18 @@ const Overview: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="ap-loading">Chargement…</div>;
+  if (loading) return <div className="ap-loading">{t('common.loading')}</div>;
   if (error)   return <div className="ap-error">{error}</div>;
 
   const { stats, activity } = data;
 
   const kpis = [
-    { label: 'Tests total',       value: stats.totalTests,       sub: `${stats.successRate}% succès`,          color: 'blue'  },
-    { label: 'Tests réussis',     value: stats.successfulTests,  sub: `${stats.failedTests} échecs`,           color: 'green' },
-    { label: 'Workers actifs',    value: stats.activeWorkers,    sub: 'Tests en cours',                        color: stats.activeWorkers > 0 ? 'orange' : 'grey' },
-    { label: 'Utilisateurs',      value: stats.totalUsers,       sub: `${stats.activeUsers} actifs`,           color: 'purple' },
-    { label: 'Commandes Telnet',  value: stats.totalCommands,    sub: 'Dans la base',                          color: 'teal'  },
-    { label: 'Rapports',          value: stats.totalReports,     sub: 'Générés',                               color: 'slate' },
+    { label: t('admin.kpiTotalTests'),   value: stats.totalTests,      sub: `${stats.successRate}% ${t('admin.subSuccess')}`,          color: 'blue'   },
+    { label: t('admin.kpiSuccessTests'), value: stats.successfulTests, sub: `${stats.failedTests} ${t('admin.subFailures')}`,          color: 'green'  },
+    { label: t('admin.kpiActiveWorkers'),value: stats.activeWorkers,   sub: t('admin.subRunning'),                                     color: stats.activeWorkers > 0 ? 'orange' : 'grey' },
+    { label: t('admin.kpiUsers'),        value: stats.totalUsers,      sub: `${stats.activeUsers} ${t('admin.subActive')}`,            color: 'purple' },
+    { label: t('admin.kpiCommands'),     value: stats.totalCommands,   sub: t('admin.subInDb'),                                        color: 'teal'   },
+    { label: t('admin.kpiReports'),      value: stats.totalReports,    sub: t('admin.subGenerated'),                                   color: 'slate'  },
   ];
 
   const maxActivity = Math.max(...activity.map((d: any) => d.total), 1);
@@ -92,7 +88,7 @@ const Overview: React.FC = () => {
 
       {/* Success rate bar */}
       <div className="ap-card">
-        <div className="ap-card-header">Taux de succès global</div>
+        <div className="ap-card-header">{t('admin.globalSuccessRate')}</div>
         <div className="rate-bar-wrap">
           <div className="rate-bar-track">
             <div className="rate-bar-fill" style={{ width: `${stats.successRate}%` }} />
@@ -884,25 +880,36 @@ const Analytics: React.FC = () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const AdminPanel: React.FC = () => {
+  // @ts-ignore
+  const { t: _t } = useTranslation();
+  const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   const [tab, setTab] = useState<TabId>('overview');
+
+  const TABS: { id: TabId; label: string; icon: string }[] = [
+    { id: 'overview',  label: t('admin.tabOverview'),  icon: '◈' },
+    { id: 'users',     label: t('admin.tabUsers'),     icon: '◉' },
+    { id: 'tests',     label: t('admin.tabTests'),     icon: '◎' },
+    { id: 'auditlogs', label: t('admin.tabAuditLogs'), icon: '◆' },
+    { id: 'analytics', label: t('admin.tabAnalytics'), icon: '◑' },
+  ];
 
   return (
     <div className="ap-container">
       <div className="ap-header">
         <div className="ap-header-left">
-          <h1>Administration</h1>
-          <span className="ap-header-sub">Gestion de la plateforme Telnet Test Manager</span>
+          <h1>{t('admin.title')}</h1>
+          <span className="ap-header-sub">{t('admin.subtitle')}</span>
         </div>
         <span className="ap-header-badge">Admin</span>
       </div>
 
       <div className="ap-layout">
         <nav className="ap-sidebar">
-          {TABS.map(t => (
-            <button key={t.id} className={`ap-nav-btn ${tab === t.id ? 'active' : ''}`}
-              onClick={() => setTab(t.id)}>
-              <span className="ap-nav-icon">{t.icon}</span>
-              {t.label}
+          {TABS.map(tab_ => (
+            <button key={tab_.id} className={`ap-nav-btn ${tab === tab_.id ? 'active' : ''}`}
+              onClick={() => setTab(tab_.id)}>
+              <span className="ap-nav-icon">{tab_.icon}</span>
+              {tab_.label}
             </button>
           ))}
         </nav>
