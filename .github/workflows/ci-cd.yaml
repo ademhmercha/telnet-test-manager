@@ -17,6 +17,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       - run: cd backend && npm ci
+      - run: cd backend && npm audit --audit-level=high
       - run: cd backend && npm test --if-present
       - run: docker build -t telnet-backend:${{ github.sha }} ./backend
 
@@ -30,6 +31,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - run: cd frontend && npm ci
+      - run: cd frontend && npm audit --audit-level=high
       - run: cd frontend && npm run build
         env:
           CI: false
@@ -49,11 +51,20 @@ jobs:
           eval $(minikube docker-env)
           docker build -t telnet-backend:latest ./backend
           docker build -t telnet-frontend:latest ./frontend
-      - run: |
+      - name: Deploy with Helm
+        id: deploy
+        run: |
           helm upgrade --install telnet-app ./helm/telnet-app \
             --create-namespace \
             --namespace telnet-app \
-            --timeout 300s
+            --timeout 300s \
+            --atomic
+      - name: Rollback on failure
+        if: failure() && steps.deploy.conclusion == 'failure'
+        run: |
+          echo "Deploy failed — rolling back to previous version..."
+          helm rollback telnet-app 0 --namespace telnet-app
+          echo "Rollback complete."
       - run: kubectl get all -n telnet-app
       - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
       - run: kubectl get pods -n telnet-app

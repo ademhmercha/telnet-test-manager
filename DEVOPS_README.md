@@ -706,4 +706,3 @@ R : Alpine Linux est une distribution minimaliste (~5MB). Ça réduit la taille 
 
 ---
 
-*Telnet Test Manager — PFE 2026*
