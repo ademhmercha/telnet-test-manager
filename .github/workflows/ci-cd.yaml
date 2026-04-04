@@ -66,6 +66,8 @@ jobs:
           echo "Done."
       - run: kubectl get all -n telnet-app
       - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
+      - run: kubectl wait --for=condition=available deployment/backend -n telnet-app --timeout=120s || true
+      - run: kubectl wait --for=condition=available deployment/mongodb -n telnet-app --timeout=120s || true
       - run: kubectl get pods -n telnet-app
       - name: Add Helm repos for monitoring
         run: |
