@@ -67,17 +67,7 @@ jobs:
       - run: kubectl get all -n telnet-app
       - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
       - run: kubectl get pods -n telnet-app
-
-  monitoring:
-    needs: [deploy]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: medyagh/setup-minikube@master
-        with:
-          driver: docker
-      - name: Add Helm repos
+      - name: Add Helm repos for monitoring
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add grafana https://grafana.github.io/helm-charts
