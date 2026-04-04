@@ -57,14 +57,13 @@ jobs:
           helm upgrade --install telnet-app ./helm/telnet-app \
             --create-namespace \
             --namespace telnet-app \
-            --timeout 300s \
-            --atomic
+            --timeout 600s
       - name: Rollback on failure
         if: failure() && steps.deploy.conclusion == 'failure'
         run: |
           echo "Deploy failed — rolling back to previous version..."
-          helm rollback telnet-app 0 --namespace telnet-app
-          echo "Rollback complete."
+          helm rollback telnet-app 0 --namespace telnet-app || echo "No previous version to rollback to."
+          echo "Done."
       - run: kubectl get all -n telnet-app
       - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
       - run: kubectl get pods -n telnet-app
