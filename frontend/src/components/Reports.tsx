@@ -55,10 +55,26 @@ function isSystemLine(content: string): boolean {
   return SYSTEM_LINE_PATTERNS.some(r => r.test(content));
 }
 
-function parseLogs(logs: string[]): { dir: 'cmd' | 'resp' | 'err' | 'other'; text: string }[] {
+function parseLogs(logs: string[]): { dir: 'cmd' | 'resp' | 'mon' | 'auth' | 'err' | 'other'; text: string }[] {
   return logs
     .map(line => {
       const content = line.replace(/^\[[^\]]+\]\s*/, '');
+      // Already formatted (pc→gw) or (pc->gw)
+      if (content.includes('(pc→gw)') || content.includes('(pc->gw)')) {
+        const text = content.replace(/\(pc[→-]>gw\)\s*/, '');
+        return { dir: 'cmd' as const, text };
+      }
+      // Already formatted (gw→pc) or (gw->pc)
+      if (content.includes('(gw→pc)') || content.includes('(gw->pc)')) {
+        const text = content.replace(/\(gw[→-]>pc\)\s*/, '');
+        return { dir: 'resp' as const, text };
+      }
+      // Monitoring lines
+      if (content.startsWith('Monitoring:') || content.startsWith('Monitoring '))
+        return { dir: 'mon' as const, text: content };
+      // Auth lines
+      if (content.includes('Authentification'))
+        return { dir: 'auth' as const, text: content };
       // → cmd  (monitoring fire-and-forget)
       if (content.startsWith('→ '))
         return { dir: 'cmd'  as const, text: content.slice(2) };
@@ -201,6 +217,10 @@ const Reports: React.FC = () => {
               return `<div class="tl-row tl-cmd"><span class="tl-dir">(pc→gw)</span><span class="tl-txt">${escHtml(l.text)}</span></div>`;
             if (l.dir === 'resp')
               return `<div class="tl-row tl-resp"><span class="tl-dir">(gw→pc)</span><span class="tl-txt">${escHtml(l.text)}</span></div>`;
+            if (l.dir === 'mon')
+              return `<div class="tl-row tl-mon"><span class="tl-txt">${escHtml(l.text)}</span></div>`;
+            if (l.dir === 'auth')
+              return `<div class="tl-row tl-auth"><span class="tl-txt">${escHtml(l.text)}</span></div>`;
             if (l.dir === 'err')
               return `<div class="tl-row tl-err"><span class="tl-dir">(!)</span><span class="tl-txt">${escHtml(l.text)}</span></div>`;
             return `<div class="tl-row tl-other"><span class="tl-txt">${escHtml(l.text)}</span></div>`;
@@ -255,6 +275,8 @@ const Reports: React.FC = () => {
     .tl-txt  { flex: 1; font-family: 'Consolas', monospace; font-size: 10px; line-height: 1.5; word-break: break-all; color: #1e293b; }
     .tl-cmd  { background: #eff6ff; } .tl-cmd  .tl-dir { color: #1d4ed8; } .tl-cmd .tl-txt { color: #1e3a8a; }
     .tl-resp { background: #f0fdf4; } .tl-resp .tl-dir { color: #15803d; } .tl-resp .tl-txt { color: #14532d; }
+    .tl-mon  { background: #faf5ff; } .tl-mon  .tl-txt { color: #6b21a8; font-style: italic; }
+    .tl-auth { background: #fffbeb; } .tl-auth .tl-txt { color: #92400e; font-style: italic; }
     .tl-err  { background: #fef2f2; } .tl-err  .tl-dir { color: #dc2626; } .tl-err .tl-txt { color: #991b1b; }
     .tl-other .tl-txt { color: #64748b; }
     .tl-empty { font-style: italic; color: #94a3b8; }
@@ -515,7 +537,7 @@ const Reports: React.FC = () => {
                         <div className="rview-transcript">
                           {lines.map((l, j) => (
                             <div key={j} className={`rview-log rview-log-${l.dir}`}>
-                              {l.dir !== 'other' && (
+                              {(l.dir === 'cmd' || l.dir === 'resp' || l.dir === 'err') && (
                                 <span className="rview-log-dir">
                                   {l.dir === 'cmd' ? '(pc→gw)' : l.dir === 'resp' ? '(gw→pc)' : '(!)'}
                                 </span>

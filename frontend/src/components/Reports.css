@@ -394,6 +394,12 @@
 .rview-log-err  .rview-log-dir  { color: var(--fail); }
 .rview-log-err  .rview-log-text { color: #991b1b; }
 
+.rview-log-mon  { background: #faf5ff; }
+.rview-log-mon  .rview-log-text { color: #6b21a8; font-style: italic; }
+
+.rview-log-auth { background: #fffbeb; }
+.rview-log-auth .rview-log-text { color: #92400e; font-style: italic; }
+
 .rview-log-other .rview-log-text { color: var(--text-muted); }
 
 .rview-log-empty {

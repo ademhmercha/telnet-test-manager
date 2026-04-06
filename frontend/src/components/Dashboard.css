@@ -731,6 +731,48 @@ body {
 .log-line.log-level-warn  { color: #fcd34d; }
 .log-line.log-level-error { color: #fca5a5; font-weight: 600; }
 
+.log-line.log-pc-to-gw   { color: #34d399; font-weight: 600; }
+.log-line.log-gw-to-pc   { color: #93c5fd; }
+.log-line.log-monitoring  { color: #c4b5fd; }
+.log-line.log-auth        { color: #fcd34d; font-style: italic; }
+
+/* ─── Pagination ────────────────────────────────────────────────────────────── */
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: 0.5rem;
+}
+
+.pagination-btn {
+  background: rgba(99,102,241,0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(99,102,241,0.35);
+  color: #fff;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
 /* ─── Sequence Builder ──────────────────────────────────────────────────────── */
 .sequence-builder {
   background: var(--bg);

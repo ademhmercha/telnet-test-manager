@@ -470,28 +470,29 @@ GitHub Actions se déclenche automatiquement
         │
         ├── [Job 1] ci-backend      ──┐ en parallèle
         │   ├── npm ci               │
+        │   ├── npm audit            │  (bloque si faille critique)
         │   ├── npm test             │
         │   └── docker build         │
         │                            │
         ├── [Job 2] ci-frontend    ──┘
         │   ├── npm ci
+        │   ├── npm audit            (bloque si faille critique)
         │   ├── npm run build (CI=false)
         │   └── docker build
         │
         │   (si les 2 jobs CI réussissent)
         │
         ▼
-        [Job 3] deploy
+        [Job 3] deploy + monitoring  (même Minikube)
         ├── setup Minikube
         ├── build images dans Minikube
-        ├── helm upgrade --install
-        └── kubectl wait (pods prêts)
-                │
-                ▼
-        [Job 4] monitoring
-        ├── setup Minikube
-        ├── helm install prometheus
-        ├── helm install grafana
+        ├── helm upgrade --install telnet-app
+        ├── rollback automatique si échec
+        ├── kubectl wait frontend ready
+        ├── kubectl wait backend ready
+        ├── kubectl wait mongodb ready
+        ├── helm install prometheus  (même cluster)
+        ├── helm install grafana     (même cluster)
         └── kubectl get pods -n monitoring
 ```
 
@@ -529,11 +530,27 @@ on:
 **Séquençage des jobs** :
 ```yaml
 deploy:
-  needs: [ci-backend, ci-frontend]
-  if: github.ref == 'refs/heads/main'
+  needs: [ci-backend, ci-frontend]  # attend que les 2 CI passent
+  if: github.ref == 'refs/heads/main'  # seulement sur main
+```
 
-monitoring:
-  needs: [deploy]
+**Rollback automatique** — si le deploy Helm échoue, on revient à la version précédente :
+```yaml
+- name: Rollback on failure
+  if: failure() && steps.deploy.conclusion == 'failure'
+  run: helm rollback telnet-app 0 --namespace telnet-app || echo "No previous version."
+```
+
+**Audit de sécurité** — bloque si faille critique dans les dépendances :
+```yaml
+- run: npm audit --audit-level=critical
+```
+
+**Healthcheck des 3 services** après deploy :
+```yaml
+- run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
+- run: kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=120s || true
+- run: kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=120s || true
 ```
 
 ---
@@ -541,12 +558,11 @@ monitoring:
 ### Résultat d'une pipeline réussie
 
 ```
-✅ ci-backend   (~1 min)
-✅ ci-frontend  (~2 min)
-✅ deploy       (~3 min)
-✅ monitoring   (~3 min)
-─────────────────────────
-Total : ~3-5 minutes
+✅ ci-backend   (~1 min)   — audit sécurité + build image
+✅ ci-frontend  (~2 min)   — audit sécurité + build React + build image
+✅ deploy       (~8 min)   — Minikube + Helm + healthchecks + monitoring
+──────────────────────────────────────────────────────────────
+Total : ~8-10 minutes
 ```
 
 À chaque push : code testé, images buildées, app déployée, monitoring installé. **Zéro intervention manuelle.**

@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
 
   const activeTestsRef = useRef<ActiveTest[]>([]);
   const webSocketRef = useRef<WebSocket | null>(null);
@@ -1054,74 +1054,106 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Historique des Tests - Tous les utilisateurs */}
-        <div className="results-section">
-          <div className="results-header">
-            <h2>Historique des Tests ({testResults.length} au total)</h2>
-            <div className="results-controls">
-              <input
-                type="text"
-                placeholder="Rechercher par ID..."
-                className="search-input"
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
-              />
-              <select
-                className="filter-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">Tous les statuts</option>
-                <option value="SUCCESS">Succès</option>
-                <option value="FAIL">Échec</option>
-                <option value="PENDING">En cours</option>
-              </select>
+        {(() => {
+          const filteredResults = testResults.filter(r => {
+            const matchId = searchId === '' || String(r.id).includes(searchId);
+            const matchStatus = statusFilter === '' || r.status === statusFilter;
+            return matchId && matchStatus;
+          });
+          const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
+          const paginatedResults = filteredResults.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+          return (
+            <div className="results-section">
+              <div className="results-header">
+                <h2>Historique des Tests ({filteredResults.length} au total)</h2>
+                <div className="results-controls">
+                  <input
+                    type="text"
+                    placeholder="Rechercher par ID..."
+                    className="search-input"
+                    value={searchId}
+                    onChange={(e) => { setSearchId(e.target.value); setCurrentPage(1); }}
+                  />
+                  <select
+                    className="filter-select"
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                  >
+                    <option value="">Tous les statuts</option>
+                    <option value="SUCCESS">Succès</option>
+                    <option value="FAIL">Échec</option>
+                    <option value="PENDING">En cours</option>
+                  </select>
+                </div>
+              </div>
+              <div className="results-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Poste</th>
+                      <th>Produit</th>
+                      <th>Slot</th>
+                      <th>Statut</th>
+                      <th>Date de début</th>
+                      <th>Date de fin</th>
+                      <th>Durée</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedResults.map(result => (
+                      <tr key={result.id} className={result.status === 'SUCCESS' ? 'row-success' : result.status === 'FAIL' ? 'row-fail' : 'row-pending'}>
+                        <td><span className="result-id">#{result.id}</span></td>
+                        <td>{getPosteName(result.posteId)}</td>
+                        <td>{getProduitName(result.produitId)}</td>
+                        <td>{getSlotName(result.slotId)}</td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(result.status)}`}>
+                            <span className="status-icon">{getStatusIcon(result.status)}</span>
+                            <span>{getStatusLabel(result.status, t)}</span>
+                          </span>
+                        </td>
+                        <td>{new Date(result.startTime).toLocaleString()}</td>
+                        <td>{new Date(result.endTime).toLocaleString()}</td>
+                        <td className="duration-cell">{calculateDuration(result.startTime, result.endTime)}</td>
+                        <td>
+                          <button
+                            className="action-button"
+                            onClick={() => setSelectedResult(result)}
+                          >
+                            Détails
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div className="pagination-controls">
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    ← Précédent
+                  </button>
+                  <span className="pagination-info">
+                    Page {currentPage} / {totalPages} ({filteredResults.length} tests)
+                  </span>
+                  <button
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Suivant →
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="results-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Poste</th>
-                  <th>Produit</th>
-                  <th>Slot</th>
-                  <th>Statut</th>
-                  <th>Date de début</th>
-                  <th>Date de fin</th>
-                  <th>Durée</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {testResults.map(result => (
-                  <tr key={result.id} className={result.status === 'SUCCESS' ? 'row-success' : result.status === 'FAIL' ? 'row-fail' : 'row-pending'}>
-                    <td><span className="result-id">#{result.id}</span></td>
-                    <td>{getPosteName(result.posteId)}</td>
-                    <td>{getProduitName(result.produitId)}</td>
-                    <td>{getSlotName(result.slotId)}</td>
-                    <td>
-                      <span className={`status-pill ${getStatusClass(result.status)}`}>
-                        <span className="status-icon">{getStatusIcon(result.status)}</span>
-                        <span>{getStatusLabel(result.status, t)}</span>
-                      </span>
-                    </td>
-                    <td>{new Date(result.startTime).toLocaleString()}</td>
-                    <td>{new Date(result.endTime).toLocaleString()}</td>
-                    <td className="duration-cell">{calculateDuration(result.startTime, result.endTime)}</td>
-                    <td>
-                      <button 
-                        className="action-button"
-                        onClick={() => setSelectedResult(result)}
-                      >
-                        Détails
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Modal de détails du test */}
         {selectedResult && (
@@ -1182,10 +1214,17 @@ const Dashboard: React.FC = () => {
                     <h4>Journaux d'exécution</h4>
                     <div className="logs-content">
                       {selectedResult.logs.map((log, index) => {
-                        const level = getLogLevel(log);
-                        const levelClass = level === 'default' ? '' : `log-level-${level}`;
+                        const isPcToGw = log.includes('(pc→gw)') || log.includes('(pc->gw)');
+                        const isGwToPc = log.includes('(gw→pc)') || log.includes('(gw->pc)');
+                        const isMonitoring = log.startsWith('Monitoring:') || log.startsWith('Monitoring ');
+                        const isAuth = log.includes('Authentification');
+                        let lineClass = 'log-line';
+                        if (isPcToGw) lineClass += ' log-pc-to-gw';
+                        else if (isGwToPc) lineClass += ' log-gw-to-pc';
+                        else if (isMonitoring) lineClass += ' log-monitoring';
+                        else if (isAuth) lineClass += ' log-auth';
                         return (
-                          <div key={index} className={`log-line ${levelClass}`.trim()}>{log}</div>
+                          <div key={index} className={lineClass}>{log}</div>
                         );
                       })}
                     </div>
