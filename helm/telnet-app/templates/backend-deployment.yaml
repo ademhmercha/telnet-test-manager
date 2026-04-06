@@ -13,7 +13,6 @@ spec:
       labels:
         app: backend
     spec:
-      hostNetwork: true
       initContainers:
         - name: wait-for-mongodb
           image: busybox
