@@ -45,52 +45,107 @@ const SYSTEM_LINE_PATTERNS = [
   /^Timeout/,
   /^Reconnexion/,
   /^Séquence\s+(intégrée\s+)?terminée/,
+  /^Séquence de \d+ commandes terminée/,
   /^Exécution de la commande/,
   /^Terminé:/,
-  /→\s*(SUCCESS|FAIL|RUNNING|PENDING)$/,  // step result lines
-  /^Étape\s+\d+\/\d+:/,                   // "Étape N/M: desc" from builtin sequence
+  /→\s*(SUCCESS|FAIL|RUNNING|PENDING)$/,
+  /^Étape\s+\d+\/\d+:/,
+  /^Tous les événements attendus reçus/,
+  /^Test arrêté par/,
+  /^Connexion terminée/,
 ];
 
 function isSystemLine(content: string): boolean {
   return SYSTEM_LINE_PATTERNS.some(r => r.test(content));
 }
 
-function parseLogs(logs: string[]): { dir: 'cmd' | 'resp' | 'mon' | 'auth' | 'err' | 'other'; text: string }[] {
-  return logs
-    .map(line => {
-      const content = line.replace(/^\[[^\]]+\]\s*/, '');
-      // Already formatted (pc→gw) or (pc->gw)
-      if (content.includes('(pc→gw)') || content.includes('(pc->gw)')) {
-        const text = content.replace(/\(pc[→-]>gw\)\s*/, '');
-        return { dir: 'cmd' as const, text };
-      }
-      // Already formatted (gw→pc) or (gw->pc)
-      if (content.includes('(gw→pc)') || content.includes('(gw->pc)')) {
-        const text = content.replace(/\(gw[→-]>pc\)\s*/, '');
-        return { dir: 'resp' as const, text };
-      }
-      // Monitoring lines
-      if (content.startsWith('Monitoring:') || content.startsWith('Monitoring '))
-        return { dir: 'mon' as const, text: content };
-      // Auth lines
-      if (content.includes('Authentification'))
-        return { dir: 'auth' as const, text: content };
-      // → cmd  (monitoring fire-and-forget)
-      if (content.startsWith('→ '))
-        return { dir: 'cmd'  as const, text: content.slice(2) };
-      // Exécution: <cmd>  (single command)
-      if (content.startsWith('Exécution: '))
-        return { dir: 'cmd'  as const, text: content.slice(11) };
-      // Réponse: <text>  (device response)
-      if (content.startsWith('Réponse: '))
-        return { dir: 'resp' as const, text: content.slice(9) };
-      // Error lines
-      if (/erreur|error/i.test(content))
-        return { dir: 'err'  as const, text: content };
-      return { dir: 'other' as const, text: content };
-    })
-    .filter(l => l.text.trim() !== '')
-    .filter(l => !isSystemLine(l.text));
+type LogEntry = { dir: 'cmd' | 'resp' | 'mon' | 'auth' | 'err' | 'other'; text: string };
+
+function parseLogs(logs: string[]): LogEntry[] {
+  const result: LogEntry[] = [];
+
+  for (const line of logs) {
+    const content = line.replace(/^\[[^\]]+\]\s*/, '').trim();
+    if (!content) continue;
+
+    // ── New format: explicit (pc→gw) / (gw→pc) markers ────────────────
+    if (content.includes('(pc→gw)') || content.includes('(pc->gw)')) {
+      result.push({ dir: 'cmd', text: content.replace(/\(pc[→-]>gw\)\s*/, '') });
+      continue;
+    }
+    if (content.includes('(gw→pc)') || content.includes('(gw->pc)')) {
+      result.push({ dir: 'resp', text: content.replace(/\(gw[→-]>pc\)\s*/, '') });
+      continue;
+    }
+
+    // ── Monitoring / auth ───────────────────────────────────────────────
+    if (content.startsWith('Monitoring:') || content.startsWith('Monitoring ')) {
+      result.push({ dir: 'mon', text: content });
+      continue;
+    }
+    if (content.startsWith('Événement:')) {
+      result.push({ dir: 'mon', text: content });
+      continue;
+    }
+    if (content.includes('Authentification')) {
+      result.push({ dir: 'auth', text: content });
+      continue;
+    }
+
+    // ── Old format: Commande "CMD" exécutée: "RESP" ────────────────────
+    const cmdMatch = content.match(/^Commande\s+"([^"]+)"\s+exécutée:\s+"([\s\S]+)"$/);
+    if (cmdMatch) {
+      result.push({ dir: 'cmd',  text: cmdMatch[1] });
+      if (cmdMatch[2].trim()) result.push({ dir: 'resp', text: cmdMatch[2] });
+      continue;
+    }
+
+    // ── Old format: Étape N: Name - "RESP" (with response in quotes) ───
+    const etapeRespMatch = content.match(/^Étape\s+\d+:\s+(.+?)\s+-\s+"([\s\S]+)"$/);
+    if (etapeRespMatch) {
+      result.push({ dir: 'cmd',  text: etapeRespMatch[1] });
+      result.push({ dir: 'resp', text: etapeRespMatch[2] });
+      continue;
+    }
+
+    // ── Old format: Étape N: Name - Événement monitoring - KEY_XXX ─────
+    const etapeEvtMatch = content.match(/^Étape\s+\d+:\s+.+?-\s+Événement monitoring\s+-\s+(KEY_\S+)$/);
+    if (etapeEvtMatch) {
+      result.push({ dir: 'mon', text: `Événement: ${etapeEvtMatch[1]}` });
+      continue;
+    }
+
+    // ── Any remaining Étape N: line → skip (system/monitoring status) ──
+    if (/^Étape\s+\d+:/.test(content)) continue;
+
+    // ── Réponse / Exécution (other backend formats) ─────────────────────
+    if (content.startsWith('→ ')) {
+      result.push({ dir: 'cmd',  text: content.slice(2) });
+      continue;
+    }
+    if (content.startsWith('Exécution: ')) {
+      result.push({ dir: 'cmd',  text: content.slice(11) });
+      continue;
+    }
+    if (content.startsWith('Réponse: ')) {
+      result.push({ dir: 'resp', text: content.slice(9) });
+      continue;
+    }
+
+    // ── Errors ─────────────────────────────────────────────────────────
+    if (/erreur|error/i.test(content)) {
+      result.push({ dir: 'err', text: content });
+      continue;
+    }
+
+    // ── System lines → skip ─────────────────────────────────────────────
+    if (isSystemLine(content)) continue;
+
+    // ── Anything else ───────────────────────────────────────────────────
+    result.push({ dir: 'other', text: content });
+  }
+
+  return result;
 }
 
 const Reports: React.FC = () => {

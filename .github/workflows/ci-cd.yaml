@@ -64,11 +64,6 @@ jobs:
           echo "Deploy failed — rolling back to previous version..."
           helm rollback telnet-app 0 --namespace telnet-app || echo "No previous version to rollback to."
           echo "Done."
-      - run: kubectl get all -n telnet-app
-      - run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
-      - run: kubectl wait --for=condition=available deployment/backend -n telnet-app --timeout=120s || true
-      - run: kubectl wait --for=condition=available deployment/mongodb -n telnet-app --timeout=120s || true
-      - run: kubectl get pods -n telnet-app
       - name: Add Helm repos for monitoring
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -86,5 +81,54 @@ jobs:
             -n monitoring \
             -f monitoring/grafana-values.yaml \
             --timeout 180s
-      - name: Verify monitoring pods
-        run: kubectl get pods -n monitoring
+
+  health-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: medyagh/setup-minikube@master
+        with:
+          driver: docker
+      - name: Wait for deployments
+        run: |
+          kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
+          kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=120s || true
+          kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=120s || true
+      - name: Show pods and services
+        run: |
+          kubectl get pods -n telnet-app -o wide
+          kubectl get svc  -n telnet-app
+          kubectl get pods -n monitoring
+      - name: Backend logs
+        run: kubectl logs -n telnet-app -l app=backend --tail=30 || true
+
+  summary:
+    needs: health-check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: medyagh/setup-minikube@master
+        with:
+          driver: docker
+      - name: Write job summary
+        run: |
+          echo "## Déploiement Telnet Test Manager" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Champ | Valeur |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branche | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Heure | $(date '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployments — telnet-app" >> $GITHUB_STEP_SUMMARY
+          echo "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          kubectl get deployments -n telnet-app --no-headers 2>/dev/null \
+            | awk '{print "| "$1" | "$2" | "$3" | "$4" | "$5" |"}' >> $GITHUB_STEP_SUMMARY || true
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployments — monitoring" >> $GITHUB_STEP_SUMMARY
+          echo "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          kubectl get deployments -n monitoring --no-headers 2>/dev/null \
+            | awk '{print "| "$1" | "$2" | "$3" | "$4" | "$5" |"}' >> $GITHUB_STEP_SUMMARY || true
