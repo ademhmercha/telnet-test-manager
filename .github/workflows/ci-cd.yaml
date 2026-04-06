@@ -43,14 +43,20 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+
       - uses: medyagh/setup-minikube@master
         with:
           driver: docker
-      - run: minikube addons enable ingress
-      - run: |
+
+      - name: Enable ingress addon
+        run: minikube addons enable ingress
+
+      - name: Build images in Minikube
+        run: |
           eval $(minikube docker-env)
           docker build -t telnet-backend:latest ./backend
           docker build -t telnet-frontend:latest ./frontend
+
       - name: Deploy with Helm
         id: deploy
         run: |
@@ -58,59 +64,42 @@ jobs:
             --create-namespace \
             --namespace telnet-app \
             --timeout 600s
+
       - name: Rollback on failure
         if: failure() && steps.deploy.conclusion == 'failure'
         run: |
           echo "Deploy failed — rolling back to previous version..."
           helm rollback telnet-app 0 --namespace telnet-app || echo "No previous version to rollback to."
-          echo "Done."
-      - name: Add Helm repos for monitoring
+
+      - name: Install monitoring stack
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
-      - name: Install Prometheus
-        run: |
           helm upgrade --install prometheus prometheus-community/prometheus \
             -n monitoring --create-namespace \
             -f monitoring/prometheus-values.yaml \
             --timeout 180s
-      - name: Install Grafana
-        run: |
           helm upgrade --install grafana grafana/grafana \
             -n monitoring \
             -f monitoring/grafana-values.yaml \
             --timeout 180s
 
-  health-check:
-    needs: deploy
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: medyagh/setup-minikube@master
-        with:
-          driver: docker
       - name: Wait for deployments
         run: |
           kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
           kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=120s || true
           kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=120s || true
+
       - name: Show pods and services
         run: |
           kubectl get pods -n telnet-app -o wide
           kubectl get svc  -n telnet-app
           kubectl get pods -n monitoring
+
       - name: Backend logs
         run: kubectl logs -n telnet-app -l app=backend --tail=30 || true
 
-  summary:
-    needs: health-check
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: medyagh/setup-minikube@master
-        with:
-          driver: docker
       - name: Write job summary
         run: |
           echo "## Déploiement Telnet Test Manager" >> $GITHUB_STEP_SUMMARY
