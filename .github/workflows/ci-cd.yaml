@@ -88,9 +88,11 @@ jobs:
 
       - name: Wait for deployments
         run: |
-          kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=180s || true
-          kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=240s || true
-          kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=180s || true
+          kubectl wait --for=condition=available deployment/mongodb  -n telnet-app  --timeout=180s || true
+          kubectl wait --for=condition=available deployment/backend  -n telnet-app  --timeout=240s || true
+          kubectl wait --for=condition=available deployment/frontend -n telnet-app  --timeout=180s || true
+          kubectl wait --for=condition=available deployment/grafana                  -n monitoring --timeout=180s || true
+          kubectl wait --for=condition=available deployment/prometheus-server        -n monitoring --timeout=180s || true
 
       - name: Show pods and services
         run: |
