@@ -193,7 +193,8 @@ const Dashboard: React.FC = () => {
     if (!token) return;
 
     try {
-      const ws = new WebSocket(`ws://localhost:3003?token=${token}`);
+      const wsBase = process.env.REACT_APP_WS_URL || `ws://${window.location.hostname}:3003`;
+      const ws = new WebSocket(`${wsBase}?token=${token}`);
       webSocketRef.current = ws;
 
       ws.onopen = () => {

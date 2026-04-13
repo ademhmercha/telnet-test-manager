@@ -21,6 +21,7 @@ services:
     container_name: backend
     ports:
       - "3002:3002"
+      - "3003:3003"
     environment:
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/telnet-db?authSource=admin
       JWT_SECRET: telnet-jwt-secret-2024
