@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-seed
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command: ['sh', '-c', 'until nc -z mongodb-service 27017; do echo waiting; sleep 2; done']
+      containers:
+        - name: seed
+          image: mongo:7
+          envFrom:
+            - secretRef:
+                name: app-secrets
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mongosh "$MONGO_URI" --eval "
+                var count = db.users.countDocuments();
+                if (count === 0) {
+                  try { db.users.dropIndex('id_1'); } catch(e) {}
+                  db.users.insertMany([
+                    {
+                      id: 'admin-001',
+                      username: 'admin',
+                      password: '\$2a\$10\$DoBVgZewn/WJbXDJjjNkUuA.ie5KqyiyibNOHf..ZaGBiFcSG/41m',
+                      role: 'admin',
+                      email: 'admin@telnet.com',
+                      statut: 'actif',
+                      permissions: ['read','write','admin'],
+                      totalTimeMinutes: 0
+                    },
+                    {
+                      id: 'engineer-001',
+                      username: 'engineer',
+                      password: '\$2a\$10\$AQZFp38jGIfjXKEN7FTzp.FDe2R95AcO3b.BXvf.DUwT8QJcObe2e',
+                      role: 'engineer',
+                      email: 'engineer@telnet.com',
+                      statut: 'actif',
+                      permissions: ['read','write'],
+                      totalTimeMinutes: 0
+                    }
+                  ]);
+                  print('Seeded ' + db.users.countDocuments() + ' users.');
+                } else {
+                  print('Already seeded: ' + count + ' users found, skipping.');
+                }
+              "

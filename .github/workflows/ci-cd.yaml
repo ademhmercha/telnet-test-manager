@@ -68,8 +68,8 @@ jobs:
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           minikube docker-env --shell powershell | Where-Object { $_ -match '^\$Env:' } | Invoke-Expression
-          docker build -t telnet-backend:latest ./backend
-          docker build -t telnet-frontend:latest ./frontend
+          docker build --no-cache -t telnet-backend:latest ./backend
+          docker build --no-cache -t telnet-frontend:latest ./frontend
 
       - name: Fix ingress webhook if broken
         shell: powershell
@@ -147,6 +147,19 @@ jobs:
           kubectl get pods -n telnet-app -o wide
           kubectl get svc  -n telnet-app
           kubectl get pods -n monitoring
+
+      - name: Show app URL
+        shell: powershell
+        run: |
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          $url = minikube service frontend-service -n telnet-app --url 2>$null
+          Write-Host "========================================="
+          Write-Host "App accessible at: $url"
+          Write-Host "========================================="
+          Add-Content $env:GITHUB_STEP_SUMMARY "### App URL"
+          Add-Content $env:GITHUB_STEP_SUMMARY "| URL | Status |"
+          Add-Content $env:GITHUB_STEP_SUMMARY "|---|---|"
+          Add-Content $env:GITHUB_STEP_SUMMARY "| $url | Live |"
 
       - name: Backend logs
         shell: powershell
