@@ -47,12 +47,12 @@ jobs:
       - name: Start Minikube if stopped
         shell: powershell
         run: |
-          $status = minikube status --format='{{.Host}}' 2>$null
-          if ($status -ne 'Running') {
-            Write-Host "Minikube is not running (state=$status) — starting..."
+          $status = minikube status 2>$null
+          if ($status -notmatch 'host: Running') {
+            Write-Host "Minikube not running - starting..."
             minikube start --driver=docker
           } else {
-            Write-Host "Minikube is already running."
+            Write-Host "Minikube already running."
           }
 
       - name: Configure kubectl context
