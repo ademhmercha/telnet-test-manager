@@ -34,7 +34,7 @@ config:
   mongodbHost: mongodb-service
   mongodbPort: "27017"
   mongodbDb: telnet-db
-  allowedOrigin: "http://localhost:3000,http://localhost:8080"
+  allowedOrigin: "http://localhost:3000,http://localhost:8080,http://localhost:5050"
 
 secrets:
   jwtSecret: "CHANGE_ME"

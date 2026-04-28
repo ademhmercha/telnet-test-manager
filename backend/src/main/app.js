@@ -30,8 +30,13 @@ function createApp(container) {
     }
   }));
 
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
-  app.use(cors({ origin: allowedOrigin, credentials: true }));
+  const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map(o => o.trim());
+  app.use(cors({
+    origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)),
+    credentials: true
+  }));
   app.use(express.json({ limit: '1mb' }));
 
   // ── Rate limiter login ─────────────────────────────────────────────────────────

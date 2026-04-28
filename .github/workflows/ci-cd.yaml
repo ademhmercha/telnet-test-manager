@@ -150,16 +150,20 @@ jobs:
 
       - name: Show app URL
         shell: powershell
+        continue-on-error: true
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          $url = minikube service frontend-service -n telnet-app --url 2>$null
+          $ip       = minikube ip 2>$null
+          $nodePort = kubectl get svc frontend-service -n telnet-app -o jsonpath="{.spec.ports[0].nodePort}" 2>$null
+          $url      = "http://${ip}:${nodePort}"
           Write-Host "========================================="
           Write-Host "App accessible at: $url"
           Write-Host "========================================="
-          Add-Content $env:GITHUB_STEP_SUMMARY "### App URL"
-          Add-Content $env:GITHUB_STEP_SUMMARY "| URL | Status |"
-          Add-Content $env:GITHUB_STEP_SUMMARY "|---|---|"
-          Add-Content $env:GITHUB_STEP_SUMMARY "| $url | Live |"
+          $summary = $env:GITHUB_STEP_SUMMARY
+          Add-Content $summary "### App URL"
+          Add-Content $summary "| URL | Status |"
+          Add-Content $summary "|---|---|"
+          Add-Content $summary "| $url | Live |"
 
       - name: Backend logs
         shell: powershell

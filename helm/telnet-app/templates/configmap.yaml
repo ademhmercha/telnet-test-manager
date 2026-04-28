@@ -9,3 +9,4 @@ data:
   MONGODB_HOST: {{ .Values.config.mongodbHost }}
   MONGODB_PORT: {{ .Values.config.mongodbPort | quote }}
   MONGODB_DB: {{ .Values.config.mongodbDb }}
+  ALLOWED_ORIGIN: {{ .Values.config.allowedOrigin }}
