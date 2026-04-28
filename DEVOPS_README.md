@@ -31,31 +31,36 @@ GitHub (code source)
     ▼
 GitHub Actions (CI/CD Pipeline)
     │
-    ├── [1] ci-backend  → installe deps, teste, build image Docker
-    ├── [2] ci-frontend → installe deps, build React, build image Docker
-    ├── [3] deploy      → déploie sur Kubernetes (Minikube) via Helm
-    └── [4] monitoring  → installe Prometheus + Grafana via Helm
-                               │
-                               ▼
-                    Kubernetes — Namespace: telnet-app
-                               │
-           ┌───────────────────┼───────────────────┐
-           ▼                   ▼                   ▼
-       MongoDB              Backend             Frontend
-       (mongo:7)        (Node.js/Express)    (React + Nginx)
-       Port 27017           Port 3002            Port 80
-       PVC: 2Gi             PVC: 1Gi          replicas: 1
-       replicas: 1          replicas: 2
-                               │
-                        expose /metrics
-                               │
-                    Kubernetes — Namespace: monitoring
-                               │
-                    ┌──────────┴──────────┐
-                    ▼                     ▼
-               Prometheus             Grafana
-           (collecte métriques)   (dashboards visuels)
-               Port 9090              Port 3001
+    ├── [1] ci-backend  → runner GitHub cloud (ubuntu-latest)
+    │       installe deps, audit sécurité, build image Docker
+    │
+    ├── [2] ci-frontend → runner GitHub cloud (ubuntu-latest)
+    │       installe deps, audit sécurité, build React, build image Docker
+    │
+    │   (si les 2 jobs CI réussissent → seulement sur main)
+    │
+    └── [3] deploy → runner self-hosted (machine locale Windows)
+                │   Minikube déjà en cours d'exécution
+                │   helm upgrade --install (déploiement RÉEL et PERSISTANT)
+                ▼
+        Kubernetes — Namespace: telnet-app
+                │
+   ┌────────────┼────────────┐
+   ▼            ▼            ▼
+MongoDB       Backend     Frontend
+(mongo:7)  (Node.js)   (React+Nginx)
+Port 27017  Port 3002    Port 80
+PVC: 2Gi    PVC: 1Gi   replicas: 1
+replicas:1  replicas: 2
+                │
+         expose /metrics
+                │
+        Kubernetes — Namespace: monitoring
+                │
+       ┌────────┴────────┐
+       ▼                 ▼
+  Prometheus          Grafana
+  Port 9090           Port 3001
 ```
 
 ### Services exposés
@@ -81,6 +86,7 @@ GitHub Actions (CI/CD Pipeline)
 | Métriques | Prometheus | latest |
 | Dashboards | Grafana | latest |
 | CI/CD | GitHub Actions | — |
+| Self-hosted Runner | GitHub Actions Runner | Déploiement réel persistant sur Minikube local |
 
 ---
 
@@ -454,47 +460,96 @@ Le dashboard et la datasource sont chargés **automatiquement** au démarrage de
 ### Qu'est-ce que CI/CD ?
 
 - **CI (Continuous Integration)** : à chaque `git push`, le code est automatiquement testé et les images Docker construites
-- **CD (Continuous Deployment)** : si les tests passent, le code est déployé automatiquement
+- **CD (Continuous Deployment)** : si les tests passent, le code est déployé automatiquement sur l'environnement cible
 
 **But** : détecter les erreurs tôt et déployer de façon fiable, répétable, sans intervention humaine.
 
 ---
 
-### Vue d'ensemble de la pipeline
+### Self-hosted Runner — clé du déploiement réel
+
+#### Qu'est-ce qu'un self-hosted runner ?
+
+GitHub Actions propose deux types de runners (machines qui exécutent les jobs) :
+
+| Type | Où ça tourne | Persistance | Usage |
+|---|---|---|---|
+| **GitHub-hosted** (`ubuntu-latest`) | Serveur cloud GitHub temporaire | Éphémère — détruit après le job | CI (build, test, audit) |
+| **Self-hosted** (`self-hosted`) | **Ta propre machine** | Persistant — ta machine reste allumée | CD (déploiement réel) |
+
+#### Pourquoi le self-hosted runner est indispensable ici ?
+
+Sans self-hosted runner, le job `deploy` tourne sur un serveur GitHub temporaire qui :
+- Lance un Minikube éphémère
+- Déploie l'app dessus
+- S'arrête → **tout disparaît**
+
+Avec un self-hosted runner installé sur ta machine Windows :
+- Le job `deploy` s'exécute **sur ta machine**
+- Minikube est déjà en cours d'exécution sur ta machine
+- `helm upgrade --install` déploie dans **ton Minikube local**
+- Quand le job finit → **l'app reste déployée** et accessible
 
 ```
 git push origin main
         │
         ▼
-GitHub Actions se déclenche automatiquement
+GitHub détecte le push
         │
-        ├── [Job 1] ci-backend      ──┐ en parallèle
-        │   ├── npm ci               │
-        │   ├── npm audit            │  (bloque si faille critique)
-        │   ├── npm test             │
-        │   └── docker build         │
-        │                            │
-        ├── [Job 2] ci-frontend    ──┘
+        ├── [Job 1] ci-backend  → serveur GitHub cloud (ubuntu-latest)
         │   ├── npm ci
-        │   ├── npm audit            (bloque si faille critique)
-        │   ├── npm run build (CI=false)
+        │   ├── npm audit --audit-level=critical   ← bloque si faille critique
+        │   ├── npm test --if-present
         │   └── docker build
         │
-        │   (si les 2 jobs CI réussissent)
+        ├── [Job 2] ci-frontend → serveur GitHub cloud (ubuntu-latest)
+        │   ├── npm ci
+        │   ├── npm audit --audit-level=critical   ← bloque si faille critique
+        │   ├── npm run build
+        │   └── docker build
+        │
+        │   (si les 2 jobs CI réussissent ET branche = main)
         │
         ▼
-        [Job 3] deploy + monitoring  (même Minikube)
-        ├── setup Minikube
-        ├── build images dans Minikube
-        ├── helm upgrade --install telnet-app
+        [Job 3] deploy → self-hosted runner (ta machine Windows)
+        ├── eval $(minikube docker-env)    ← contexte Minikube local
+        ├── docker build telnet-backend    ← image dans Minikube
+        ├── docker build telnet-frontend   ← image dans Minikube
+        ├── helm upgrade --install telnet-app   ← déploiement RÉEL persistant
         ├── rollback automatique si échec
-        ├── kubectl wait frontend ready
-        ├── kubectl wait backend ready
-        ├── kubectl wait mongodb ready
-        ├── helm install prometheus  (même cluster)
-        ├── helm install grafana     (même cluster)
-        └── kubectl get pods -n monitoring
+        ├── helm install prometheus + grafana
+        ├── kubectl wait (pods ready)
+        └── kubectl get pods + summary
 ```
+
+#### Comment installer le self-hosted runner (une seule fois)
+
+1. Aller sur GitHub → ton repo → **Settings → Actions → Runners → New self-hosted runner**
+2. Choisir **Windows**
+3. Suivre les commandes affichées (télécharger, configurer, démarrer) :
+
+```powershell
+# Dans PowerShell sur ta machine Windows
+mkdir actions-runner; cd actions-runner
+
+# Télécharger le runner (URL fournie par GitHub)
+Invoke-WebRequest -Uri https://github.com/actions/runner/releases/download/v2.x.x/actions-runner-win-x64-2.x.x.zip -OutFile actions-runner-win-x64.zip
+
+# Extraire
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD/actions-runner-win-x64.zip", "$PWD")
+
+# Configurer avec ton token GitHub (affiché sur la page GitHub)
+./config.cmd --url https://github.com/TON-USER/TON-REPO --token TON_TOKEN
+
+# Installer comme service Windows (démarre automatiquement)
+./svc.cmd install
+./svc.cmd start
+```
+
+4. Vérifier que le runner apparaît **Online** dans GitHub → Settings → Runners
+
+Une fois installé, le runner démarre automatiquement avec Windows et écoute en permanence les jobs GitHub Actions.
 
 ---
 
@@ -510,7 +565,19 @@ on:
 
 ---
 
-### Points clés
+### Points clés de la pipeline
+
+**Jobs CI sur runners cloud** — isolation propre, pas de pollution entre runs :
+```yaml
+ci-backend:
+  runs-on: ubuntu-latest   # serveur GitHub temporaire → OK pour CI
+```
+
+**Job deploy sur self-hosted** — accès à Minikube local, déploiement persistant :
+```yaml
+deploy:
+  runs-on: self-hosted     # ta machine → Minikube déjà là, déploiement réel
+```
 
 **Cache npm** — évite de retélécharger les dépendances à chaque run :
 ```yaml
@@ -534,7 +601,7 @@ deploy:
   if: github.ref == 'refs/heads/main'  # seulement sur main
 ```
 
-**Rollback automatique** — si le deploy Helm échoue, on revient à la version précédente :
+**Rollback automatique** — si le deploy Helm échoue, retour à la version précédente :
 ```yaml
 - name: Rollback on failure
   if: failure() && steps.deploy.conclusion == 'failure'
@@ -546,11 +613,11 @@ deploy:
 - run: npm audit --audit-level=critical
 ```
 
-**Healthcheck des 3 services** après deploy :
+**Healthcheck des services** après deploy :
 ```yaml
-- run: kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=120s || true
-- run: kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=120s || true
-- run: kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=120s || true
+kubectl wait --for=condition=available deployment/backend  -n telnet-app --timeout=240s
+kubectl wait --for=condition=available deployment/frontend -n telnet-app --timeout=180s
+kubectl wait --for=condition=available deployment/mongodb  -n telnet-app --timeout=180s
 ```
 
 ---
@@ -558,14 +625,14 @@ deploy:
 ### Résultat d'une pipeline réussie
 
 ```
-✅ ci-backend   (~1 min)   — audit sécurité + build image
-✅ ci-frontend  (~2 min)   — audit sécurité + build React + build image
-✅ deploy       (~8 min)   — Minikube + Helm + healthchecks + monitoring
-──────────────────────────────────────────────────────────────
-Total : ~8-10 minutes
+✅ ci-backend   (~1 min)   — audit sécurité + build image   [GitHub cloud]
+✅ ci-frontend  (~2 min)   — audit sécurité + build React   [GitHub cloud]
+✅ deploy       (~5 min)   — Helm + Minikube local + monitoring persistant   [self-hosted]
+──────────────────────────────────────────────────────────────────────────
+Total : ~5-8 minutes
 ```
 
-À chaque push : code testé, images buildées, app déployée, monitoring installé. **Zéro intervention manuelle.**
+À chaque push sur `main` : code testé, images buildées, app déployée sur Minikube, monitoring installé. **Zéro intervention manuelle. Déploiement persistant.**
 
 ---
 
@@ -644,6 +711,12 @@ docker compose down
 
 ## 8. Questions fréquentes jury
 
+**Q : Pourquoi un self-hosted runner et pas un runner GitHub standard ?**
+
+R : Les runners GitHub standard (`ubuntu-latest`) sont des machines cloud temporaires — elles sont détruites dès que le job se termine. Pour le job `deploy`, on a besoin d'accéder à Minikube qui tourne sur notre machine locale. Un self-hosted runner est un agent GitHub Actions installé sur notre propre machine Windows. Quand GitHub déclenche le job `deploy`, il s'exécute directement sur notre machine où Minikube est déjà en cours d'exécution — le déploiement Helm est donc réel et persistant, pas éphémère.
+
+---
+
 **Q : Pourquoi Docker et pas déployer directement sur le serveur ?**
 
 R : Docker garantit que l'application fonctionne identiquement partout. Sans Docker, on peut avoir des problèmes de versions Node.js différentes, de dépendances manquantes, de configuration différente entre les environnements. Docker élimine ces problèmes — une image buildée une fois fonctionne partout.
@@ -717,6 +790,7 @@ R : Alpine Linux est une distribution minimaliste (~5MB). Ça réduit la taille 
 | **prom-client** | SDK métriques Node.js | Officiel Prometheus, métriques custom |
 | **Grafana** | Visualisation | Dashboards riches, provisioning auto |
 | **GitHub Actions** | CI/CD | Intégré GitHub, gratuit, YAML natif |
+| **Self-hosted Runner** | CD persistant | Déploiement réel sur Minikube local, pas éphémère |
 | **Nginx** | Reverse proxy | Léger, performant, proxy transparent |
 | **MongoDB** | Base de données | Schéma flexible, adapté NoSQL |
 

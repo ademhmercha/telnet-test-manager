@@ -39,17 +39,10 @@ jobs:
 
   deploy:
     needs: [ci-backend, ci-frontend]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-
-      - uses: medyagh/setup-minikube@master
-        with:
-          driver: docker
-
-      - name: Enable ingress addon
-        run: minikube addons enable ingress
 
       - name: Build images in Minikube
         run: |
