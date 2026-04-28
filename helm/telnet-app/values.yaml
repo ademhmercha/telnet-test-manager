@@ -34,12 +34,13 @@ config:
   mongodbHost: mongodb-service
   mongodbPort: "27017"
   mongodbDb: telnet-db
+  allowedOrigin: "http://localhost:3000,http://localhost:8080"
 
 secrets:
-  jwtSecret: "telnet-jwt-secret-2024"
-  mongodbUri: "mongodb://admin:admin123@mongodb-service:27017/telnet-db?authSource=admin"
-  mongoRootUsername: "admin"
-  mongoRootPassword: "admin123"
+  jwtSecret: "CHANGE_ME"
+  mongodbUri: "CHANGE_ME"
+  mongoRootUsername: "CHANGE_ME"
+  mongoRootPassword: "CHANGE_ME"
 
 persistence:
   backend:

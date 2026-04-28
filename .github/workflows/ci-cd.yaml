@@ -81,12 +81,21 @@ jobs:
       - name: Deploy with Helm
         id: deploy
         shell: powershell
+        env:
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           helm upgrade --install telnet-app ./helm/telnet-app `
             --create-namespace `
             --namespace telnet-app `
             --set replicaCount.backend=1 `
+            --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
+            --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
+            --set secrets.mongodbUri="$env:MONGO_URI" `
+            --set secrets.jwtSecret="$env:JWT_SECRET" `
             --timeout 600s
 
       - name: Rollback on failure
