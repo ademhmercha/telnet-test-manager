@@ -45,75 +45,89 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build images in Minikube
+        shell: powershell
         run: |
-          eval $(minikube docker-env)
+          minikube docker-env --shell powershell | Invoke-Expression
           docker build -t telnet-backend:latest ./backend
           docker build -t telnet-frontend:latest ./frontend
 
       - name: Deploy with Helm
         id: deploy
+        shell: powershell
         run: |
-          helm upgrade --install telnet-app ./helm/telnet-app \
-            --create-namespace \
-            --namespace telnet-app \
-            --set replicaCount.backend=1 \
+          helm upgrade --install telnet-app ./helm/telnet-app `
+            --create-namespace `
+            --namespace telnet-app `
+            --set replicaCount.backend=1 `
             --timeout 600s
 
       - name: Rollback on failure
         if: failure() && steps.deploy.conclusion == 'failure'
+        shell: powershell
         run: |
-          echo "Deploy failed — rolling back to previous version..."
-          helm rollback telnet-app 0 --namespace telnet-app || echo "No previous version to rollback to."
+          Write-Host "Deploy failed - rolling back to previous version..."
+          helm rollback telnet-app 0 --namespace telnet-app
+          if (-not $?) { Write-Host "No previous version to rollback to." }
 
       - name: Install monitoring stack
+        shell: powershell
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
-          helm upgrade --install prometheus prometheus-community/prometheus \
-            -n monitoring --create-namespace \
-            -f monitoring/prometheus-values.yaml \
+          helm upgrade --install prometheus prometheus-community/prometheus `
+            -n monitoring --create-namespace `
+            -f monitoring/prometheus-values.yaml `
             --timeout 180s
-          helm upgrade --install grafana grafana/grafana \
-            -n monitoring \
-            -f monitoring/grafana-values.yaml \
+          helm upgrade --install grafana grafana/grafana `
+            -n monitoring `
+            -f monitoring/grafana-values.yaml `
             --timeout 180s
 
       - name: Wait for deployments
+        shell: powershell
         run: |
-          kubectl wait --for=condition=available deployment/mongodb  -n telnet-app  --timeout=180s || true
-          kubectl wait --for=condition=available deployment/backend  -n telnet-app  --timeout=240s || true
-          kubectl wait --for=condition=available deployment/frontend -n telnet-app  --timeout=180s || true
-          kubectl wait --for=condition=available deployment/grafana                  -n monitoring --timeout=180s || true
-          kubectl wait --for=condition=available deployment/prometheus-server        -n monitoring --timeout=180s || true
+          kubectl wait --for=condition=available deployment/mongodb  -n telnet-app  --timeout=180s
+          kubectl wait --for=condition=available deployment/backend  -n telnet-app  --timeout=240s
+          kubectl wait --for=condition=available deployment/frontend -n telnet-app  --timeout=180s
+          kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
+          kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
 
       - name: Show pods and services
+        shell: powershell
         run: |
           kubectl get pods -n telnet-app -o wide
           kubectl get svc  -n telnet-app
           kubectl get pods -n monitoring
 
       - name: Backend logs
-        run: kubectl logs -n telnet-app -l app=backend --tail=30 || true
+        shell: powershell
+        run: kubectl logs -n telnet-app -l app=backend --tail=30
 
       - name: Write job summary
+        shell: powershell
         run: |
-          echo "## Déploiement Telnet Test Manager" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Champ | Valeur |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Branche | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Heure | $(date '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Deployments — telnet-app" >> $GITHUB_STEP_SUMMARY
-          echo "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          kubectl get deployments -n telnet-app --no-headers 2>/dev/null \
-            | awk '{print "| "$1" | "$2" | "$3" | "$4" | "$5" |"}' >> $GITHUB_STEP_SUMMARY || true
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Deployments — monitoring" >> $GITHUB_STEP_SUMMARY
-          echo "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          kubectl get deployments -n monitoring --no-headers 2>/dev/null \
-            | awk '{print "| "$1" | "$2" | "$3" | "$4" | "$5" |"}' >> $GITHUB_STEP_SUMMARY || true
+          $summary = $env:GITHUB_STEP_SUMMARY
+          Add-Content $summary "## Deploiement Telnet Test Manager"
+          Add-Content $summary ""
+          Add-Content $summary "| Champ | Valeur |"
+          Add-Content $summary "|---|---|"
+          Add-Content $summary "| Commit | ``${{ github.sha }}`` |"
+          Add-Content $summary "| Branche | ``${{ github.ref_name }}`` |"
+          Add-Content $summary "| Heure | $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC') |"
+          Add-Content $summary ""
+          Add-Content $summary "### Deployments - telnet-app"
+          Add-Content $summary "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |"
+          Add-Content $summary "|---|---|---|---|---|"
+          kubectl get deployments -n telnet-app --no-headers 2>$null | ForEach-Object {
+            $cols = $_ -split '\s+'
+            Add-Content $summary "| $($cols[0]) | $($cols[1]) | $($cols[2]) | $($cols[3]) | $($cols[4]) |"
+          }
+          Add-Content $summary ""
+          Add-Content $summary "### Deployments - monitoring"
+          Add-Content $summary "| NAME | READY | UP-TO-DATE | AVAILABLE | AGE |"
+          Add-Content $summary "|---|---|---|---|---|"
+          kubectl get deployments -n monitoring --no-headers 2>$null | ForEach-Object {
+            $cols = $_ -split '\s+'
+            Add-Content $summary "| $($cols[0]) | $($cols[1]) | $($cols[2]) | $($cols[3]) | $($cols[4]) |"
+          }
