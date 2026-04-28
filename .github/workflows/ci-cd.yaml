@@ -144,7 +144,7 @@ jobs:
         continue-on-error: true
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          kubectl logs -n telnet-app -l app=backend --tail=30 2>&1 | Write-Host
+          kubectl logs -n telnet-app -l app=backend -c backend --tail=30
 
       - name: Write job summary
         shell: powershell
