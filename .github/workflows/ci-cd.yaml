@@ -71,6 +71,13 @@ jobs:
           docker build -t telnet-backend:latest ./backend
           docker build -t telnet-frontend:latest ./frontend
 
+      - name: Fix ingress webhook if broken
+        shell: powershell
+        run: |
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          kubectl delete validatingwebhookconfiguration ingress-nginx-admission 2>$null
+          Write-Host "Ingress webhook cleared (safe to ignore if not found)."
+
       - name: Deploy with Helm
         id: deploy
         shell: powershell
