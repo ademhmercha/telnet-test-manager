@@ -153,7 +153,9 @@ jobs:
         continue-on-error: true
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          kubectl logs -n telnet-app -l app=backend -c backend --tail=30
+          $pod = kubectl get pods -n telnet-app -l app=backend --field-selector=status.phase=Running -o jsonpath="{.items[0].metadata.name}" 2>$null
+          if ($pod) { kubectl logs -n telnet-app $pod -c backend --tail=30 }
+          else { Write-Host "No running backend pod yet." }
 
       - name: Write job summary
         shell: powershell
