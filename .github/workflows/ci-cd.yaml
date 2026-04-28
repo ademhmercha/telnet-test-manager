@@ -44,6 +44,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Start Minikube if stopped
+        shell: powershell
+        run: |
+          $status = minikube status --format='{{.Host}}' 2>$null
+          if ($status -ne 'Running') {
+            Write-Host "Minikube is not running (state=$status) — starting..."
+            minikube start --driver=docker
+          } else {
+            Write-Host "Minikube is already running."
+          }
+
       - name: Configure kubectl context
         shell: powershell
         run: |
