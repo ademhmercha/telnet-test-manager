@@ -47,7 +47,7 @@ jobs:
       - name: Build images in Minikube
         shell: powershell
         run: |
-          minikube docker-env --shell powershell | Invoke-Expression
+          minikube docker-env --shell powershell | Where-Object { $_ -match '^\$Env:' } | Invoke-Expression
           docker build -t telnet-backend:latest ./backend
           docker build -t telnet-frontend:latest ./frontend
 
