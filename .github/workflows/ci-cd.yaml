@@ -75,8 +75,8 @@ jobs:
         shell: powershell
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          kubectl delete validatingwebhookconfiguration ingress-nginx-admission 2>$null
-          Write-Host "Ingress webhook cleared (safe to ignore if not found)."
+          kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found
+          Write-Host "Ingress webhook cleared."
 
       - name: Deploy with Helm
         id: deploy
