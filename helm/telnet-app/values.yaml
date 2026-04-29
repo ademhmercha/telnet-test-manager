@@ -48,6 +48,12 @@ persistence:
   mongodb:
     size: 2Gi
 
+hpa:
+  backend:
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPU: 70
+
 resources:
   backend:
     requests:
