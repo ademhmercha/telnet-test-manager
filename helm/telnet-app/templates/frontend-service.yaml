@@ -4,7 +4,7 @@ metadata:
   name: frontend-service
   namespace: {{ .Release.Namespace }}
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: frontend
   ports:
