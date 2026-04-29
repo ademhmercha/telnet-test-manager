@@ -8,6 +8,9 @@ persistence:
   size: 1Gi
   storageClassName: standard
 
+initChownData:
+  enabled: false
+
 datasources:
   datasources.yaml:
     apiVersion: 1
