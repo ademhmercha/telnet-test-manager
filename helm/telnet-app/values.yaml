@@ -1,5 +1,5 @@
 replicaCount:
-  backend: 2
+  backend: 1
   frontend: 1
   mongodb: 1
 

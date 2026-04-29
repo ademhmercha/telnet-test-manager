@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci-backend:
     runs-on: ubuntu-latest
@@ -13,13 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       - run: cd backend && npm ci
       - run: cd backend && npm audit --audit-level=critical
       - run: cd backend && npm test --if-present
-      - run: docker build -t telnet-backend:${{ github.sha }} ./backend
 
   ci-frontend:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       - run: cd frontend && npm ci
@@ -35,7 +38,6 @@ jobs:
       - run: cd frontend && npm run build
         env:
           CI: false
-      - run: docker build -t telnet-frontend:${{ github.sha }} ./frontend
 
   deploy:
     needs: [ci-backend, ci-frontend]
@@ -59,7 +61,6 @@ jobs:
         shell: powershell
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          minikube update-context
           kubectl config use-context minikube
           kubectl cluster-info
 
@@ -68,8 +69,8 @@ jobs:
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           minikube docker-env --shell powershell | Where-Object { $_ -match '^\$Env:' } | Invoke-Expression
-          docker build --no-cache -t telnet-backend:latest ./backend
-          docker build --no-cache -t telnet-frontend:latest ./frontend
+          docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-backend:latest ./backend
+          docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-frontend:latest ./frontend
 
       - name: Fix ingress webhook if broken
         shell: powershell
@@ -91,28 +92,17 @@ jobs:
           helm upgrade --install telnet-app ./helm/telnet-app `
             --create-namespace `
             --namespace telnet-app `
-            --set replicaCount.backend=1 `
             --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
             --set secrets.mongodbUri="$env:MONGO_URI" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
+            --atomic `
             --timeout 600s
-
-      - name: Rollback on failure
-        if: failure() && steps.deploy.conclusion == 'failure'
-        shell: powershell
-        run: |
-          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          Write-Host "Deploy failed - rolling back to previous version..."
-          helm rollback telnet-app 0 --namespace telnet-app
-          if (-not $?) { Write-Host "No previous version to rollback to." }
 
       - name: Install monitoring stack
         shell: powershell
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
           helm upgrade --install prometheus prometheus-community/prometheus `
             -n monitoring --create-namespace `
@@ -151,18 +141,16 @@ jobs:
       - name: Show app URL
         shell: powershell
         run: |
-          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           Write-Host "========================================="
-          Write-Host "Access the app with:"
-          Write-Host "kubectl port-forward svc/frontend-service 3000:80 -n telnet-app"
-          Write-Host "Then open: http://localhost:3000"
+          Write-Host "kubectl port-forward svc/frontend-service 4000:80 -n telnet-app"
+          Write-Host "Then open: http://localhost:4000"
           Write-Host "========================================="
           $summary = $env:GITHUB_STEP_SUMMARY
           Add-Content $summary "### Acces a l'application"
           Add-Content $summary '```'
-          Add-Content $summary "kubectl port-forward svc/frontend-service 3000:80 -n telnet-app"
+          Add-Content $summary "kubectl port-forward svc/frontend-service 4000:80 -n telnet-app"
           Add-Content $summary '```'
-          Add-Content $summary "Ouvrir : http://localhost:3000"
+          Add-Content $summary "Ouvrir : http://localhost:4000"
 
       - name: Backend logs
         shell: powershell
