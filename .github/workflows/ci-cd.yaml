@@ -109,12 +109,14 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          # Construire MONGO_URI depuis les credentials pour garantir la coherence
+          $mongoUri = "mongodb://$env:MONGO_USERNAME`:$env:MONGO_PASSWORD`@mongodb-service:27017/telnet-db?authSource=admin"
           helm upgrade --install telnet-app ./helm/telnet-app `
             --create-namespace `
             --namespace telnet-app `
             --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
-            --set secrets.mongodbUri="$env:MONGO_URI" `
+            --set "secrets.mongodbUri=$mongoUri" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
             --no-hooks `
             --timeout 900s

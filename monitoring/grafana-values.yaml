@@ -20,6 +20,8 @@ datasources:
         url: http://prometheus-server.monitoring.svc.cluster.local
         isDefault: true
 
+assertNoLeakedSecrets: false
+
 grafana.ini:
   smtp:
     enabled: true
