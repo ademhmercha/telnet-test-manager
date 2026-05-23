@@ -19,7 +19,7 @@ spec:
         - name: mongodb
           image: "{{ .Values.image.mongodb.name }}:{{ .Values.image.mongodb.tag }}"
           imagePullPolicy: {{ .Values.image.mongodb.pullPolicy }}
-          command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+          command: ["mongod", "--bind_ip_all"]
           ports:
             - containerPort: {{ .Values.service.mongodb.port }}
           env:
