@@ -113,14 +113,9 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          # Supprimer la release si elle est dans un etat bloquant (failed, pending-*)
-          $releaseInfo = helm list -n telnet-app --filter "^telnet-app$" --all -o json 2>&1 | Out-String
-          if ($releaseInfo.Trim() -ne '[]' -and $releaseInfo -notmatch '"status":"deployed"') {
-            Write-Host "Release en etat bloquant - nettoyage..."
-            helm uninstall telnet-app -n telnet-app 2>&1 | Out-Null
-          } else {
-            Write-Host "Release OK ou inexistante - installation directe."
-          }
+          # Toujours nettoyer la release avant de reinstaller (evite les etats bloques)
+          helm uninstall telnet-app -n telnet-app 2>&1 | Out-Null
+          Write-Host "Release nettoyee (ou inexistante), installation propre..."
           # Echapper les virgules du MONGO_URI (Helm --set utilise , comme separateur)
           $escapedUri = $env:MONGO_URI -replace ',', '\,'
           helm upgrade --install telnet-app ./helm/telnet-app `
