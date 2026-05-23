@@ -85,6 +85,7 @@ jobs:
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           minikube docker-env --shell powershell | Where-Object { $_ -match '^\$Env:' } | Invoke-Expression
+          docker pull mongo:7
           docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-backend:latest ./backend
           docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-frontend:latest ./frontend
 
@@ -94,6 +95,25 @@ jobs:
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found
           Write-Host "Ingress webhook cleared."
+
+      - name: Deploy with Helm
+        id: deploy
+        shell: powershell
+        env:
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          helm upgrade --install telnet-app ./helm/telnet-app `
+            --create-namespace `
+            --namespace telnet-app `
+            --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
+            --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
+            --set secrets.mongodbUri="$env:MONGO_URI" `
+            --set secrets.jwtSecret="$env:JWT_SECRET" `
+            --timeout 900s
 
       - name: Debug - inspect backend pod
         shell: powershell
@@ -114,25 +134,6 @@ jobs:
           if ($mpod -and $mpod -notmatch 'Error') {
             kubectl logs -n telnet-app $mpod --tail=30
           }
-
-      - name: Deploy with Helm
-        id: deploy
-        shell: powershell
-        env:
-          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
-          MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        run: |
-          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          helm upgrade --install telnet-app ./helm/telnet-app `
-            --create-namespace `
-            --namespace telnet-app `
-            --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
-            --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
-            --set secrets.mongodbUri="$env:MONGO_URI" `
-            --set secrets.jwtSecret="$env:JWT_SECRET"
-          Start-Sleep 90
 
       - name: Install monitoring stack
         shell: powershell
