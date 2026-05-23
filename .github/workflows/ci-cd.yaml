@@ -71,6 +71,12 @@ jobs:
           if ($status -notmatch 'host: Running') {
             Write-Host "Minikube non demarre - lancement..."
             minikube start --driver=docker
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Echec minikube start - reseau Docker corrompu, suppression et recreation..."
+              minikube delete
+              minikube start --driver=docker
+              if ($LASTEXITCODE -ne 0) { Write-Error "Minikube ne demarre pas."; exit 1 }
+            }
           } else {
             Write-Host "Minikube deja en cours."
           }
