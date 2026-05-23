@@ -95,6 +95,20 @@ jobs:
           kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found
           Write-Host "Ingress webhook cleared."
 
+      - name: Debug - backend pod status on failure
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          Write-Host "=== Pods telnet-app ==="
+          kubectl get pods -n telnet-app -o wide 2>$null
+          Write-Host "=== Backend pod logs ==="
+          $pod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}" 2>$null
+          if ($pod) {
+            kubectl logs -n telnet-app $pod --all-containers --tail=50 2>$null
+            kubectl describe pod -n telnet-app $pod 2>$null | Select-String -Pattern "Events:|Warning|Error|Reason|State|Started|Finished" -Context 0,1
+          }
+
       - name: Deploy with Helm
         id: deploy
         shell: powershell

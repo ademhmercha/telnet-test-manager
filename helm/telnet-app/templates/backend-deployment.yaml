@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount.backend }}
+  progressDeadlineSeconds: 840
   selector:
     matchLabels:
       app: backend
