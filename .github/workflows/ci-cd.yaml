@@ -115,9 +115,12 @@ jobs:
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           # Supprimer la release si elle est en etat failed (bloque les upgrades)
           $releaseStatus = helm status telnet-app -n telnet-app 2>&1 | Out-String
-          if ($releaseStatus -match 'failed') {
+          $helmExitCode = $LASTEXITCODE
+          if ($helmExitCode -eq 0 -and $releaseStatus -match 'failed') {
             Write-Host "Release en etat failed - suppression avant reinstallation..."
             helm delete telnet-app -n telnet-app
+          } elseif ($helmExitCode -ne 0) {
+            Write-Host "Release inexistante - installation directe."
           }
           # Echapper les virgules du MONGO_URI (Helm --set utilise , comme separateur)
           $escapedUri = $env:MONGO_URI -replace ',', '\,'
