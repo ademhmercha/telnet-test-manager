@@ -46,15 +46,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Minikube if stopped
+      - name: Start Docker and Minikube if stopped
         shell: powershell
         run: |
-          $status = minikube status 2>$null
+          # Demarrer Docker Desktop si pas encore lance
+          $dockerRunning = docker info 2>&1 | Out-String
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Docker Desktop non demarre - lancement..."
+            Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+            Write-Host "Attente du daemon Docker (max 120s)..."
+            $timeout = 120; $elapsed = 0
+            while ($elapsed -lt $timeout) {
+              Start-Sleep 5; $elapsed += 5
+              $check = docker info 2>&1 | Out-String
+              if ($LASTEXITCODE -eq 0) { Write-Host "Docker pret apres ${elapsed}s."; break }
+              Write-Host "Attente Docker... ${elapsed}s"
+            }
+            if ($LASTEXITCODE -ne 0) { Write-Error "Docker n'a pas demarre en ${timeout}s."; exit 1 }
+          } else {
+            Write-Host "Docker Desktop deja en cours."
+          }
+          # Demarrer Minikube si pas encore lance
+          $status = minikube status 2>&1 | Out-String
           if ($status -notmatch 'host: Running') {
-            Write-Host "Minikube not running - starting..."
+            Write-Host "Minikube non demarre - lancement..."
             minikube start --driver=docker
           } else {
-            Write-Host "Minikube already running."
+            Write-Host "Minikube deja en cours."
           }
 
       - name: Configure kubectl context
