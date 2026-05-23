@@ -19,3 +19,83 @@ datasources:
         type: prometheus
         url: http://prometheus-server.monitoring.svc.cluster.local
         isDefault: true
+
+# Configuration SMTP Gmail pour les alertes email
+grafana.ini:
+  smtp:
+    enabled: true
+    host: smtp.gmail.com:587
+    user: ademhmerchaaa@gmail.com
+    # Generer un App Password Gmail : https://myaccount.google.com/apppasswords
+    # Activer d'abord la verification en 2 etapes, puis creer un mot de passe d'application
+    password: CHANGE_ME_INJECTED_BY_PIPELINE
+
+    from_address: ademhmerchaaa@gmail.com
+    from_name: "Grafana - Telnet Monitor"
+    startTLS_policy: MandatoryStartTLS
+  alerting:
+    enabled: true
+  unified_alerting:
+    enabled: true
+
+# Alerte : pod ou service inaccessible (target Prometheus down)
+alerting:
+  rules.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: telnet-alerts
+        folder: Telnet
+        interval: 1m
+        rules:
+          - uid: alert-target-down
+            title: "Service Inaccessible"
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: "{{ ds_prometheus }}"
+                model:
+                  expr: up == 0
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  type: threshold
+                  conditions:
+                    - evaluator:
+                        params: [0]
+                        type: gt
+                      unloadEvaluator:
+                        params: [0]
+                        type: lt
+            noDataState: OK
+            execErrState: Error
+            for: 1m
+            annotations:
+              summary: "Un service surveille est inaccessible"
+              description: "La cible {{ $labels.job }} / {{ $labels.instance }} est DOWN depuis plus d'1 minute."
+            labels:
+              severity: critical
+
+  contactpoints.yaml:
+    apiVersion: 1
+    contactPoints:
+      - orgId: 1
+        name: email-alertes
+        receivers:
+          - uid: email-receiver
+            type: email
+            settings:
+              addresses: ademhmerchaaa@gmail.com
+              singleEmail: false
+
+  policies.yaml:
+    apiVersion: 1
+    policies:
+      - orgId: 1
+        receiver: email-alertes
+        group_by: ["alertname", "job"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 1h

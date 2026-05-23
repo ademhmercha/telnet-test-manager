@@ -1,11 +1,2 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mongodb-pvc
-  namespace: {{ .Release.Namespace }}
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ .Values.persistence.mongodb.size }}
+# PVC géré automatiquement par les volumeClaimTemplates du StatefulSet mongodb.
+# Kubernetes crée : mongodb-storage-mongodb-0, mongodb-storage-mongodb-1, mongodb-storage-mongodb-2

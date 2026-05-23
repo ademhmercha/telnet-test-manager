@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-replicaset-init
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z mongodb-0.mongodb-headless 27017 && nc -z mongodb-1.mongodb-headless 27017 && nc -z mongodb-2.mongodb-headless 27017; do
+                echo "En attente des 3 pods MongoDB..."
+                sleep 3
+              done
+              echo "Les 3 pods MongoDB sont accessibles."
+      containers:
+        - name: init-replica
+          image: "{{ .Values.image.mongodb.name }}:{{ .Values.image.mongodb.tag }}"
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mongosh --host mongodb-0.mongodb-headless:27017 \
+                -u "$MONGO_INITDB_ROOT_USERNAME" \
+                -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                --authenticationDatabase admin \
+                --eval "
+                  var status;
+                  try { status = rs.status().ok; } catch(e) { status = 0; }
+                  if (status !== 1) {
+                    rs.initiate({
+                      _id: 'rs0',
+                      members: [
+                        { _id: 0, host: 'mongodb-0.mongodb-headless:27017', priority: 2 },
+                        { _id: 1, host: 'mongodb-1.mongodb-headless:27017', priority: 1 },
+                        { _id: 2, host: 'mongodb-2.mongodb-headless:27017', priority: 1 }
+                      ]
+                    });
+                    print('Replica set rs0 initialisé avec succes.');
+                  } else {
+                    print('Replica set déjà initialisé, rien à faire.');
+                  }
+                "

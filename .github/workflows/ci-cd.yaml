@@ -101,6 +101,8 @@ jobs:
 
       - name: Install monitoring stack
         shell: powershell
+        env:
+          GRAFANA_SMTP_PASSWORD: ${{ secrets.GRAFANA_SMTP_PASSWORD }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           helm repo update
@@ -111,6 +113,7 @@ jobs:
           helm upgrade --install grafana grafana/grafana `
             -n monitoring `
             -f monitoring/grafana-values.yaml `
+            --set "grafana\.ini.smtp.password=$env:GRAFANA_SMTP_PASSWORD" `
             --timeout 180s
 
       - name: Force rollout restart to pick up new images

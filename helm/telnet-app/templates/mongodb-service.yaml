@@ -10,3 +10,18 @@ spec:
   ports:
     - port: {{ .Values.service.mongodb.port }}
       targetPort: {{ .Values.service.mongodb.port }}
+---
+# Service headless requis par le StatefulSet pour la resolution DNS des pods
+# Permet d'adresser chaque pod : mongodb-0.mongodb-headless, mongodb-1.mongodb-headless...
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: {{ .Release.Namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+    - port: {{ .Values.service.mongodb.port }}
+      targetPort: {{ .Values.service.mongodb.port }}
