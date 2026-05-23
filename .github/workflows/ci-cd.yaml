@@ -187,13 +187,19 @@ jobs:
         shell: powershell
         run: |
           Write-Host "========================================="
-          Write-Host "kubectl port-forward svc/frontend-service 4000:80 -n telnet-app"
+          Write-Host '$bpod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}"'
+          Write-Host "Start-Job { kubectl port-forward svc/frontend-service 4000:80 -n telnet-app } | Out-Null"
+          Write-Host "Start-Job { kubectl port-forward svc/backend 3002:3002 -n telnet-app } | Out-Null"
+          Write-Host 'kubectl port-forward -n telnet-app pod/$bpod 3003:3003'
           Write-Host "Then open: http://localhost:4000"
           Write-Host "========================================="
           $summary = $env:GITHUB_STEP_SUMMARY
           Add-Content $summary "### Acces a l'application"
-          Add-Content $summary '```'
-          Add-Content $summary "kubectl port-forward svc/frontend-service 4000:80 -n telnet-app"
+          Add-Content $summary '```powershell'
+          Add-Content $summary '$bpod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}"'
+          Add-Content $summary "Start-Job { kubectl port-forward svc/frontend-service 4000:80 -n telnet-app } | Out-Null"
+          Add-Content $summary "Start-Job { kubectl port-forward svc/backend 3002:3002 -n telnet-app } | Out-Null"
+          Add-Content $summary 'kubectl port-forward -n telnet-app pod/$bpod 3003:3003'
           Add-Content $summary '```'
           Add-Content $summary "Ouvrir : http://localhost:4000"
 
