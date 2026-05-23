@@ -113,7 +113,7 @@ jobs:
             --set secrets.mongodbUri="$env:MONGO_URI" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
             --atomic `
-            --timeout 600s
+            --timeout 900s
 
       - name: Install monitoring stack
         shell: powershell
