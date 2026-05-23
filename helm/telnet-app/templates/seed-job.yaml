@@ -13,8 +13,22 @@ spec:
       restartPolicy: OnFailure
       initContainers:
         - name: wait-for-mongodb
-          image: busybox
-          command: ['sh', '-c', 'until nc -z mongodb-service 27017; do echo waiting; sleep 2; done']
+          image: mongo:7
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_URI
+          command:
+            - sh
+            - -c
+            - |
+              until mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" --quiet 2>/dev/null; do
+                echo "Waiting for MongoDB auth..."; sleep 3
+              done
+              echo "MongoDB ready."
       containers:
         - name: seed
           image: mongo:7
