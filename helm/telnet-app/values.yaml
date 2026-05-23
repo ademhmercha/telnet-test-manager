@@ -20,6 +20,7 @@ image:
 service:
   backend:
     port: 3002
+    wsPort: 3003
   frontend:
     port: 80
   mongodb:

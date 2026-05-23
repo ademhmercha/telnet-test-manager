@@ -44,23 +44,23 @@ spec:
                   try { db.users.dropIndex('id_1'); } catch(e) {}
                   db.users.insertMany([
                     {
-                      id: 'admin-001',
+                      id: 1,
                       username: 'admin',
                       password: '\$2a\$10\$DoBVgZewn/WJbXDJjjNkUuA.ie5KqyiyibNOHf..ZaGBiFcSG/41m',
                       role: 'admin',
                       email: 'admin@telnet.com',
                       statut: 'actif',
-                      permissions: ['read','write','admin'],
+                      permissions: ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
                       totalTimeMinutes: 0
                     },
                     {
-                      id: 'engineer-001',
+                      id: 2,
                       username: 'engineer',
                       password: '\$2a\$10\$AQZFp38jGIfjXKEN7FTzp.FDe2R95AcO3b.BXvf.DUwT8QJcObe2e',
                       role: 'engineer',
                       email: 'engineer@telnet.com',
                       statut: 'actif',
-                      permissions: ['read','write'],
+                      permissions: ['read','write','run_tests'],
                       totalTimeMinutes: 0
                     }
                   ]);

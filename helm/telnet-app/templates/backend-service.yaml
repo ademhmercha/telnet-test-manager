@@ -8,5 +8,9 @@ spec:
   selector:
     app: backend
   ports:
-    - port: {{ .Values.service.backend.port }}
+    - name: http
+      port: {{ .Values.service.backend.port }}
       targetPort: {{ .Values.service.backend.port }}
+    - name: ws
+      port: {{ .Values.service.backend.wsPort }}
+      targetPort: {{ .Values.service.backend.wsPort }}
