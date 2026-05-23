@@ -15,8 +15,28 @@ spec:
     spec:
       initContainers:
         - name: wait-for-mongodb
-          image: busybox
-          command: ['sh', '-c', 'until nc -z mongodb-service {{ .Values.service.mongodb.port }}; do echo waiting for mongodb; sleep 2; done']
+          image: mongo:7
+          env:
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              until mongosh --host mongodb-service --port {{ .Values.service.mongodb.port }} \
+                -u "$MONGO_USER" -p "$MONGO_PASS" --authenticationDatabase admin \
+                --eval "db.adminCommand('ping')" --quiet 2>/dev/null; do
+                echo "Waiting for MongoDB to be ready..."; sleep 5
+              done
+              echo "MongoDB ready."
       containers:
         - name: backend
           image: "{{ .Values.image.backend.name }}:{{ .Values.image.backend.tag }}"
@@ -38,11 +58,17 @@ spec:
             limits:
               memory: {{ .Values.resources.backend.limits.memory | quote }}
               cpu: {{ .Values.resources.backend.limits.cpu | quote }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.backend.port }}
+            failureThreshold: 30
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.backend.port }}
-            initialDelaySeconds: 15
+            initialDelaySeconds: 0
             periodSeconds: 20
           readinessProbe:
             httpGet:
