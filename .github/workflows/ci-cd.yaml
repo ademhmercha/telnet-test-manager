@@ -95,18 +95,24 @@ jobs:
           kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found
           Write-Host "Ingress webhook cleared."
 
-      - name: Debug - backend pod status on failure
+      - name: Debug - inspect backend pod
         shell: powershell
         continue-on-error: true
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          Write-Host "=== Pods telnet-app ==="
-          kubectl get pods -n telnet-app -o wide 2>$null
-          Write-Host "=== Backend pod logs ==="
-          $pod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}" 2>$null
-          if ($pod) {
-            kubectl logs -n telnet-app $pod --all-containers --tail=50 2>$null
-            kubectl describe pod -n telnet-app $pod 2>$null | Select-String -Pattern "Events:|Warning|Error|Reason|State|Started|Finished" -Context 0,1
+          Write-Host "=== TOUS LES PODS ==="
+          kubectl get pods -n telnet-app -o wide
+          Write-Host "=== LOGS BACKEND ==="
+          $pod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}" 2>&1
+          if ($pod -and $pod -notmatch 'Error') {
+            kubectl logs -n telnet-app $pod --all-containers --tail=80
+            Write-Host "=== DESCRIBE BACKEND POD ==="
+            kubectl describe pod -n telnet-app $pod
+          }
+          Write-Host "=== LOGS MONGODB ==="
+          $mpod = kubectl get pods -n telnet-app -l app=mongodb -o jsonpath="{.items[0].metadata.name}" 2>&1
+          if ($mpod -and $mpod -notmatch 'Error') {
+            kubectl logs -n telnet-app $mpod --tail=30
           }
 
       - name: Deploy with Helm
@@ -125,9 +131,8 @@ jobs:
             --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
             --set secrets.mongodbUri="$env:MONGO_URI" `
-            --set secrets.jwtSecret="$env:JWT_SECRET" `
-            --atomic `
-            --timeout 900s
+            --set secrets.jwtSecret="$env:JWT_SECRET"
+          Start-Sleep 90
 
       - name: Install monitoring stack
         shell: powershell
