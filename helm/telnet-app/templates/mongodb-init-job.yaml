@@ -19,11 +19,10 @@ spec:
             - sh
             - -c
             - |
-              until nc -z mongodb-0.mongodb-headless 27017 && nc -z mongodb-1.mongodb-headless 27017 && nc -z mongodb-2.mongodb-headless 27017; do
-                echo "En attente des 3 pods MongoDB..."
-                sleep 3
+              until nc -z mongodb-0.mongodb-headless 27017; do
+                echo "En attente de mongodb-0..."; sleep 3
               done
-              echo "Les 3 pods MongoDB sont accessibles."
+              echo "mongodb-0 accessible."
       containers:
         - name: init-replica
           image: "{{ .Values.image.mongodb.name }}:{{ .Values.image.mongodb.tag }}"
@@ -49,16 +48,9 @@ spec:
                   var status;
                   try { status = rs.status().ok; } catch(e) { status = 0; }
                   if (status !== 1) {
-                    rs.initiate({
-                      _id: 'rs0',
-                      members: [
-                        { _id: 0, host: 'mongodb-0.mongodb-headless:27017', priority: 2 },
-                        { _id: 1, host: 'mongodb-1.mongodb-headless:27017', priority: 1 },
-                        { _id: 2, host: 'mongodb-2.mongodb-headless:27017', priority: 1 }
-                      ]
-                    });
-                    print('Replica set rs0 initialisé avec succes.');
+                    rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb-0.mongodb-headless:27017' }] });
+                    print('Replica set rs0 initialisé (1 membre).');
                   } else {
-                    print('Replica set déjà initialisé, rien à faire.');
+                    print('Replica set déjà initialisé.');
                   }
                 "
