@@ -5,7 +5,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount.backend }}
-  progressDeadlineSeconds: 800
   selector:
     matchLabels:
       app: backend
@@ -14,6 +13,10 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command: ['sh', '-c', 'until nc -z mongodb-service {{ .Values.service.mongodb.port }}; do echo waiting for mongodb; sleep 2; done']
       containers:
         - name: backend
           image: "{{ .Values.image.backend.name }}:{{ .Values.image.backend.tag }}"
@@ -35,17 +38,11 @@ spec:
             limits:
               memory: {{ .Values.resources.backend.limits.memory | quote }}
               cpu: {{ .Values.resources.backend.limits.cpu | quote }}
-          startupProbe:
-            httpGet:
-              path: /health
-              port: {{ .Values.service.backend.port }}
-            failureThreshold: 30
-            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.backend.port }}
-            initialDelaySeconds: 0
+            initialDelaySeconds: 15
             periodSeconds: 20
           readinessProbe:
             httpGet:

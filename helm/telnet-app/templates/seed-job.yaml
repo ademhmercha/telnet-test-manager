@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
@@ -14,13 +14,7 @@ spec:
       initContainers:
         - name: wait-for-mongodb
           image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              until nc -z mongodb-0.mongodb-headless 27017; do echo "En attente de mongodb-0..."; sleep 3; done
-              echo "mongodb-0 accessible, attente du PRIMARY replica set (30s)..."
-              sleep 30
+          command: ['sh', '-c', 'until nc -z mongodb-service 27017; do echo waiting; sleep 2; done']
       containers:
         - name: seed
           image: mongo:7

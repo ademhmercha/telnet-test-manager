@@ -49,37 +49,29 @@ jobs:
       - name: Start Docker and Minikube if stopped
         shell: powershell
         run: |
-          # Demarrer Docker Desktop si pas encore lance
-          $dockerRunning = docker info 2>&1 | Out-String
+          $dockerInfo = docker info 2>&1 | Out-String
           if ($LASTEXITCODE -ne 0) {
-            Write-Host "Docker Desktop non demarre - lancement..."
+            Write-Host "Demarrage Docker Desktop..."
             Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-            Write-Host "Attente du daemon Docker (max 120s)..."
             $timeout = 120; $elapsed = 0
             while ($elapsed -lt $timeout) {
               Start-Sleep 5; $elapsed += 5
               $check = docker info 2>&1 | Out-String
-              if ($LASTEXITCODE -eq 0) { Write-Host "Docker pret apres ${elapsed}s."; break }
-              Write-Host "Attente Docker... ${elapsed}s"
+              if ($LASTEXITCODE -eq 0) { Write-Host "Docker pret (${elapsed}s)."; break }
             }
-            if ($LASTEXITCODE -ne 0) { Write-Error "Docker n'a pas demarre en ${timeout}s."; exit 1 }
-          } else {
-            Write-Host "Docker Desktop deja en cours."
-          }
-          # Demarrer Minikube si pas encore lance
+            if ($LASTEXITCODE -ne 0) { Write-Error "Docker n'a pas demarre."; exit 1 }
+          } else { Write-Host "Docker deja en cours." }
           $status = minikube status 2>&1 | Out-String
           if ($status -notmatch 'host: Running') {
-            Write-Host "Minikube non demarre - lancement..."
+            Write-Host "Demarrage Minikube..."
             minikube start --driver=docker
             if ($LASTEXITCODE -ne 0) {
-              Write-Host "Echec minikube start - reseau Docker corrompu, suppression et recreation..."
+              Write-Host "Reseau Docker corrompu - suppression et recreation..."
               minikube delete
               minikube start --driver=docker
               if ($LASTEXITCODE -ne 0) { Write-Error "Minikube ne demarre pas."; exit 1 }
             }
-          } else {
-            Write-Host "Minikube deja en cours."
-          }
+          } else { Write-Host "Minikube deja en cours." }
 
       - name: Configure kubectl context
         shell: powershell
@@ -113,20 +105,15 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          # Toujours nettoyer la release avant de reinstaller (evite les etats bloques)
-          helm uninstall telnet-app -n telnet-app 2>&1 | Out-Null
-          Write-Host "Release nettoyee (ou inexistante), installation propre..."
-          # Echapper les virgules du MONGO_URI (Helm --set utilise , comme separateur)
-          $escapedUri = $env:MONGO_URI -replace ',', '\,'
           helm upgrade --install telnet-app ./helm/telnet-app `
             --create-namespace `
             --namespace telnet-app `
             --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
-            --set "secrets.mongodbUri=$escapedUri" `
+            --set secrets.mongodbUri="$env:MONGO_URI" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
-            --rollback-on-failure `
-            --timeout 900s
+            --atomic `
+            --timeout 600s
 
       - name: Install monitoring stack
         shell: powershell

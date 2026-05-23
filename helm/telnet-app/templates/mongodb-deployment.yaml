@@ -1,10 +1,9 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: mongodb
   namespace: {{ .Release.Namespace }}
 spec:
-  serviceName: mongodb-headless
   replicas: {{ .Values.replicaCount.mongodb }}
   selector:
     matchLabels:
@@ -14,12 +13,10 @@ spec:
       labels:
         app: mongodb
     spec:
-      automountServiceAccountToken: false
       containers:
         - name: mongodb
           image: "{{ .Values.image.mongodb.name }}:{{ .Values.image.mongodb.tag }}"
           imagePullPolicy: {{ .Values.image.mongodb.pullPolicy }}
-          command: ["mongod", "--bind_ip_all"]
           ports:
             - containerPort: {{ .Values.service.mongodb.port }}
           env:
@@ -42,26 +39,10 @@ spec:
             requests:
               memory: {{ .Values.resources.mongodb.requests.memory | quote }}
               cpu: {{ .Values.resources.mongodb.requests.cpu | quote }}
-              ephemeral-storage: "500Mi"
             limits:
               memory: {{ .Values.resources.mongodb.limits.memory | quote }}
               cpu: {{ .Values.resources.mongodb.limits.cpu | quote }}
-              ephemeral-storage: "1Gi"
-          readinessProbe:
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-  volumeClaimTemplates:
-    - metadata:
-        name: mongodb-storage
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: {{ .Values.persistence.mongodb.size }}
+      volumes:
+        - name: mongodb-storage
+          persistentVolumeClaim:
+            claimName: mongodb-pvc

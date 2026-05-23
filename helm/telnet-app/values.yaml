@@ -1,7 +1,7 @@
 replicaCount:
   backend: 1
   frontend: 1
-  mongodb: 3
+  mongodb: 1
 
 image:
   backend:
