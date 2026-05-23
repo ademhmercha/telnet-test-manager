@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-initdb
+  namespace: {{ .Release.Namespace }}
+data:
+  seed.js: |
+    db = db.getSiblingDB('telnet-db');
+    var count = db.users.countDocuments();
+    if (count === 0) {
+      try { db.users.dropIndex('id_1'); } catch(e) {}
+      db.users.insertMany([
+        {
+          id: 'admin-001',
+          username: 'admin',
+          password: '$2a$10$DoBVgZewn/WJbXDJjjNkUuA.ie5KqyiyibNOHf..ZaGBiFcSG/41m',
+          role: 'admin',
+          email: 'admin@telnet.com',
+          statut: 'actif',
+          permissions: ['read','write','admin'],
+          totalTimeMinutes: 0
+        },
+        {
+          id: 'engineer-001',
+          username: 'engineer',
+          password: '$2a$10$AQZFp38jGIfjXKEN7FTzp.FDe2R95AcO3b.BXvf.DUwT8QJcObe2e',
+          role: 'engineer',
+          email: 'engineer@telnet.com',
+          statut: 'actif',
+          permissions: ['read','write'],
+          totalTimeMinutes: 0
+        }
+      ]);
+      print('Users seeded.');
+    } else {
+      print('Already seeded: ' + count + ' users.');
+    }

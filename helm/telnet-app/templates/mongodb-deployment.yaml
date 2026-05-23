@@ -35,6 +35,8 @@ spec:
           volumeMounts:
             - name: mongodb-storage
               mountPath: /data/db
+            - name: mongodb-initdb
+              mountPath: /docker-entrypoint-initdb.d
           resources:
             requests:
               memory: {{ .Values.resources.mongodb.requests.memory | quote }}
@@ -46,3 +48,6 @@ spec:
         - name: mongodb-storage
           persistentVolumeClaim:
             claimName: mongodb-pvc
+        - name: mongodb-initdb
+          configMap:
+            name: mongodb-initdb

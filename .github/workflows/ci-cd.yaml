@@ -113,6 +113,7 @@ jobs:
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
             --set secrets.mongodbUri="$env:MONGO_URI" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
+            --no-hooks `
             --timeout 900s
 
       - name: Debug - inspect backend pod
