@@ -113,12 +113,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
-          # Supprimer la release si elle est en etat failed (bloque les upgrades)
-          # helm list retourne toujours exit 0, pas de NativeCommandError
-          $releaseInfo = helm list -n telnet-app --filter "^telnet-app$" -o json 2>&1 | Out-String
-          if ($releaseInfo -match '"status":"failed"') {
-            Write-Host "Release en etat failed - suppression avant reinstallation..."
-            helm uninstall telnet-app -n telnet-app
+          # Supprimer la release si elle est dans un etat bloquant (failed, pending-*)
+          $releaseInfo = helm list -n telnet-app --filter "^telnet-app$" -a -o json 2>&1 | Out-String
+          if ($releaseInfo.Trim() -ne '[]' -and $releaseInfo -notmatch '"status":"deployed"') {
+            Write-Host "Release en etat bloquant - nettoyage..."
+            helm uninstall telnet-app -n telnet-app 2>&1 | Out-Null
           } else {
             Write-Host "Release OK ou inexistante - installation directe."
           }
