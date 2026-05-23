@@ -113,12 +113,14 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          # Echapper les virgules du MONGO_URI (Helm --set utilise , comme separateur)
+          $escapedUri = $env:MONGO_URI -replace ',', '\,'
           helm upgrade --install telnet-app ./helm/telnet-app `
             --create-namespace `
             --namespace telnet-app `
             --set secrets.mongoRootUsername="$env:MONGO_USERNAME" `
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
-            --set secrets.mongodbUri="$env:MONGO_URI" `
+            --set "secrets.mongodbUri=$escapedUri" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
             --atomic `
             --timeout 600s
