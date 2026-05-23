@@ -1,0 +1,472 @@
+% =============================================================
+%  Chapitre 4 — Réalisation et développement
+% =============================================================
+\chapter{Réalisation et développement}
+
+\section*{Introduction}
+Ce chapitre décrit la mise en \oe{}uvre concrète de l'application Telnet Test
+Manager. Nous présentons l'environnement de développement, la structure des
+projets backend et frontend, puis détaillons l'implémentation des modules
+clés~: moteur Telnet, \gls{api} REST et connexion MongoDB.
+
+% -----------------------------------------------------------------
+\section{Environnement de développement}
+% -----------------------------------------------------------------
+
+\begin{table}[H]
+  \centering
+  \caption{Environnement de développement}
+  \label{tab:env_dev}
+  \begin{tabularx}{\textwidth}{L{3.5cm} L{4cm} X}
+    \toprule
+    \textbf{Outil} & \textbf{Version} & \textbf{Rôle} \\
+    \midrule
+    Visual Studio Code & 1.90+ & Éditeur de code principal \\
+    Node.js & 20 LTS (Alpine) & Environnement d'exécution JavaScript \\
+    npm & 10+ & Gestionnaire de paquets \\
+    MongoDB & 7.0 & Base de données documentaire \\
+    MongoDB Compass & 1.42+ & Client graphique MongoDB \\
+    Docker Desktop & 4.30+ & Gestion des conteneurs locaux \\
+    Postman & 11+ & Test et documentation de l'API REST \\
+    Git & 2.45+ & Contrôle de version \\
+    GitHub & --- & Hébergement du dépôt et CI/CD \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% -----------------------------------------------------------------
+\section{Structure du projet}
+% -----------------------------------------------------------------
+
+\subsection{Structure du backend}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    dir/.style={font=\ttfamily\small,bleuPFE},
+    file/.style={font=\ttfamily\scriptsize},
+  ]
+    \node[dir] at (0,0) {backend/};
+    \node[dir] at (0.5,-0.5) {src/};
+    \node[dir] at (1,-1)     {domain/};
+    \node[file] at (2.5,-1.5)  {entities/ --- Utilisateur, Slot, ResultatTest...};
+    \node[file] at (2.5,-2)    {repositories/ --- IUserRepo, ISlotRepo...};
+    \node[dir] at (1,-2.5)   {application/};
+    \node[file] at (2.5,-3)    {usecases/ --- LoginUseCase, RunTestUseCase...};
+    \node[dir] at (1,-3.5)   {infrastructure/};
+    \node[file] at (2.5,-4)    {config/ --- database.js};
+    \node[file] at (2.5,-4.5)  {database/ --- models/, repositories/};
+    \node[file] at (2.5,-5)    {telnet/ --- TestWorkerManager.js, testWorker.js};
+    \node[file] at (2.5,-5.5)  {metrics/ --- prometheusMetrics.js};
+    \node[dir] at (1,-6)     {interfaces/};
+    \node[file] at (2.5,-6.5)  {http/ --- controllers/, routes/, middlewares/};
+    \node[file] at (2.5,-7)    {websocket/ --- WebSocketServer.js};
+    \node[dir] at (1,-7.5)   {main/};
+    \node[file] at (2.5,-8)    {server.js, app.js, container.js};
+    \node[file] at (0.5,-8.5) {package.json, Dockerfile, .env.example};
+
+    % Lignes guides
+    \foreach \y in {-0.5,-1,-2.5,-3.5,-6,-7.5} {
+      \draw[gray!30] (0.4,\y) -- (0.5,\y);
+    }
+  \end{tikzpicture}
+  \caption{Structure du projet backend (Clean Architecture)}
+  \label{fig:backend_structure}
+\end{figure}
+
+\subsection{Structure du frontend}
+
+Le frontend est organisé selon les conventions de \textbf{Create React App}
+avec TypeScript, enrichi d'un module d'internationalisation \texttt{i18next}
+et d'un service API centralisé~:
+
+\begin{itemize}
+  \item \texttt{src/components/}~: 8 composants React (Login, Dashboard,
+        MultiTest, Commands, Configuration, Reports, AdminPanel, LanguageSwitcher)~;
+  \item \texttt{src/services/api.ts}~: instance Axios avec intercepteurs JWT~;
+  \item \texttt{src/hooks/usePermissions.ts}~: extraction des permissions utilisateur~;
+  \item \texttt{src/i18n/}~: configuration i18next + traductions FR/EN/PT-BR.
+\end{itemize}
+
+% -----------------------------------------------------------------
+\section{Implémentation du module de test Telnet}
+% -----------------------------------------------------------------
+
+\subsection{Architecture Worker Threads}
+
+Le moteur Telnet repose sur les \textbf{Worker Threads} de Node.js pour
+isoler chaque session Telnet dans un fil d'exécution dédié. Cette approche
+présente trois avantages majeurs~:
+
+\begin{enumerate}
+  \item \textbf{Non-blocage}~: le fil principal Express reste réactif
+        aux nouvelles requêtes HTTP pendant qu'un test s'exécute~;
+  \item \textbf{Isolation}~: un crash dans un Worker ne fait pas tomber
+        le serveur~;
+  \item \textbf{Parallélisme}~: plusieurs Workers peuvent tourner
+        simultanément, permettant le module MultiTest.
+\end{enumerate}
+
+\subsection{Gestionnaire de Workers (TestWorkerManager)}
+
+\begin{lstlisting}[language=javascript,
+  caption={TestWorkerManager.js — gestion du cycle de vie des Workers}]
+const { Worker } = require('worker_threads');
+const path = require('path');
+
+class TestWorkerManager {
+  constructor() {
+    this._activeWorkers = new Map();   // testId -> Worker
+    this._monitoringClients = new Map(); // testId -> Set<WebSocket>
+  }
+
+  // Lance un Worker Thread pour un test donné
+  spawnWorker(testId, workerData, broadcastFn) {
+    const workerPath = path.join(__dirname, 'testWorker.js');
+    const worker = new Worker(workerPath, { workerData });
+
+    worker.on('message', (msg) => {
+      // Diffuse chaque événement aux clients WebSocket abonnés
+      broadcastFn(testId, msg);
+    });
+
+    worker.on('error', (err) => {
+      broadcastFn(testId, { type: 'error', testId, message: err.message });
+    });
+
+    worker.on('exit', () => {
+      this._activeWorkers.delete(testId);
+    });
+
+    this._activeWorkers.set(testId, worker);
+    return worker;
+  }
+
+  // Termine un Worker (arrêt à la demande)
+  terminateWorker(testId) {
+    const worker = this._activeWorkers.get(testId);
+    if (worker) {
+      worker.terminate();
+      this._activeWorkers.delete(testId);
+    }
+  }
+}
+
+module.exports = new TestWorkerManager(); // Singleton
+\end{lstlisting}
+
+\subsection{Worker Thread Telnet (testWorker.js)}
+
+\begin{lstlisting}[language=javascript,
+  caption={testWorker.js — exécution isolée d'un test Telnet}]
+const { workerData, parentPort } = require('worker_threads');
+const Telnet = require('telnet-client');
+
+async function runTest() {
+  const { slot, command, testId } = workerData;
+  const telnet = new Telnet();
+
+  // Paramètres de connexion Telnet
+  const params = {
+    host:                 slot.adresse,  // ex: "192.168.5.1"
+    port:                 slot.port,     // 23
+    timeout:              15000,
+    shellPrompt:          /#\s*$/,       // Invite root Linux
+    loginPrompt:          /login:\s*$/,
+    passwordPrompt:       /Password:\s*$/,
+    username:             'root',
+    password:             'root',
+    negotiationMandatory: true,
+    stripControls:        true,
+    echoLines:            0,
+  };
+
+  try {
+    await telnet.connect(params);
+
+    if (command.type === 'single') {
+      // Mode commande unitaire
+      const response = await telnet.exec(command.command);
+      const success = !command.expectedResponse ||
+                      response.includes(command.expectedResponse);
+      parentPort.postMessage({
+        type: 'completed', testId,
+        success, response
+      });
+
+    } else if (command.type === 'sequence') {
+      // Mode séquence : exécution pas-à-pas
+      for (let i = 0; i < command.steps.length; i++) {
+        const step = command.steps[i];
+        const res = await telnet.exec(step.command);
+        const ok  = !step.expectedResponse ||
+                    res.includes(step.expectedResponse);
+        parentPort.postMessage({
+          type: 'step', testId, stepIndex: i,
+          status: ok ? 'SUCCESS' : 'FAIL',
+          response: res, timestamp: new Date()
+        });
+      }
+      parentPort.postMessage({ type: 'completed', testId, success: true });
+
+    } else if (command.type === 'monitoring') {
+      // Mode supervision : collecte d'événements pendant N secondes
+      await telnet.exec(command.command);
+      const duration = command.steps[0]?.duration || 15000;
+      await new Promise(resolve => setTimeout(resolve, duration));
+      parentPort.postMessage({ type: 'completed', testId, success: true });
+    }
+
+    await telnet.end();
+
+  } catch (err) {
+    parentPort.postMessage({
+      type: 'error', testId,
+      message: err.message
+    });
+  }
+}
+
+runTest();
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{API REST}
+% -----------------------------------------------------------------
+
+\subsection{Middlewares de sécurité}
+
+Chaque requête traverse une chaîne de middlewares avant d'atteindre le
+contrôleur~:
+
+\begin{enumerate}
+  \item \texttt{metricsMiddleware}~: enregistrement Prometheus (début de
+        chronomètre)~;
+  \item \texttt{authenticate}~: vérification du jeton JWT et hydratation
+        de l'objet \texttt{req.user}~;
+  \item \texttt{requireRole} ou \texttt{requirePermission}~: contrôle
+        d'accès basé sur le rôle/permissions~;
+  \item \textbf{Contrôleur}~: délégation au Use Case correspondant~;
+  \item \texttt{errorHandler}~: capture globale des erreurs non gérées.
+\end{enumerate}
+
+\subsection{Référentiel des endpoints}
+
+\begin{longtable}{L{1.5cm} L{4.5cm} L{2cm} X}
+  \caption{Endpoints de l'API REST}
+  \label{tab:api_endpoints} \\
+  \toprule
+  \textbf{Méthode} & \textbf{Route} & \textbf{Rôle requis} &
+  \textbf{Description} \\
+  \midrule
+  \endfirsthead
+  \multicolumn{4}{c}{\tablename\ \thetable\ — suite} \\
+  \toprule
+  \textbf{Méthode} & \textbf{Route} & \textbf{Rôle requis} &
+  \textbf{Description} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \bottomrule
+  \endlastfoot
+
+  POST & \texttt{/login}           & Public    & Authentification, retourne le JWT \\
+  POST & \texttt{/logout}          & Tous      & Déconnexion \\
+  GET  & \texttt{/postes}          & Tous      & Liste des postes \\
+  POST & \texttt{/postes}          & Ingénieur & Création d'un poste \\
+  PUT  & \texttt{/postes/:id}      & Ingénieur & Mise à jour d'un poste \\
+  DELETE & \texttt{/postes/:id}    & Admin     & Suppression d'un poste \\
+  GET  & \texttt{/produits}        & Tous      & Liste des produits (filtrés par posteId) \\
+  POST & \texttt{/produits}        & Ingénieur & Création d'un produit \\
+  GET  & \texttt{/slots}           & Tous      & Liste des slots (filtrés par produitId) \\
+  POST & \texttt{/slots}           & Ingénieur & Création d'un slot \\
+  GET  & \texttt{/references}      & Tous      & Liste des références \\
+  POST & \texttt{/references}      & Ingénieur & Création d'une référence \\
+  GET  & \texttt{/telnet-commands} & Tous      & Bibliothèque de commandes Telnet \\
+  POST & \texttt{/telnet-commands} & Ingénieur & Création d'une commande \\
+  PUT  & \texttt{/telnet-commands/:id} & Ingénieur & Mise à jour d'une commande \\
+  DELETE & \texttt{/telnet-commands/:id} & Admin & Suppression d'une commande \\
+  POST & \texttt{/run-test}        & Tous (run\_tests) & Lancement d'un test Telnet \\
+  POST & \texttt{/stop-test}       & Tous      & Arrêt d'un test en cours \\
+  POST & \texttt{/stop-monitoring} & Tous      & Arrêt d'un test monitoring \\
+  GET  & \texttt{/test-results}    & Tous      & Historique des résultats \\
+  GET  & \texttt{/test-results/:id}& Tous      & Détail d'un résultat \\
+  GET  & \texttt{/reports}         & Tous      & Liste des rapports \\
+  POST & \texttt{/reports/generate}& Tous      & Génération d'un rapport \\
+  DELETE & \texttt{/reports/:id}   & Ingénieur & Suppression d'un rapport \\
+  GET  & \texttt{/admin/users}     & Admin     & Liste des utilisateurs \\
+  POST & \texttt{/admin/users}     & Admin     & Création d'un utilisateur \\
+  PUT  & \texttt{/admin/users/:id} & Admin     & Mise à jour d'un utilisateur \\
+  DELETE & \texttt{/admin/users/:id} & Admin   & Suppression d'un utilisateur \\
+  GET  & \texttt{/admin/audit-logs}& Admin     & Journal d'audit \\
+  GET  & \texttt{/admin/analytics} & Admin     & Statistiques globales \\
+  GET  & \texttt{/health}          & Public    & État du serveur \\
+  GET  & \texttt{/metrics}         & Public    & Métriques Prometheus \\
+\end{longtable}
+
+% -----------------------------------------------------------------
+\section{Connexion et gestion MongoDB}
+% -----------------------------------------------------------------
+
+\begin{lstlisting}[language=javascript,
+  caption={infrastructure/config/database.js — connexion MongoDB}]
+const mongoose = require('mongoose');
+
+async function connectDatabase() {
+  const uri = process.env.MONGO_URI ||
+    'mongodb://admin:admin123@localhost:27017/telnet-db?authSource=admin';
+
+  await mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS:          45000,
+  });
+
+  console.log('[DB] Connexion MongoDB établie :', mongoose.connection.host);
+
+  mongoose.connection.on('error',        err  => console.error('[DB] Erreur :', err));
+  mongoose.connection.on('disconnected', ()   => console.warn('[DB] Déconnecté'));
+}
+
+module.exports = { connectDatabase };
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Serveur WebSocket}
+% -----------------------------------------------------------------
+
+\begin{lstlisting}[language=javascript,
+  caption={WebSocketServer.js — authentification et diffusion temps réel}]
+const WebSocket = require('ws');
+const jwt       = require('jsonwebtoken');
+
+class WebSocketServer {
+  constructor(port) {
+    this._wss = new WebSocket.Server({ port });
+    this._subscriptions = new Map(); // testId -> Set<WebSocket>
+
+    this._wss.on('connection', (ws, req) => {
+      // Vérification du token JWT à la connexion
+      const token = new URLSearchParams(req.url.slice(1)).get('token');
+      try {
+        jwt.verify(token, process.env.JWT_SECRET);
+      } catch {
+        ws.close(4001, 'Unauthorized');
+        return;
+      }
+
+      ws.on('message', (raw) => {
+        const { type, testId } = JSON.parse(raw);
+        if (type === 'subscribe_monitoring') {
+          if (!this._subscriptions.has(testId))
+            this._subscriptions.set(testId, new Set());
+          this._subscriptions.get(testId).add(ws);
+        } else if (type === 'unsubscribe_monitoring') {
+          this._subscriptions.get(testId)?.delete(ws);
+        }
+      });
+
+      ws.on('close', () => {
+        // Nettoyage des abonnements
+        this._subscriptions.forEach(clients => clients.delete(ws));
+      });
+    });
+  }
+
+  // Diffuse un message à tous les clients abonnés à un testId
+  broadcast(testId, message) {
+    const clients = this._subscriptions.get(testId);
+    if (!clients) return;
+    const payload = JSON.stringify(message);
+    clients.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN)
+        ws.send(payload);
+    });
+  }
+}
+
+module.exports = WebSocketServer;
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Captures d'écran des interfaces}
+% -----------------------------------------------------------------
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \draw[draw=bleuPFE!30,fill=bleuPFE!3,rounded corners=4pt]
+      (0,0) rectangle (13,7);
+    \node[bleuPFE,font=\bfseries] at (6.5,6.5) {Dashboard — Test Telnet};
+    \draw[draw=bleuPFE!20,fill=white,rounded corners=2pt]
+      (0.3,0.5) rectangle (4.5,5.8);
+    \node[font=\scriptsize,bleuPFE!70] at (2.4,5.5) {Sélection équipement};
+    \node[font=\scriptsize] at (2.4,4.8) {Poste~: [banc-01]};
+    \node[font=\scriptsize] at (2.4,4.2) {Produit~: [Gateway A]};
+    \node[font=\scriptsize] at (2.4,3.6) {Slot~: [192.168.5.1]};
+    \node[font=\scriptsize] at (2.4,2.8) {Commande~: [ping-test]};
+    \draw[draw=bleuPFE,fill=bleuPFE!60,rounded corners=2pt]
+      (0.8,1.2) rectangle (4,1.8);
+    \node[white,font=\small\bfseries] at (2.4,1.5) {Lancer le test};
+    \draw[draw=bleuPFE!20,fill=white,rounded corners=2pt]
+      (4.8,0.5) rectangle (12.7,5.8);
+    \node[font=\scriptsize,bleuPFE!70] at (8.7,5.5) {Résultats en temps réel};
+    \node[font=\ttfamily\scriptsize,color=vertCode] at (8.7,4.8)
+      {[10:32:05] Connexion TCP 192.168.5.1:23 ... OK};
+    \node[font=\ttfamily\scriptsize,color=vertCode] at (8.7,4.2)
+      {[10:32:06] Authentification root ... OK};
+    \node[font=\ttfamily\scriptsize,color=vertCode] at (8.7,3.6)
+      {[10:32:07] \$ ping -c 3 8.8.8.8};
+    \node[font=\ttfamily\scriptsize] at (8.7,3.0)
+      {3 packets transmitted, 3 received};
+    \node[font=\ttfamily\scriptsize,color=vertCode] at (8.7,2.4)
+      {[10:32:09] Statut~: SUCCESS};
+  \end{tikzpicture}
+  \caption{Maquette du tableau de bord principal (Dashboard)}
+  \label{fig:screen_dashboard}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \draw[draw=bleuPFE!30,fill=bleuPFE!3,rounded corners=4pt]
+      (0,0) rectangle (13,6);
+    \node[bleuPFE,font=\bfseries] at (6.5,5.6) {Panneau d'administration — Gestion des utilisateurs};
+    % En-têtes tableau
+    \draw[draw=bleuPFE!40,fill=bleuPFE!15]
+      (0.3,4.5) rectangle (12.7,5.1);
+    \foreach \x/\lbl in {1.2/ID, 3/Nom, 5.5/Rôle, 7.5/Permissions, 9.5/Statut, 11.5/Actions} {
+      \node[font=\scriptsize\bfseries\color{bleuPFE}] at (\x,4.8) {\lbl};
+    }
+    % Ligne 1
+    \draw[draw=gray!20,fill=white] (0.3,3.9) rectangle (12.7,4.5);
+    \node[font=\scriptsize] at (1.2,4.2) {1};
+    \node[font=\scriptsize] at (3,4.2) {admin};
+    \node[font=\scriptsize] at (5.5,4.2) {admin};
+    \node[font=\scriptsize] at (7.5,4.2) {read, write, admin};
+    \node[font=\scriptsize,color=vertCode] at (9.5,4.2) {actif};
+    % Ligne 2
+    \draw[draw=gray!20,fill=bleuPFE!2] (0.3,3.3) rectangle (12.7,3.9);
+    \node[font=\scriptsize] at (1.2,3.6) {2};
+    \node[font=\scriptsize] at (3,3.6) {ing.dupont};
+    \node[font=\scriptsize] at (5.5,3.6) {ingénieur};
+    \node[font=\scriptsize] at (7.5,3.6) {read, write};
+    \node[font=\scriptsize,color=vertCode] at (9.5,3.6) {actif};
+    % Bouton nouveau
+    \draw[draw=bleuPFE,fill=bleuPFE!60,rounded corners=2pt]
+      (0.3,0.3) rectangle (3.5,0.9);
+    \node[white,font=\scriptsize\bfseries] at (1.9,0.6) {+ Nouvel utilisateur};
+  \end{tikzpicture}
+  \caption{Maquette du panneau d'administration — gestion des utilisateurs}
+  \label{fig:screen_admin}
+\end{figure}
+
+\section*{Conclusion}
+
+Ce chapitre a décrit la réalisation technique des composants principaux de
+Telnet Test Manager. L'implémentation du moteur Telnet via les Worker Threads
+garantit le non-blocage et le parallélisme, tandis que l'architecture Clean
+Architecture assure une séparation stricte des responsabilités. Les 32 endpoints
+REST, la connexion MongoDB et le serveur WebSocket constituent l'épine dorsale
+de l'application. Le chapitre suivant aborde le déploiement et l'infrastructure
+DevOps de ce projet.

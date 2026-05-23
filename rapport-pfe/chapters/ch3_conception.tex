@@ -1,0 +1,560 @@
+% =============================================================
+%  Chapitre 3 — Conception
+% =============================================================
+\chapter{Conception}
+
+\section*{Introduction}
+Ce chapitre expose les choix architecturaux et les modèles de conception
+retenus pour le développement de Telnet Test Manager. Nous présentons
+successivement l'architecture générale de l'application, les diagrammes de
+classes et de séquence des cas d'utilisation principaux, puis le modèle de
+données MongoDB.
+
+% -----------------------------------------------------------------
+\section{Architecture générale de l'application}
+% -----------------------------------------------------------------
+
+\subsection{Architecture N-tiers}
+
+L'application adopte une architecture \textbf{N-tiers} séparant clairement
+les responsabilités en couches indépendantes~:
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    tier/.style={draw=bleuPFE,fill=bleuPFE!8,rounded corners=6pt,
+                 minimum width=14cm,minimum height=1.3cm,
+                 align=center,font=\small},
+    svc/.style={draw=bleuPFE!60,fill=white,rounded corners=3pt,
+                minimum width=3cm,minimum height=0.9cm,
+                align=center,font=\scriptsize},
+    arr/.style={<->,>=stealth,draw=bleuPFE!50,thick},
+    protocol/.style={font=\scriptsize\itshape,color=gray},
+  ]
+
+    % Couche 1 — Client
+    \node[tier,fill=bleuPFE!12] (c1) at (0,7.5) {};
+    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,7.5) {Couche Présentation};
+    \node[svc] at (-3,7.5) {React 18\\TypeScript};
+    \node[svc] at (0,7.5) {Nginx\\(Reverse Proxy)};
+    \node[svc] at (3,7.5) {WebSocket Client\\(ws)};
+
+    % Couche 2 — Application
+    \node[tier,fill=bleuPFE!7] (c2) at (0,5.5) {};
+    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,5.5) {Couche Application};
+    \node[svc] at (-3,5.5) {Express.js API\\Port 3002};
+    \node[svc] at (0,5.5) {WebSocket Server\\Port 3003};
+    \node[svc] at (3,5.5) {Worker Threads\\(Telnet Engine)};
+
+    % Couche 3 — Domaine
+    \node[tier,fill=bleuPFE!5] (c3) at (0,3.5) {};
+    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,3.5) {Couche Domaine};
+    \node[svc] at (-3,3.5) {Use Cases\\(Business Logic)};
+    \node[svc] at (0,3.5) {Entities\\(Domain Models)};
+    \node[svc] at (3,3.5) {Repository\\Interfaces};
+
+    % Couche 4 — Infrastructure
+    \node[tier,fill=bleuPFE!10] (c4) at (0,1.5) {};
+    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,1.5) {Couche Infrastructure};
+    \node[svc] at (-4,1.5) {MongoDB 7\\(Mongoose)};
+    \node[svc] at (-1,1.5) {Mongo\\Repositories};
+    \node[svc] at (2,1.5) {Prometheus\\Metrics};
+    \node[svc] at (5,1.5) {Grafana\\Dashboard};
+
+    % Flèches entre couches
+    \draw[arr] (0,6.8) -- (0,6.2);
+    \draw[arr] (0,4.8) -- (0,4.2);
+    \draw[arr] (0,2.8) -- (0,2.2);
+
+    % Protocoles
+    \node[protocol] at (0.8,6.5) {HTTP/WS};
+    \node[protocol] at (0.8,4.5) {Use Cases};
+    \node[protocol] at (0.8,2.5) {Repository Pattern};
+
+  \end{tikzpicture}
+  \caption{Architecture N-tiers de l'application Telnet Test Manager}
+  \label{fig:archi_ntiers}
+\end{figure}
+
+\subsection{Clean Architecture}
+
+Le backend est structuré selon les principes de la
+\textbf{Clean Architecture} \cite{martin2017clean}, garantissant l'indépendance
+des règles métier vis-à-vis des détails d'infrastructure. La règle fondamentale
+est que les dépendances ne peuvent pointer que \textit{vers l'intérieur}~:
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[scale=0.9]
+    % Couche Domain (centre)
+    \fill[bleuPFE!50] (0,0) circle (2cm);
+    \node[white,font=\bfseries\small,align=center] at (0,0)
+      {\textbf{Domain}\\Entities\\Repository\\Interfaces};
+
+    % Couche Application
+    \fill[bleuPFE!25] (0,0) circle (3.5cm);
+    \fill[bleuPFE!50] (0,0) circle (2cm); % recouvre pour l'anneau
+    \node[bleuPFE!80,font=\small,align=center] at (0,2.7) {Application};
+    \node[font=\scriptsize,align=center] at (0,3.1) {Use Cases};
+
+    % Couche Infrastructure
+    \fill[bleuPFE!12] (0,0) circle (5.2cm);
+    \fill[bleuPFE!25] (0,0) circle (3.5cm);
+    \node[bleuPFE!60,font=\small] at (0,4.3) {Infrastructure};
+    \node[font=\scriptsize,align=center] at (0,4.7)
+      {MongoDB~/ Repos~/ Metrics};
+
+    % Couche Interfaces
+    \fill[bleuPFE!6] (0,0) circle (6.8cm);
+    \fill[bleuPFE!12] (0,0) circle (5.2cm);
+    \node[bleuPFE!50,font=\small] at (0,5.9) {Interfaces};
+    \node[font=\scriptsize,align=center] at (0,6.3)
+      {HTTP Controllers~/ WS~/ Routes~/ Middleware};
+
+    % Flèche de dépendance
+    \draw[->,>=stealth,thick,bleuPFE] (5.5,1) -- (3.2,0.5)
+      node[midway,above,font=\scriptsize] {dépendances};
+
+  \end{tikzpicture}
+  \caption{Diagramme des couches de la Clean Architecture du backend}
+  \label{fig:clean_archi}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Diagramme de classes}
+% -----------------------------------------------------------------
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    cls/.style={draw=bleuPFE,fill=white,
+                minimum width=3.8cm,align=left,
+                font=\scriptsize},
+    asc/.style={draw=bleuPFE!60,->,>=open triangle 60},
+    comp/.style={draw=bleuPFE!60,->,>=diamond},
+    note/.style={font=\tiny\itshape,color=gray},
+  ]
+
+    % ── User ──────────────────────────────────────────────
+    \node[cls] (user) at (0,0) {
+      \begin{tabular}{l}
+        \textbf{Utilisateur}\\
+        \hline
+        id~: Number\\
+        username~: String\\
+        motDePasse~: String [hashed]\\
+        role~: \{admin, ingenieur, technicien\}\\
+        permissions~: String[]\\
+        email~: String\\
+        statut~: \{actif, inactif\}\\
+        \hline
+        login()\\
+        logout()\\
+      \end{tabular}
+    };
+
+    % ── Poste ─────────────────────────────────────────────
+    \node[cls] (poste) at (6,3) {
+      \begin{tabular}{l}
+        \textbf{Poste}\\
+        \hline
+        id~: Number\\
+        nom~: String\\
+        description~: String\\
+        statut~: String\\
+        \hline
+        getProduits()\\
+      \end{tabular}
+    };
+
+    % ── Produit ───────────────────────────────────────────
+    \node[cls] (produit) at (6,0) {
+      \begin{tabular}{l}
+        \textbf{Produit}\\
+        \hline
+        id~: Number\\
+        nom~: String\\
+        posteId~: Number\\
+        description~: String\\
+        \hline
+        getSlots()\\
+      \end{tabular}
+    };
+
+    % ── Slot ──────────────────────────────────────────────
+    \node[cls] (slot) at (6,-3.5) {
+      \begin{tabular}{l}
+        \textbf{Slot}\\
+        \hline
+        id~: Number\\
+        nom~: String\\
+        produitId~: Number\\
+        adresse~: String [IP]\\
+        port~: Number [23]\\
+        description~: String\\
+        \hline
+        connect()\\
+      \end{tabular}
+    };
+
+    % ── CommandeTelnet ────────────────────────────────────
+    \node[cls] (cmd) at (-5.5,3) {
+      \begin{tabular}{l}
+        \textbf{CommandeTelnet}\\
+        \hline
+        id~: String\\
+        nom~: String\\
+        type~: \{single,sequence,monitoring\}\\
+        commande~: String\\
+        reponseAttendue~: String\\
+        etapes~: Etape[]\\
+        \hline
+        execute()\\
+      \end{tabular}
+    };
+
+    % ── ResultatTest ──────────────────────────────────────
+    \node[cls] (result) at (-5.5,-2) {
+      \begin{tabular}{l}
+        \textbf{ResultatTest}\\
+        \hline
+        id~: Number\\
+        slotId~: Number\\
+        commandeId~: String\\
+        runMode~: String\\
+        statut~: \{PENDING,SUCCESS,FAIL,STOPPED\}\\
+        horaireDebut~: Date\\
+        horaireFin~: Date\\
+        etapes~: EtapeResultat[]\\
+        logs~: String[]\\
+        \hline
+        stop()\\
+      \end{tabular}
+    };
+
+    % ── JournalAudit ──────────────────────────────────────
+    \node[cls] (audit) at (-5.5,-6) {
+      \begin{tabular}{l}
+        \textbf{JournalAudit}\\
+        \hline
+        timestamp~: Date\\
+        userId~: Number\\
+        username~: String\\
+        action~: String\\
+        methode~: String\\
+        url~: String\\
+        ip~: String\\
+      \end{tabular}
+    };
+
+    % ── Rapport ───────────────────────────────────────────
+    \node[cls] (report) at (0,-6) {
+      \begin{tabular}{l}
+        \textbf{Rapport}\\
+        \hline
+        id~: String\\
+        createdAt~: Date\\
+        generePar~: String\\
+        synthese~: Mixed\\
+        tests~: Mixed[]\\
+      \end{tabular}
+    };
+
+    % ── Associations ──────────────────────────────────────
+    \draw[asc] (poste.south) -- (produit.north)
+      node[note,midway,right] {1\dots N};
+    \draw[asc] (produit.south) -- (slot.north)
+      node[note,midway,right] {1\dots N};
+    \draw[asc] (user.east) -- (result.west |- user.east)
+      node[note,near start,above] {lance};
+    \draw[asc] (cmd.south) -- (result.north -| cmd.south)
+      node[note,midway,right] {référence};
+    \draw[asc] (slot.west) -- (result.east |- slot.west)
+      node[note,near start,above] {teste};
+    \draw[asc] (user.south) -- (audit.north -| user.south)
+      node[note,midway,right] {génère};
+    \draw[asc] (result.east) -- (report.west |- result.east)
+      node[note,near start,above] {compilé dans};
+
+  \end{tikzpicture}
+  \caption{Diagramme de classes principal de Telnet Test Manager}
+  \label{fig:class_diagram}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Diagrammes de séquence}
+% -----------------------------------------------------------------
+
+\subsection{Cas d'utilisation~: Authentification}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    life/.style={dashed,draw=gray!50},
+    box/.style={draw=bleuPFE,fill=bleuPFE!8,minimum width=2.4cm,
+                minimum height=0.6cm,align=center,font=\scriptsize},
+    msg/.style={->,>=stealth,draw=bleuPFE,font=\scriptsize},
+    ret/.style={->,>=stealth,draw=bleuPFE!50,dashed,font=\scriptsize},
+    act/.style={draw=bleuPFE,fill=bleuPFE!20,minimum width=0.3cm,
+                minimum height=1.2cm},
+  ]
+
+    % Participants
+    \node[box] (user)  at (0,0)  {Utilisateur};
+    \node[box] (front) at (3.5,0) {Frontend\\React};
+    \node[box] (back)  at (7,0)  {Backend\\API};
+    \node[box] (db)    at (10.5,0) {MongoDB};
+
+    % Lifelines
+    \draw[life] (0,-0.3) -- (0,-9);
+    \draw[life] (3.5,-0.3) -- (3.5,-9);
+    \draw[life] (7,-0.3) -- (7,-9);
+    \draw[life] (10.5,-0.3) -- (10.5,-9);
+
+    % Messages
+    \draw[msg] (0,-1) -- (3.5,-1)
+      node[midway,above,font=\scriptsize] {Saisie identifiants};
+    \draw[msg] (3.5,-1.8) -- (7,-1.8)
+      node[midway,above,font=\scriptsize] {\texttt{POST /login}};
+    \draw[msg] (7,-2.6) -- (10.5,-2.6)
+      node[midway,above,font=\scriptsize] {\texttt{findUser(username)}};
+    \draw[ret] (10.5,-3.2) -- (7,-3.2)
+      node[midway,above,font=\scriptsize] {User \{hash\}};
+    \draw[msg] (7,-4) -- (7,-4)
+      node[right,font=\scriptsize] {bcrypt.compare(mdp, hash)};
+    \node[font=\scriptsize,color=gray,right] at (7.2,-4.7)
+      {[succès] Génération JWT};
+    \draw[ret] (7,-5.4) -- (3.5,-5.4)
+      node[midway,above,font=\scriptsize]
+      {200~: \{token, user\}};
+    \draw[msg] (3.5,-6.2) -- (3.5,-6.2)
+      node[right,font=\scriptsize]
+      {Stockage token (sessionStorage)};
+    \draw[ret] (3.5,-7) -- (0,-7)
+      node[midway,above,font=\scriptsize] {Redirection Dashboard};
+
+    % Fragment alt
+    \draw[draw=bleuPFE!30,dashed] (1.5,-3) rectangle (9,-5);
+    \node[font=\scriptsize\bfseries\color{bleuPFE!60}] at (2,-3.1)
+      {[alt] Échec};
+    \draw[ret] (7,-4.9) -- (3.5,-4.9)
+      node[midway,above,font=\scriptsize] {401~: Identifiants invalides};
+
+  \end{tikzpicture}
+  \caption{Diagramme de séquence~: Authentification JWT}
+  \label{fig:seq_auth}
+\end{figure}
+
+\subsection{Cas d'utilisation~: Exécution d'un test Telnet}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    life/.style={dashed,draw=gray!50},
+    box/.style={draw=bleuPFE,fill=bleuPFE!8,minimum width=2.1cm,
+                minimum height=0.6cm,align=center,font=\tiny},
+    msg/.style={->,>=stealth,draw=bleuPFE,font=\tiny},
+    ret/.style={->,>=stealth,draw=bleuPFE!50,dashed,font=\tiny},
+  ]
+
+    % Participants
+    \node[box] (user)   at (0,0)    {Utilisateur};
+    \node[box] (front)  at (2.5,0)  {Frontend};
+    \node[box] (back)   at (5.5,0)  {Backend API};
+    \node[box] (worker) at (8.5,0)  {Worker Thread};
+    \node[box] (db)     at (11.2,0) {MongoDB};
+    \node[box] (equip)  at (13.8,0) {Équipement\\TCP:23};
+
+    % Lifelines
+    \foreach \x in {0,2.5,5.5,8.5,11.2,13.8}
+      \draw[life] (\x,-0.3) -- (\x,-13);
+
+    % Messages
+    \draw[msg] (0,-1)    -- (2.5,-1)
+      node[midway,above] {Clic «Lancer le test»};
+    \draw[msg] (2.5,-1.8) -- (5.5,-1.8)
+      node[midway,above] {\texttt{POST /run-test}};
+    \draw[msg] (5.5,-2.6) -- (5.5,-2.6)
+      node[right] {Vérif. JWT \& permissions};
+    \draw[msg] (5.5,-3.4) -- (11.2,-3.4)
+      node[midway,above] {findSlot(slotId)};
+    \draw[ret] (11.2,-4) -- (5.5,-4)
+      node[midway,above] {Slot \{IP, port\}};
+    \draw[msg] (5.5,-4.8) -- (11.2,-4.8)
+      node[midway,above] {createTestResult (PENDING)};
+    \draw[msg] (5.5,-5.6) -- (8.5,-5.6)
+      node[midway,above] {spawnWorker(testId, slot, cmd)};
+    \draw[ret] (5.5,-6.2) -- (2.5,-6.2)
+      node[midway,above] {200~: \{testId\}};
+    \draw[ret] (2.5,-6.9) -- (0,-6.9)
+      node[midway,above] {Affichage «En cours...»};
+
+    % Worker
+    \draw[msg] (8.5,-7.7) -- (13.8,-7.7)
+      node[midway,above] {Connexion TCP port 23};
+    \draw[msg] (8.5,-8.4) -- (13.8,-8.4)
+      node[midway,above] {Authentification (login/mdp)};
+    \draw[msg] (8.5,-9.1) -- (13.8,-9.1)
+      node[midway,above] {Envoi commande Linux};
+    \draw[ret] (13.8,-9.8) -- (8.5,-9.8)
+      node[midway,above] {Réponse Telnet};
+    \draw[msg] (8.5,-10.5) -- (8.5,-10.5)
+      node[right] {Comparaison expectedResponse};
+    \draw[msg] (8.5,-11.2) -- (5.5,-11.2)
+      node[midway,above] {WS~: \{step, status\}};
+    \draw[msg] (5.5,-11.2) -- (2.5,-11.2);
+    \draw[ret] (2.5,-11.2) -- (0,-11.2)
+      node[midway,above] {Mise à jour UI (temps réel)};
+    \draw[msg] (8.5,-12) -- (11.2,-12)
+      node[midway,above] {updateTestResult (SUCCESS)};
+
+  \end{tikzpicture}
+  \caption{Diagramme de séquence~: Exécution d'un test Telnet}
+  \label{fig:seq_telnet}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Modèle de la base de données MongoDB}
+% -----------------------------------------------------------------
+
+\subsection{Justification du choix NoSQL}
+
+MongoDB a été retenu comme système de gestion de base de données pour
+plusieurs raisons~:
+\begin{itemize}
+  \item La nature \textbf{schéma flexible} des données de tests (étapes
+        et logs de taille variable selon le type de test)~;
+  \item La performance des opérations en \textbf{lecture/écriture intensive}
+        sur les journaux d'audit~;
+  \item La sérialisation native en \textbf{BSON/JSON} alignée avec
+        l'écosystème Node.js~;
+  \item La facilité d'intégration avec \textbf{Mongoose} (ODM) qui apporte
+        la validation de schéma et les middlewares.
+\end{itemize}
+
+\subsection{Schémas des collections principales}
+
+\paragraph{Collection \texttt{users}}
+\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection users}]
+{
+  id:           { type: Number, unique: true },
+  username:     { type: String, required: true, unique: true },
+  password:     { type: String, required: true },  // bcrypt hash
+  role:         { type: String, enum: ['admin','engineer','technician'] },
+  permissions:  [{ type: String }],  // ['read','write','admin']
+  email:        { type: String },
+  statut:       { type: String, enum: ['actif','inactif'], default: 'actif' },
+  lastLogin:    { type: Date },
+  totalTimeMinutes: { type: Number, default: 0 },
+  createdAt:    { type: Date, default: Date.now }
+}
+\end{lstlisting}
+
+\paragraph{Collection \texttt{slots}}
+\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection slots}]
+{
+  id:          { type: Number, unique: true },
+  nom:         { type: String, required: true },
+  produitId:   { type: Number, required: true, ref: 'Produit' },
+  adresse:     { type: String, required: true }, // IP ex: "192.168.5.1"
+  port:        { type: Number, default: 23 },    // Telnet port
+  description: { type: String }
+}
+\end{lstlisting}
+
+\paragraph{Collection \texttt{telnetCommands}}
+\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection telnetCommands}]
+{
+  id:               { type: String, unique: true },
+  name:             { type: String, required: true },
+  type:             { type: String, enum: ['single','sequence','monitoring'] },
+  command:          { type: String },   // Pour le type 'single'
+  description:      { type: String },
+  expectedResponse: { type: String },   // Sous-chaîne attendue dans la réponse
+  expectedEvents:   [{ type: String }], // Pour le mode monitoring
+  steps: [{
+    command:          String,
+    description:      String,
+    type:             String,
+    expectedResponse: String,
+    expectedEvents:   [String],
+    duration:         Number,
+    timeout:          Number
+  }]
+}
+\end{lstlisting}
+
+\paragraph{Collection \texttt{testResults}}
+\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection testResults}]
+{
+  id:        { type: Number, unique: true },   // Date.now()
+  slotId:    { type: Number, ref: 'Slot' },
+  posteId:   { type: Number, ref: 'Poste' },
+  produitId: { type: Number, ref: 'Produit' },
+  commandId: { type: String, ref: 'TelnetCommand' },
+  runMode:   { type: String,
+               enum: ['single','builtin_sequence','sequence','monitoring'] },
+  statut:    { type: String,
+               enum: ['PENDING','SUCCESS','FAIL','STOPPED'],
+               default: 'PENDING' },
+  startTime: { type: Date },
+  endTime:   { type: Date },
+  steps: [{
+    step:        String,
+    description: String,
+    statut:      String,
+    timestamp:   Date
+  }],
+  logs: [{ type: String }]
+}
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Conception des interfaces utilisateur}
+% -----------------------------------------------------------------
+
+\subsection{Tableau de bord principal (Dashboard)}
+
+Le tableau de bord offre un espace unique de sélection et d'exécution des
+tests. Il est composé de~:
+\begin{itemize}
+  \item Un panneau de sélection hiérarchique (Poste~$\to$ Produit~$\to$
+        Slot) permettant d'identifier l'équipement cible~;
+  \item Un sélecteur de commandes Telnet avec prévisualisation des étapes~;
+  \item Un terminal de résultats en temps réel (mise à jour par WebSocket)
+        affichant chaque étape avec son statut et son horodatage~;
+  \item Des boutons d'action~: Lancer, Arrêter, Exporter.
+\end{itemize}
+
+\subsection{Module de configuration}
+
+L'interface de configuration adopte une présentation en \textbf{tableaux
+imbriqués} avec des formulaires modaux pour les opérations CRUD. La
+hiérarchie Poste~$\to$ Produit~$\to$ Slot~$\to$ Référence est navigable
+via des onglets.
+
+\subsection{Panneau d'administration}
+
+Le panneau d'administration comprend cinq onglets~:
+\begin{enumerate}
+  \item \textbf{Vue d'ensemble}~: métriques globales (utilisateurs actifs,
+        tests du jour, taux de succès)~;
+  \item \textbf{Gestion des utilisateurs}~: tableau \gls{crud} avec
+        assignation de rôles et permissions~;
+  \item \textbf{Historique des tests}~: tous les tests de tous les
+        utilisateurs, filtrables~;
+  \item \textbf{Journal d'audit}~: liste chronologique des actions avec
+        filtrage par utilisateur, action et date~;
+  \item \textbf{Analytiques}~: graphiques de répartition des tests par
+        statut, utilisateur et période.
+\end{enumerate}
+
+\section*{Conclusion}
+
+Ce chapitre a posé les bases architecturales et conceptuelles du projet.
+L'architecture N-tiers combinée aux principes de la Clean Architecture
+garantit la séparation des responsabilités et la testabilité du code.
+Les diagrammes de classes et de séquence documentent les interactions
+entre les composants, tandis que les schémas MongoDB formalisent le
+modèle de persistance. Le chapitre suivant détaille la mise en \oe{}uvre
+technique de ces choix de conception.

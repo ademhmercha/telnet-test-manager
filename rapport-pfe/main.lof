@@ -1,0 +1,20 @@
+\babel@toc {french}{}\relax 
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Logo officiel de Sagemcom}}{5}{figure.caption.8}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Schéma du processus de tests Telnet existant}}{7}{figure.caption.9}%
+\contentsline {figure}{\numberline {1.3}{\ignorespaces Schéma du cadre Scrum appliqué au projet Telnet Test Manager}}{11}{figure.caption.13}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Logo Node.js / Express.js}}{17}{figure.caption.17}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Logo MongoDB}}{17}{figure.caption.18}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Logo Docker}}{17}{figure.caption.19}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Logos Kubernetes et Helm}}{18}{figure.caption.20}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Logo GitHub Actions}}{18}{figure.caption.21}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Logo Grafana}}{19}{figure.caption.22}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Architecture globale de l'application Telnet Test Manager}}{19}{figure.caption.23}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Flux de travail du pipeline GitHub Actions}}{20}{figure.caption.25}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Interface Dashboard~: résultat en temps réel d'un test Telnet}}{26}{figure.caption.27}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Tableau de bord principal de l'application}}{29}{figure.caption.28}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Formulaire de lancement d'un test Telnet}}{29}{figure.caption.29}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Exécution réussie du pipeline CI/CD dans GitHub Actions}}{37}{figure.caption.30}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Runner auto-hébergé enregistré et actif}}{37}{figure.caption.31}%

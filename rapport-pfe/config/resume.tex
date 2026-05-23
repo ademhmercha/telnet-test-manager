@@ -1,0 +1,101 @@
+% =============================================================
+%  Résumé — Français, Anglais, Arabe (placeholder)
+% =============================================================
+
+% ── Résumé en français ────────────────────────────────────────
+\chapter*{Résumé}
+\markboth{Résumé}{Résumé}
+
+\noindent\textbf{Titre~:} Conception et Déploiement d'une Application de Test
+Telnet des Appareils Réseau avec Pipeline CI/CD DevOps.\\[0.2cm]
+\noindent\textbf{Étudiant~:} Adem Hmercha \hfill
+\textbf{Entreprise~:} Sagemcom Ezzahra\\[0.3cm]
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{0.3cm}
+
+\noindent Dans le cadre de la validation fonctionnelle des équipements réseau
+embarqués développés par \textbf{Sagemcom Ezzahra} (passerelles résidentielles,
+décodeurs multimédias, routeurs), les équipes de tests effectuent quotidiennement
+des dizaines de commandes Telnet manuelles pour vérifier le comportement des
+firmwares Linux. Cette approche artisanale génère des inefficacités opérationnelles
+majeures~: absence de traçabilité, impossibilité d'automatiser les tests en parallèle
+et manque de supervision centralisée.
+
+Ce projet propose \textbf{Telnet Test Manager}, une application web fullstack
+conçue pour centraliser, automatiser et historiser les tests Telnet des appareils
+réseau. L'application est développée selon les principes de la \textit{Clean
+Architecture} avec un backend \textbf{Node.js/Express.js}, une base de données
+\textbf{MongoDB}, et un frontend \textbf{React~18/TypeScript}. Le moteur de tests
+exploite les \textit{Worker Threads} de Node.js pour exécuter les sessions Telnet
+en isolation, tandis qu'un serveur \textbf{WebSocket} diffuse les résultats en
+temps réel. Sur le plan DevOps, l'application est entièrement conteneurisée avec
+\textbf{Docker}, orchestrée via \textbf{Kubernetes} (chart Helm v0.3.0) avec
+autoscaling horizontal, et déployée par un pipeline \textbf{GitHub Actions}
+auto-hébergé. Une stack de supervision \textbf{Prometheus/Grafana} assure la
+visibilité en temps réel des performances applicatives.
+
+\vspace{0.3cm}
+\noindent\textbf{Mots-clés~:} Telnet, Node.js, React, MongoDB, Docker,
+Kubernetes, Helm, GitHub Actions, CI/CD, WebSocket, Clean Architecture,
+Prometheus, Grafana, DevOps.
+
+\vspace{0.8cm}
+\noindent\rule{\textwidth}{0.4pt}
+
+\vspace{0.8cm}
+
+% ── Abstract in English ───────────────────────────────────────
+\chapter*{Abstract}
+\markboth{Abstract}{Abstract}
+
+\noindent\textbf{Title:} Design and Deployment of a Telnet Testing Application
+for Network Devices with a DevOps CI/CD Pipeline.\\[0.2cm]
+\noindent\textbf{Student:} Adem Hmercha \hfill
+\textbf{Company:} Sagemcom Ezzahra\\[0.3cm]
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{0.3cm}
+
+\noindent In the context of functional validation of embedded network equipment
+developed by \textbf{Sagemcom Ezzahra} (residential gateways, set-top boxes,
+routers), test teams manually execute dozens of Telnet commands daily to verify
+Linux firmware behavior. This manual approach leads to significant operational
+inefficiencies~: lack of traceability, inability to parallelize tests, and
+absence of centralized monitoring.
+
+This project introduces \textbf{Telnet Test Manager}, a fullstack web application
+designed to centralize, automate, and archive Telnet tests for network devices.
+Built on \textit{Clean Architecture} principles, the application features a
+\textbf{Node.js/Express.js} backend, a \textbf{MongoDB} database, and a
+\textbf{React~18/TypeScript} frontend. The Telnet engine leverages Node.js
+\textit{Worker Threads} for isolated test execution, while a \textbf{WebSocket}
+server streams real-time results. On the DevOps side, the application is fully
+containerized with \textbf{Docker}, orchestrated via \textbf{Kubernetes}
+(Helm chart v0.3.0) with horizontal autoscaling, and deployed through a
+self-hosted \textbf{GitHub Actions} pipeline. A \textbf{Prometheus/Grafana}
+monitoring stack provides live visibility into application performance.
+
+\vspace{0.3cm}
+\noindent\textbf{Keywords:} Telnet, Node.js, React, MongoDB, Docker, Kubernetes,
+Helm, GitHub Actions, CI/CD, WebSocket, Clean Architecture, Prometheus, Grafana,
+DevOps.
+
+\vspace{0.8cm}
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{0.5cm}
+
+% ── Résumé en arabe (placeholder — nécessite XeLaTeX + arabxetex) ──
+%
+% Pour inclure un résumé en arabe, compilez avec XeLaTeX et remplacez
+% cette section par le texte arabe en utilisant le package arabxetex
+% ou polyglossia + une police arabique (Amiri, Scheherazade, etc.).
+%
+% \begin{RLtext}
+%   ملخص: [texte arabe ici]
+% \end{RLtext}
+
+\begin{infobox}[title={Résumé en arabe}]
+  \textit{Le résumé en arabe nécessite une compilation avec \textbf{XeLaTeX}
+  et le paquet \textbf{polyglossia} avec une police arabique (Amiri ou
+  Scheherazade). Remplacez cette boîte par le texte arabe correspondant
+  une fois votre environnement XeLaTeX configuré.}
+\end{infobox}

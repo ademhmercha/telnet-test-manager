@@ -1,0 +1,370 @@
+% =============================================================
+%  Chapitre 2 — Analyse et spécification des besoins
+% =============================================================
+\chapter{Analyse et spécification des besoins}
+
+\section{Introduction}
+
+Ce chapitre présente l'analyse complète des besoins fonctionnels et non
+fonctionnels de l'application Telnet Test Manager, ainsi que les choix
+technologiques et architecturaux justifiés par ces besoins. Nous détaillons
+également la conception du pipeline \gls{cicd} qui automatise l'intégration
+et le déploiement continus de la solution.
+
+% -----------------------------------------------------------------
+\section{Analyse des besoins}
+
+\subsection{Besoins fonctionnels}
+
+Les besoins fonctionnels définissent les capacités essentielles que
+l'application Telnet Test Manager doit fournir pour répondre aux exigences
+opérationnelles du département tests de Sagemcom Ezzahra.
+
+\begin{table}[H]
+  \centering
+  \caption{Besoins fonctionnels}
+  \label{tab:besoins_fonctionnels}
+  \begin{tabular}{|L{5cm}|L{9cm}|}
+    \hline
+    \textbf{Test de connectivité Telnet} &
+      Connexion TCP automatique sur le port 23 d'un slot,
+      authentification, exécution de commande et validation
+      de la réponse obtenue. \\
+    \hline
+    \textbf{Gestion des équipements} &
+      Création, modification et suppression des Postes,
+      Produits, Slots (IP~:~port) et Références via
+      une interface CRUD complète. \\
+    \hline
+    \textbf{Bibliothèque de commandes} &
+      Gestion de commandes Telnet réutilisables de types~:
+      commande unitaire, séquence d'étapes et
+      supervision continue (\textit{monitoring}). \\
+    \hline
+    \textbf{Tests multi-slots en parallèle} &
+      Lancement simultané de tests Telnet sur plusieurs
+      interfaces Ethernet d'un ou plusieurs équipements
+      via des Worker Threads isolés. \\
+    \hline
+    \textbf{Résultats en temps réel} &
+      Diffusion des événements de test (logs, progression,
+      statut de chaque étape) via WebSocket avec
+      abonnement par identifiant de test. \\
+    \hline
+    \textbf{Authentification et contrôle d'accès} &
+      Connexion sécurisée par JWT, système RBAC avec
+      trois rôles (Administrateur, Ingénieur, Technicien)
+      et limitation de débit sur les tentatives de connexion. \\
+    \hline
+    \textbf{Tableau de bord d'administration} &
+      Gestion des utilisateurs, consultation des journaux
+      d'audit, statistiques d'utilisation et analytiques
+      des campagnes de tests. \\
+    \hline
+    \textbf{Génération de rapports} &
+      Compilation de résultats de tests en rapports
+      synthétiques, avec historique complet filtrable
+      par statut, date et slot. \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Besoins non fonctionnels}
+
+Les besoins non fonctionnels garantissent que le système répond aux
+exigences de qualité industrielle en termes de performance, sécurité,
+disponibilité et maintenabilité.
+
+\begin{table}[H]
+  \centering
+  \caption{Besoins non fonctionnels}
+  \label{tab:besoins_non_fonctionnels}
+  \begin{tabular}{|L{3cm}|L{4.5cm}|L{6cm}|}
+    \hline
+    \textbf{Catégorie} & \textbf{Exigence} & \textbf{Critère de mesure} \\
+    \hline
+    \multirow{2}{*}{\textbf{Performance}}
+      & Temps de réponse API
+      & 95\,\% des requêtes non-Telnet en moins de 2 secondes \\
+    \cline{2-3}
+      & Parallélisme
+      & 10 tests Telnet simultanés minimum \\
+    \hline
+    \multirow{3}{*}{\textbf{Sécurité}}
+      & Authentification
+      & JWT avec expiration configurable, chiffrement HS256 \\
+    \cline{2-3}
+      & Mots de passe
+      & Hachage bcryptjs, facteur de coût~: 10 \\
+    \cline{2-3}
+      & En-têtes HTTP
+      & Helmet.js~: CSP, HSTS, X-Frame-Options \\
+    \hline
+    \textbf{Disponibilité}
+      & Objectif de service
+      & 99,9\,\% sur l'infrastructure locale \\
+    \hline
+    \multirow{2}{*}{\textbf{Scalabilité}}
+      & Autoscaling
+      & HPA Kubernetes~: 1 à 5 répliques, seuil CPU 70\,\% \\
+    \cline{2-3}
+      & Sans état
+      & Backend stateless, session portée par le JWT \\
+    \hline
+    \textbf{Maintenabilité}
+      & Architecture
+      & Clean Architecture 4 couches, principes SOLID \\
+    \hline
+    \textbf{Portabilité}
+      & Conteneurisation
+      & Images Docker, déploiement identique dev/production \\
+    \hline
+  \end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------
+\section{Conception du système}
+
+\subsection{Technologies et outils clés}
+
+\subsubsection{Node.js et Express.js}
+
+\textbf{Node.js} (version~20 LTS) est un environnement d'exécution
+JavaScript côté serveur basé sur le moteur V8 de Google. Son modèle
+non bloquant (\textit{event loop}) et la prise en charge native des
+\textit{Worker Threads} en font un choix idéal pour un serveur Telnet
+concurrent. \textbf{Express.js} (v4.18) est le framework HTTP minimaliste
+le plus utilisé dans l'écosystème Node.js ; il structure l'application
+en routes, middlewares et contrôleurs.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.30\textwidth]{images/nodejs}
+  \caption{Logo Node.js / Express.js}
+  \label{fig:logo_node}
+\end{figure}
+
+\subsubsection{MongoDB}
+
+\textbf{MongoDB~7} est un système de gestion de base de données orienté
+documents (\gls{nosql}). Les données sont stockées en \gls{bson}, un
+format binaire dérivé du \gls{json}. Cette flexibilité schématique est
+particulièrement adaptée aux structures de données hétérogènes des
+résultats de tests Telnet. L'\gls{orm} \textbf{Mongoose~9} fournit la
+validation des schémas et les middlewares d'accès aux données.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/mongodb}
+  \caption{Logo MongoDB}
+  \label{fig:logo_mongo}
+\end{figure}
+
+\subsubsection{Docker et Docker Compose}
+
+\textbf{Docker} est une plateforme de conteneurisation qui encapsule une
+application et ses dépendances dans des images légères et portables.
+\textbf{Docker Compose} orchestre plusieurs conteneurs localement via un
+fichier \gls{yaml} déclaratif. La stack de développement comprend cinq
+services~: MongoDB, backend, frontend, Prometheus et Grafana.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/docker}
+  \caption{Logo Docker}
+  \label{fig:logo_docker}
+\end{figure}
+
+\subsubsection{Kubernetes et Helm}
+
+\textbf{Kubernetes} (\gls{k8s}) est le système d'orchestration de
+conteneurs open source de référence. Il automatise le déploiement,
+la mise à l'échelle et la gestion des applications conteneurisées.
+L'environnement utilisé est \textbf{Minikube} (cluster local).
+\textbf{Helm} est le gestionnaire de paquets de Kubernetes~; il
+paramétrise les manifestes YAML via des templates et des fichiers
+de valeurs, facilitant la reproductibilité des déploiements.
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[c]{0.30\textwidth}
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/kubernetes}
+  \end{minipage}
+  \hspace{1cm}
+  \begin{minipage}[c]{0.30\textwidth}
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/helm}
+  \end{minipage}
+  \caption{Logos Kubernetes et Helm}
+  \label{fig:logo_k8s_helm}
+\end{figure}
+
+\subsubsection{GitHub Actions et self-hosted runner}
+
+\textbf{GitHub Actions} est la plateforme d'\gls{cicd} intégrée à
+GitHub. Les workflows sont définis en \gls{yaml} et déclenchés par des
+événements Git (push, pull request). Un \textbf{runner auto-hébergé}
+(\textit{self-hosted runner}) est un agent installé sur la machine
+locale hébergeant Minikube, permettant d'accéder au cluster Kubernetes
+sans l'exposer sur Internet.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.32\textwidth]{images/githubactions}
+  \caption{Logo GitHub Actions}
+  \label{fig:logo_ghactions}
+\end{figure}
+
+\subsubsection{Prometheus et Grafana}
+
+\textbf{Prometheus} est un système de collecte de métriques open source
+qui scrape périodiquement les endpoints \texttt{/metrics} exposés par
+les applications. \textbf{Grafana} est la plateforme de visualisation
+associée qui permet de construire des tableaux de bord interactifs à
+partir des métriques collectées. Le projet expose quatre métriques
+personnalisées~: requêtes HTTP, durées de réponse, tests Telnet lancés
+et connexions WebSocket actives.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/grafana}
+  \caption{Logo Grafana}
+  \label{fig:logo_grafana}
+\end{figure}
+
+\subsection{Architecture globale du système}
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.88\textwidth}{\centering\vspace{1.2cm}
+    {\large\color{gray!50}\textbf{Figure 2.7 — Architecture globale du système}}\\[0.4cm]
+    {\small Client React $\leftrightarrow$ Nginx $\leftrightarrow$
+     Express API~:3002 $\leftrightarrow$ MongoDB~:27017}\\
+    {\small WebSocket~:3003 $\leftrightarrow$ Worker Threads
+     $\leftrightarrow$ Équipements Telnet~:23}\\
+    {\small Prometheus~:9090 $\leftrightarrow$ Grafana~:3001}\\[0.3cm]
+    {\scriptsize\itshape\color{gray}(diagramme à insérer)}
+    \vspace{1.2cm}}}
+  \caption{Architecture globale de l'application Telnet Test Manager}
+  \label{fig:archi_globale}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Composants de l'architecture et leurs rôles}
+  \label{tab:composants_archi}
+  \begin{tabular}{|L{3cm}|L{2.5cm}|L{8cm}|}
+    \hline
+    \textbf{Composant} & \textbf{Technologie} & \textbf{Rôle} \\
+    \hline
+    Interface client & React 18 + TS & SPA~: configuration, exécution, supervision \\
+    \hline
+    Proxy inverse & Nginx & Routage des requêtes HTTP et WebSocket \\
+    \hline
+    API REST & Express.js & Logique métier, 32 endpoints sécurisés \\
+    \hline
+    Serveur WebSocket & ws~8.19 & Diffusion temps réel des événements de test \\
+    \hline
+    Moteur Telnet & Worker Threads & Exécution isolée des sessions Telnet \\
+    \hline
+    Base de données & MongoDB~7 & Persistance~: utilisateurs, équipements, tests \\
+    \hline
+    Métriques & Prometheus & Collecte de 4 métriques applicatives \\
+    \hline
+    Tableaux de bord & Grafana & Visualisation des performances en temps réel \\
+    \hline
+  \end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------
+\section{Pipeline CI/CD}
+
+\subsection{Flux de travail GitHub Actions}
+
+Le pipeline GitHub Actions est déclenché automatiquement à chaque
+poussée sur les branches \texttt{main} et \texttt{develop}, ainsi
+qu'à l'ouverture d'une \textit{pull request} vers \texttt{main}. Un
+mécanisme de concurrence annule les exécutions précédentes pour la
+même branche, évitant les déploiements redondants.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\centering\vspace{0.8cm}
+    {\large\color{gray!50}\textbf{Figure 2.8 — Flux du pipeline CI/CD}}\\[0.3cm]
+    {\small git push $\to$ GitHub $\to$ CI Backend + CI Frontend (parallèle)
+     $\to$ Deploy (self-hosted)}\\[0.3cm]
+    {\scriptsize\itshape\color{gray}(diagramme à insérer)}
+    \vspace{0.8cm}}}
+  \caption{Flux de travail du pipeline GitHub Actions}
+  \label{fig:pipeline_flux}
+\end{figure}
+
+\subsection{Configuration du self-hosted runner}
+
+Le \textbf{runner auto-hébergé} est installé sur la machine Windows
+locale hébergeant Minikube. Il est enregistré auprès du dépôt GitHub
+avec les labels \texttt{self-hosted}, \texttt{windows} et
+\texttt{minikube}. Ce runner est le seul autorisé à exécuter le job
+\texttt{deploy}, qui requiert un accès direct au cluster Kubernetes
+local et au daemon Docker de Minikube.
+
+\subsection{Étapes du pipeline}
+
+\begin{table}[H]
+  \centering
+  \caption{Récapitulatif des étapes du pipeline CI/CD}
+  \label{tab:pipeline_etapes}
+  \begin{tabular}{|L{2.5cm}|L{4cm}|L{3cm}|L{4cm}|}
+    \hline
+    \textbf{Étape} & \textbf{Action} & \textbf{Outil} & \textbf{Condition d'échec} \\
+    \hline
+    Audit sécurité &
+      \texttt{npm audit -{}-audit-level=critical} &
+      npm &
+      Vulnérabilité critique détectée \\
+    \hline
+    Tests &
+      Tests unitaires et d'intégration &
+      Jest, Supertest &
+      Échec d'au moins un test \\
+    \hline
+    Build frontend &
+      \texttt{npm run build} (React → statiques) &
+      React Scripts &
+      Erreur de compilation TypeScript \\
+    \hline
+    Build Docker &
+      Construction des images backend et frontend &
+      Docker &
+      Erreur dans un Dockerfile \\
+    \hline
+    Deploy Helm &
+      \texttt{helm upgrade -{}-install -{}-atomic} &
+      Helm, kubectl &
+      Pod en erreur après timeout 600s \\
+    \hline
+    Validation &
+      \texttt{kubectl rollout status} &
+      kubectl &
+      Timeout de disponibilité \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\section{Conclusion}
+
+Ce chapitre a formalisé l'ensemble des besoins fonctionnels et non
+fonctionnels de Telnet Test Manager sous une forme structurée et lisible.
+Les huit besoins fonctionnels couvrent l'intégralité du cycle de vie des
+tests Telnet, de la connexion initiale jusqu'à la génération des rapports.
+Les exigences non fonctionnelles garantissent une qualité industrielle en
+termes de performance, sécurité, scalabilité et maintenabilité.
+
+Les six technologies retenues --- Node.js, MongoDB, Docker, Kubernetes,
+GitHub Actions et Prometheus/Grafana --- forment un écosystème cohérent
+et éprouvé, parfaitement adapté aux contraintes d'un déploiement DevOps
+sur infrastructure locale. Le pipeline CI/CD en six étapes automatise
+l'ensemble du cycle de livraison avec des contrôles de qualité à chaque
+étape. Le chapitre suivant détaille la réalisation technique de l'ensemble
+de ces composants.

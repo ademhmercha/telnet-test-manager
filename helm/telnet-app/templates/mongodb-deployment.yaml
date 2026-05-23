@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   serviceName: mongodb-headless
-  replicas: 3
+  replicas: {{ .Values.replicaCount.mongodb }}
   selector:
     matchLabels:
       app: mongodb

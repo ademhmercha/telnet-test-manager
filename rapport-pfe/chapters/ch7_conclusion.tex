@@ -1,0 +1,66 @@
+% =============================================================
+%  Conclusion générale et perspectives
+% =============================================================
+\chapter*{Conclusion générale et perspectives}
+\addcontentsline{toc}{chapter}{Conclusion générale et perspectives}
+\markboth{Conclusion générale et perspectives}
+         {Conclusion générale et perspectives}
+
+\section*{Bilan des réalisations}
+
+Ce projet de fin d'études, réalisé au sein de \textbf{Sagemcom Ezzahra},
+avait pour ambition de concevoir et déployer une solution complète de
+tests Telnet automatisés pour les équipements réseau embarqués, intégrée
+dans une infrastructure DevOps moderne.
+
+Sur le \textbf{plan applicatif}, nous avons livré \textbf{Telnet Test
+Manager}, une application web fullstack structurée selon les principes
+de la \textit{Clean Architecture}. Le moteur Telnet, implémenté via les
+Worker Threads de Node.js et la bibliothèque \texttt{telnet-client},
+supporte quatre modes d'exécution~: commande unitaire, séquence, supervision
+continue et séquence personnalisée. La diffusion des résultats en temps
+réel par WebSocket et l'interface React~18/TypeScript multilingue offrent
+une expérience utilisateur professionnelle et réactive.
+
+Sur le \textbf{plan DevOps}, l'application est entièrement conteneurisée
+avec Docker (build multi-stage pour le frontend, réduisant l'image de
+production à~$\sim$25~Mo), orchestrée par un chart Helm~v0.3.0 sur
+Kubernetes Minikube avec autoscaling horizontal (1~à~5~répliques, seuil
+CPU~: 70\,\%). Un pipeline GitHub Actions en trois jobs automatise
+l'intégration continue, les audits de sécurité et le déploiement via un
+runner auto-hébergé. La stack Prometheus/Grafana assure la visibilité
+en temps réel des performances applicatives.
+
+\section*{Perspectives d'évolution}
+
+Plusieurs axes d'amélioration sont envisagés pour les versions futures~:
+
+\begin{itemize}
+  \item \textbf{Support du protocole SSH~:} ajouter une couche SSH en
+        complément de Telnet pour couvrir les équipements modernes
+        refusant les connexions non chiffrées~;
+
+  \item \textbf{Tests end-to-end automatisés~:} intégrer Cypress ou
+        Playwright dans le pipeline CI/CD pour valider automatiquement
+        les scénarios utilisateur complets~;
+
+  \item \textbf{Analyse intelligente des résultats~:} appliquer des
+        algorithmes de détection d'anomalies sur l'historique des tests
+        pour anticiper les défaillances matérielles~;
+
+  \item \textbf{Déploiement cloud hybride~:} migrer vers AWS EKS ou
+        GCP GKE pour étendre la portée de l'infrastructure à plusieurs
+        sites géographiques~;
+
+  \item \textbf{Planification des campagnes~:} implémenter un module
+        de scheduling permettant de lancer des campagnes de tests
+        automatiques sur des plages horaires programmées.
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent En définitive, ce projet illustre comment l'union du génie
+logiciel moderne (\textit{Clean Architecture}, WebSocket, \gls{rbac})
+et des pratiques \gls{devops} avancées (Docker, Kubernetes, CI/CD,
+Prometheus) peut transformer un processus manuel fragmenté en une
+plateforme automatisée, traçable et scalable, apportant une valeur
+ajoutée concrète à l'équipe d'ingénierie de Sagemcom Ezzahra.

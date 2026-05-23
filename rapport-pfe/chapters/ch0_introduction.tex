@@ -1,0 +1,51 @@
+% =============================================================
+%  Introduction générale
+% =============================================================
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+\markboth{Introduction générale}{Introduction générale}
+
+L'industrie des équipements réseau et des télécommunications connaît
+une accélération technologique sans précédent. Les équipements modernes
+--- passerelles résidentielles (\textit{home gateways}), décodeurs
+multimédias (\textit{set-top boxes}) et routeurs industriels ---
+embarquent des systèmes d'exploitation Linux complets, accessibles
+à distance via le protocole \gls{telnet}. La validation fonctionnelle
+de ces équipements constitue une étape critique du cycle de développement,
+garantissant la conformité des firmwares avant chaque mise en production.
+
+C'est dans ce cadre que s'inscrit notre projet de fin d'études réalisé
+au sein de \textbf{Sagemcom Ezzahra}, centre de recherche et développement
+reconnu dans la conception d'équipements \gls{cpe} pour les opérateurs de
+télécommunications internationaux. Face à l'inefficacité du processus
+de tests Telnet manuel en vigueur, l'équipe d'ingénierie des tests a
+exprimé le besoin d'une solution web centralisée, automatisée et intégrée
+dans un pipeline \gls{cicd} moderne.
+
+Ce rapport présente la conception et le déploiement de
+\textbf{Telnet Test Manager}, une application web fullstack développée
+selon les principes de la \textit{Clean Architecture}, conteneurisée avec
+\textbf{Docker}, orchestrée par \textbf{Kubernetes}, et déployée
+automatiquement via un pipeline \textbf{GitHub Actions} auto-hébergé.
+
+\vspace{0.4cm}
+\noindent Le rapport est structuré en trois chapitres~:
+
+\begin{description}[labelwidth=3.5cm,leftmargin=4cm]
+  \item[\textbf{Chapitre 1}] présente le contexte général du projet~:
+    l'organisme d'accueil, la problématique, les objectifs, l'analyse
+    critique du système existant, la solution proposée et la méthodologie
+    Scrum adoptée.
+
+  \item[\textbf{Chapitre 2}] détaille l'analyse et la spécification des
+    besoins fonctionnels et non fonctionnels, les choix technologiques,
+    l'architecture globale du système et le pipeline CI/CD.
+
+  \item[\textbf{Chapitre 3}] expose la réalisation complète~: structure
+    du projet, implémentation du moteur Telnet, API REST, base de données
+    MongoDB, interfaces utilisateur, conteneurisation Docker, déploiement
+    Kubernetes/Helm et configuration du pipeline GitHub Actions.
+\end{description}
+
+\noindent Le rapport se conclut par une synthèse des réalisations et des
+perspectives d'évolution de la solution.

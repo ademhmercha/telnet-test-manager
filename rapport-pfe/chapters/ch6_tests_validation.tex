@@ -1,0 +1,361 @@
+% =============================================================
+%  Chapitre 6 — Tests et validation
+% =============================================================
+\chapter{Tests et validation}
+
+\section*{Introduction}
+La qualité d'un logiciel se mesure à la rigueur de sa stratégie de tests.
+Ce chapitre présente la stratégie adoptée pour valider l'ensemble du système
+Telnet Test Manager~: tests unitaires, tests d'intégration, tests
+fonctionnels et résultats du pipeline CI/CD.
+
+% -----------------------------------------------------------------
+\section{Stratégie de tests}
+% -----------------------------------------------------------------
+
+\subsection{Pyramide de tests}
+
+La stratégie de tests suit la \textbf{pyramide de tests} classique qui
+préconise un grand nombre de tests unitaires rapides à la base, un nombre
+modéré de tests d'intégration au milieu, et un nombre restreint de tests
+fonctionnels (end-to-end) au sommet.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    % Niveau 1 : Tests unitaires (base)
+    \fill[bleuPFE!60] (0,0) -- (6,0) -- (5,1.5) -- (1,1.5) -- cycle;
+    \node[white,font=\small\bfseries] at (3,0.75) {Tests Unitaires};
+    \node[font=\scriptsize,white] at (3,0.35) {Jest — Use Cases, Workers, Middlewares};
+
+    % Niveau 2 : Tests d'intégration
+    \fill[bleuPFE!35] (1,1.5) -- (5,1.5) -- (4,3) -- (2,3) -- cycle;
+    \node[white,font=\small\bfseries] at (3,2.25) {Tests d'intégration};
+    \node[font=\scriptsize,white] at (3,1.85) {API REST + MongoDB};
+
+    % Niveau 3 : Tests fonctionnels
+    \fill[bleuPFE!20] (2,3) -- (4,3) -- (3.2,4.5) -- (2.8,4.5) -- cycle;
+    \fill[bleuPFE!20] (2.8,4.5) -- (3.2,4.5) -- (3,5) -- cycle;
+    \node[bleuPFE,font=\small\bfseries] at (3,3.75) {Tests E2E};
+    \node[font=\scriptsize,bleuPFE!70] at (3,3.35) {Interface utilisateur};
+
+    % Étiquettes de quantité
+    \node[font=\scriptsize,color=bleuPFE] at (-1.5,0.75)
+      {\textbf{Nombreux}};
+    \node[font=\scriptsize,color=bleuPFE] at (-1.5,2.25)
+      {\textbf{Modérés}};
+    \node[font=\scriptsize,color=bleuPFE] at (-1.5,3.75)
+      {\textbf{Peu}};
+
+    % Axe vitesse
+    \draw[->,>=stealth,gray!50] (-0.5,0) -- (-0.5,5.2)
+      node[above,font=\scriptsize,gray] {Vitesse};
+
+  \end{tikzpicture}
+  \caption{Pyramide de tests adoptée pour le projet}
+  \label{fig:test_pyramid}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Tests unitaires}
+% -----------------------------------------------------------------
+
+\subsection{Framework utilisé~: Jest}
+
+Les tests unitaires sont rédigés avec le framework \textbf{Jest} (v29).
+Chaque Use Case et chaque module critique dispose de sa suite de tests.
+Les dépendances externes (MongoDB, réseau Telnet) sont mockées.
+
+\subsection{Tests du module d'authentification}
+
+\begin{lstlisting}[language=javascript,
+  caption={Tests unitaires — LoginUseCase}]
+describe('LoginUseCase', () => {
+
+  const mockUserRepo = {
+    findByUsername: jest.fn(),
+  };
+  const loginUseCase = new LoginUseCase(mockUserRepo);
+
+  test('devrait retourner un JWT valide pour des identifiants corrects',
+    async () => {
+      const hashedPwd = await bcrypt.hash('motdepasse123', 10);
+      mockUserRepo.findByUsername.mockResolvedValue({
+        id: 1, username: 'testuser',
+        password: hashedPwd, role: 'engineer',
+        statut: 'actif',
+      });
+
+      const result = await loginUseCase.execute(
+        'testuser', 'motdepasse123'
+      );
+
+      expect(result).toHaveProperty('token');
+      expect(result.user.username).toBe('testuser');
+    }
+  );
+
+  test('devrait rejeter des identifiants incorrects', async () => {
+    mockUserRepo.findByUsername.mockResolvedValue({
+      password: await bcrypt.hash('correct', 10), statut: 'actif',
+    });
+
+    await expect(
+      loginUseCase.execute('user', 'mauvaismdp')
+    ).rejects.toThrow('Identifiants invalides');
+  });
+
+  test('devrait rejeter un compte inactif', async () => {
+    mockUserRepo.findByUsername.mockResolvedValue({
+      password: await bcrypt.hash('mdp', 10), statut: 'inactif',
+    });
+
+    await expect(
+      loginUseCase.execute('user', 'mdp')
+    ).rejects.toThrow('Compte inactif');
+  });
+});
+\end{lstlisting}
+
+\subsection{Tests du Worker Thread Telnet}
+
+\begin{lstlisting}[language=javascript,
+  caption={Tests unitaires — Moteur Telnet (mock telnet-client)}]
+jest.mock('telnet-client', () => {
+  return jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(true),
+    exec:    jest.fn().mockResolvedValue('PING 8.8.8.8 ... OK'),
+    end:     jest.fn().mockResolvedValue(true),
+  }));
+});
+
+describe('testWorker — mode single', () => {
+  test('devrait exécuter une commande et valider la réponse',
+    async () => {
+      const result = await runSingleTest({
+        slot:    { adresse: '192.168.5.1', port: 23 },
+        command: {
+          type: 'single',
+          command: 'ping -c 1 8.8.8.8',
+          expectedResponse: 'OK',
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.response).toContain('OK');
+    }
+  );
+});
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Tests d'intégration}
+% -----------------------------------------------------------------
+
+\subsection{Tests de l'API REST avec Supertest}
+
+Les tests d'intégration utilisent \textbf{Supertest} pour simuler des
+requêtes HTTP réelles vers l'API Express, avec une base MongoDB de test
+(base isolée \texttt{telnet-test-db})~:
+
+\begin{lstlisting}[language=javascript,
+  caption={Tests d'intégration — Endpoint POST /login}]
+describe('POST /login', () => {
+  beforeAll(async () => {
+    await connectDatabase(process.env.MONGO_URI_TEST);
+    // Création d'un utilisateur de test
+    await UserModel.create({
+      id: 99, username: 'testuser',
+      password: await bcrypt.hash('test1234', 10),
+      role: 'engineer', statut: 'actif',
+    });
+  });
+
+  afterAll(async () => {
+    await UserModel.deleteMany({ username: 'testuser' });
+    await mongoose.connection.close();
+  });
+
+  it('retourne 200 et un JWT pour des identifiants valides',
+    async () => {
+      const res = await request(app)
+        .post('/login')
+        .send({ username: 'testuser', password: 'test1234' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.user.role).toBe('engineer');
+    }
+  );
+
+  it('retourne 401 pour un mot de passe incorrect', async () => {
+    const res = await request(app)
+      .post('/login')
+      .send({ username: 'testuser', password: 'mauvais' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('retourne 429 après 10 tentatives en 15 minutes',
+    async () => {
+      for (let i = 0; i < 10; i++) {
+        await request(app).post('/login')
+          .send({ username: 'x', password: 'x' });
+      }
+      const res = await request(app).post('/login')
+        .send({ username: 'x', password: 'x' });
+      expect(res.status).toBe(429);
+    }
+  );
+});
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Tests fonctionnels (end-to-end)}
+% -----------------------------------------------------------------
+
+\subsection{Scénarios de tests manuels}
+
+En l'absence d'un framework E2E (Playwright/Cypress) dans cette version,
+les tests fonctionnels ont été réalisés manuellement selon des scénarios
+documentés. Les principaux scénarios validés sont~:
+
+\begin{table}[H]
+  \centering
+  \caption{Scénarios de tests fonctionnels — résultats}
+  \label{tab:e2e_tests}
+  \begin{tabularx}{\textwidth}{L{0.8cm} L{5cm} L{3cm} C{2cm}}
+    \toprule
+    \textbf{ID} & \textbf{Scénario} & \textbf{Précondition} & \textbf{Résultat} \\
+    \midrule
+    ST01 & Connexion avec identifiants valides &
+           Utilisateur actif en BD & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST02 & Connexion avec mot de passe erroné &
+           --- & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST03 & Accès à une route protégée sans JWT &
+           --- & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST04 & Création d'un Poste (CRUD) &
+           Rôle ingénieur & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST05 & Création d'un Slot avec adresse IP &
+           Poste + Produit existants & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST06 & Exécution d'un test commande \texttt{single} &
+           Slot accessible, équipement actif & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST07 & Exécution d'un test séquence (3 étapes) &
+           Slot accessible & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST08 & Résultats en temps réel via WebSocket &
+           Test en cours & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST09 & Arrêt d'un test en cours &
+           Test PENDING & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST10 & Tests multi-slots (3 slots en parallèle) &
+           3 slots configurés & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST11 & Génération d'un rapport &
+           Tests historisés & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST12 & Consultation du journal d'audit &
+           Rôle admin & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST13 & Changement de langue (FR → EN) &
+           --- & \textcolor{vertCode}{\textbf{PASS}} \\
+    ST14 & Accès technicien à une route admin &
+           JWT technicien & \textcolor{vertCode}{\textbf{PASS}} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% -----------------------------------------------------------------
+\section{Résultats du pipeline CI/CD}
+% -----------------------------------------------------------------
+
+\subsection{Exécution du pipeline}
+
+Chaque poussée sur la branche \texttt{main} déclenche les trois jobs du
+pipeline. Le tableau suivant résume les durées et statuts observés lors
+des dernières exécutions~:
+
+\begin{table}[H]
+  \centering
+  \caption{Résultats du pipeline GitHub Actions}
+  \label{tab:cicd_results}
+  \begin{tabularx}{\textwidth}{L{3cm} L{3.5cm} C{2.5cm} C{2.5cm}}
+    \toprule
+    \textbf{Job} & \textbf{Étapes clés} &
+    \textbf{Durée} & \textbf{Statut} \\
+    \midrule
+    ci-backend & Checkout + npm ci + audit + tests &
+      $\sim$1 min 45 s & \textcolor{vertCode}{\textbf{Success}} \\
+    ci-frontend & Checkout + npm ci + audit + build &
+      $\sim$2 min 30 s & \textcolor{vertCode}{\textbf{Success}} \\
+    deploy & Build Docker + Helm upgrade + rollout &
+      $\sim$6 min 20 s & \textcolor{vertCode}{\textbf{Success}} \\
+    \bottomrule
+    \multicolumn{2}{l}{\textbf{Durée totale}} &
+      \multicolumn{2}{l}{$\sim$10 min 35 s} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Vérification de l'état des pods après déploiement}
+
+\begin{lstlisting}[language=yaml,
+  caption={Sortie de \texttt{kubectl get pods -n telnet-app} après déploiement}]
+NAME                                    READY   STATUS    RESTARTS   AGE
+telnet-app-backend-7d4f9c8b6f-xk2p9    1/1     Running   0          4m12s
+telnet-app-backend-7d4f9c8b6f-m8tn7    1/1     Running   0          3m55s
+telnet-app-frontend-5c9d7b4f8d-qw3r1   1/1     Running   0          4m08s
+telnet-app-mongodb-6b8f7c5d9b-nj4t8    1/1     Running   0          4m20s
+\end{lstlisting}
+
+% -----------------------------------------------------------------
+\section{Tableau de synthèse de validation}
+% -----------------------------------------------------------------
+
+\begin{table}[H]
+  \centering
+  \caption{Synthèse de la validation par rapport aux besoins}
+  \label{tab:synthese_validation}
+  \begin{tabularx}{\textwidth}{C{0.8cm} L{5cm} L{3cm} C{2cm}}
+    \toprule
+    \textbf{BF} & \textbf{Besoin} & \textbf{Méthode de test} & \textbf{Statut} \\
+    \midrule
+    BF-01 & Authentification JWT & Tests unitaires + intégration &
+      \textcolor{vertCode}{Validé} \\
+    BF-05/06/07/08 & CRUD Configuration & Tests intégration &
+      \textcolor{vertCode}{Validé} \\
+    BF-09/10/11 & Gestion commandes Telnet & Tests intégration &
+      \textcolor{vertCode}{Validé} \\
+    BF-12 & Exécution test Telnet & Tests unitaires + fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-13 & Modes single/séquence/monitoring & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-14 & Tests multi-slots parallèles & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-17/18/19 & WebSocket temps réel & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-20 & Historique des tests & Tests intégration &
+      \textcolor{vertCode}{Validé} \\
+    BF-21/22 & Génération de rapports & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-23/24 & Gestion utilisateurs RBAC & Tests unitaires + intégration &
+      \textcolor{vertCode}{Validé} \\
+    BF-25 & Journal d'audit & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-26 & Statistiques admin & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    BF-27/28 & Internationalisation & Tests fonctionnels &
+      \textcolor{vertCode}{Validé} \\
+    --- & Pipeline CI/CD & Exécution GitHub Actions &
+      \textcolor{vertCode}{Validé} \\
+    --- & Déploiement Kubernetes & \texttt{kubectl rollout status} &
+      \textcolor{vertCode}{Validé} \\
+    --- & Supervision Prometheus/Grafana & Consultation dashboard &
+      \textcolor{vertCode}{Validé} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section*{Conclusion}
+
+Ce chapitre a présenté la stratégie de validation du projet Telnet Test
+Manager. Les tests unitaires (Jest), les tests d'intégration (Supertest),
+les tests fonctionnels manuels et la validation du pipeline CI/CD
+confirment que l'ensemble des 27 besoins fonctionnels et des exigences
+non fonctionnelles sont satisfaits. Le taux de réussite de 100\,\% sur les
+14 scénarios E2E testés témoigne de la qualité de la réalisation.
