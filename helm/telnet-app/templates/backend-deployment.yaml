@@ -14,30 +14,6 @@ spec:
       labels:
         app: backend
     spec:
-      initContainers:
-        - name: wait-for-mongodb
-          image: mongo:7
-          env:
-            - name: MONGO_USER
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: MONGO_INITDB_ROOT_USERNAME
-            - name: MONGO_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: MONGO_INITDB_ROOT_PASSWORD
-          command:
-            - sh
-            - -c
-            - |
-              until mongosh --host mongodb-service --port {{ .Values.service.mongodb.port }} \
-                -u "$MONGO_USER" -p "$MONGO_PASS" --authenticationDatabase admin \
-                --eval "db.adminCommand('ping')" --quiet 2>/dev/null; do
-                echo "Waiting for MongoDB to be ready..."; sleep 5
-              done
-              echo "MongoDB ready."
       containers:
         - name: backend
           image: "{{ .Values.image.backend.name }}:{{ .Values.image.backend.tag }}"
