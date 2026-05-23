@@ -113,6 +113,12 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          # Supprimer la release si elle est en etat failed (bloque les upgrades)
+          $releaseStatus = helm status telnet-app -n telnet-app 2>&1 | Out-String
+          if ($releaseStatus -match 'failed') {
+            Write-Host "Release en etat failed - suppression avant reinstallation..."
+            helm delete telnet-app -n telnet-app
+          }
           # Echapper les virgules du MONGO_URI (Helm --set utilise , comme separateur)
           $escapedUri = $env:MONGO_URI -replace ',', '\,'
           helm upgrade --install telnet-app ./helm/telnet-app `
@@ -122,7 +128,7 @@ jobs:
             --set secrets.mongoRootPassword="$env:MONGO_PASSWORD" `
             --set "secrets.mongodbUri=$escapedUri" `
             --set secrets.jwtSecret="$env:JWT_SECRET" `
-            --atomic `
+            --rollback-on-failure `
             --timeout 600s
 
       - name: Install monitoring stack
