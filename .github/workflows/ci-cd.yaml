@@ -114,7 +114,7 @@ jobs:
         run: |
           $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
           # Supprimer la release si elle est dans un etat bloquant (failed, pending-*)
-          $releaseInfo = helm list -n telnet-app --filter "^telnet-app$" -a -o json 2>&1 | Out-String
+          $releaseInfo = helm list -n telnet-app --filter "^telnet-app$" --all -o json 2>&1 | Out-String
           if ($releaseInfo.Trim() -ne '[]' -and $releaseInfo -notmatch '"status":"deployed"') {
             Write-Host "Release en etat bloquant - nettoyage..."
             helm uninstall telnet-app -n telnet-app 2>&1 | Out-Null
