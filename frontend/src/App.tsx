@@ -58,7 +58,7 @@ function App() {
     const token = sessionStorage.getItem('token');
     if (token) {
       try {
-        await fetch('http://localhost:3002/logout', {
+        await fetch('/logout', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` }
         });

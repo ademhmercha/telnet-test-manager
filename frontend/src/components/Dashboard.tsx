@@ -472,7 +472,7 @@ const Dashboard: React.FC = () => {
 
   const loadTelnetCommands = async () => {
     try {
-      const response = await fetch('http://localhost:3002/telnet-commands', {
+      const response = await fetch('/telnet-commands', {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }

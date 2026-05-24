@@ -74,7 +74,7 @@ const Commands: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3002/telnet-commands', { headers: apiHeaders() });
+      const res = await fetch('/telnet-commands', { headers: apiHeaders() });
       const data = await res.json();
       setCommands(data.commands || []);
     } catch {
@@ -139,7 +139,7 @@ const Commands: React.FC = () => {
       };
 
       if (editingId) {
-        const res = await fetch(`http://localhost:3002/telnet-commands/${editingId}`, {
+        const res = await fetch(`/telnet-commands/${editingId}`, {
           method: 'PUT',
           headers: apiHeaders(),
           body: JSON.stringify(body),
@@ -148,7 +148,7 @@ const Commands: React.FC = () => {
         if (!res.ok) throw new Error(data.error || t('common.serverError'));
         setCommands(prev => prev.map(c => c.id === editingId ? data.command : c));
       } else {
-        const res = await fetch('http://localhost:3002/telnet-commands', {
+        const res = await fetch('/telnet-commands', {
           method: 'POST',
           headers: apiHeaders(),
           body: JSON.stringify(body),
@@ -167,7 +167,7 @@ const Commands: React.FC = () => {
 
   const handleDelete = async (cmd: TelnetCommand) => {
     try {
-      const res = await fetch(`http://localhost:3002/telnet-commands/${cmd.id}`, {
+      const res = await fetch(`/telnet-commands/${cmd.id}`, {
         method: 'DELETE',
         headers: apiHeaders(),
       });

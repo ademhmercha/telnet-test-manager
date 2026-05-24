@@ -188,7 +188,7 @@ const Reports: React.FC = () => {
         posteService.getPostes(),
         produitService.getProduits(),
         slotService.getSlots(),
-        fetch('http://localhost:3002/telnet-commands', { headers }).then(r => r.json()).catch(() => ({ commands: [] }))
+        fetch('/telnet-commands', { headers }).then(r => r.json()).catch(() => ({ commands: [] }))
       ]);
       setPostes(p || []);
       setProduits(pr || []);

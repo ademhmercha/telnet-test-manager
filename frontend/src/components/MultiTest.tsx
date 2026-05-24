@@ -152,7 +152,7 @@ const MultiTest: React.FC = () => {
 
   const loadTelnetCommands = async () => {
     try {
-      const resp = await fetch('http://localhost:3002/telnet-commands', {
+      const resp = await fetch('/telnet-commands', {
         headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token')}` },
       });
       const data = await resp.json();
