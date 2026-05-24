@@ -182,20 +182,6 @@ jobs:
           kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
           kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
 
-      - name: Configure hosts file for telnet-app.local
-        shell: powershell
-        continue-on-error: true
-        run: |
-          $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
-          $entry = "127.0.0.1 telnet-app.local"
-          $content = Get-Content $hostsFile -Raw -ErrorAction SilentlyContinue
-          if ($content -notmatch "telnet-app\.local") {
-            Add-Content $hostsFile "`n$entry"
-            Write-Host "Hosts entry added: $entry"
-          } else {
-            Write-Host "Hosts entry already present."
-          }
-
       - name: Start minikube tunnel
         shell: powershell
         continue-on-error: true
