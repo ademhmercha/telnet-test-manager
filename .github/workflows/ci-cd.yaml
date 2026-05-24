@@ -182,6 +182,33 @@ jobs:
           kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
           kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
 
+      - name: Configure hosts file for telnet-app.local
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $hostsFile = "$env:SystemRoot\System32\drivers\etc\hosts"
+          $entry = "127.0.0.1 telnet-app.local"
+          $content = Get-Content $hostsFile -Raw -ErrorAction SilentlyContinue
+          if ($content -notmatch "telnet-app\.local") {
+            Add-Content $hostsFile "`n$entry"
+            Write-Host "Hosts entry added: $entry"
+          } else {
+            Write-Host "Hosts entry already present."
+          }
+
+      - name: Start minikube tunnel
+        shell: powershell
+        continue-on-error: true
+        run: |
+          $existing = Get-WmiObject Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*minikube*tunnel*" }
+          if ($existing) {
+            Write-Host "minikube tunnel already running (PID $($existing.ProcessId))"
+          } else {
+            Start-Process -FilePath "minikube" -ArgumentList "tunnel" -WindowStyle Hidden
+            Start-Sleep 3
+            Write-Host "minikube tunnel started in background"
+          }
+
       - name: Show pods and services
         shell: powershell
         run: |
@@ -194,21 +221,16 @@ jobs:
         shell: powershell
         run: |
           Write-Host "========================================="
-          Write-Host '$bpod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}"'
-          Write-Host "Start-Job { kubectl port-forward svc/frontend-service 4000:80 -n telnet-app } | Out-Null"
-          Write-Host "Start-Job { kubectl port-forward svc/backend 3002:3002 -n telnet-app } | Out-Null"
-          Write-Host 'kubectl port-forward -n telnet-app pod/$bpod 3003:3003'
-          Write-Host "Then open: http://localhost:4000"
+          Write-Host "Application disponible sur : http://telnet-app.local"
+          Write-Host "Grafana disponible sur     : http://localhost:3000 (port-forward manuel)"
           Write-Host "========================================="
           $summary = $env:GITHUB_STEP_SUMMARY
-          Add-Content $summary "### Acces a l'application"
-          Add-Content $summary '```powershell'
-          Add-Content $summary '$bpod = kubectl get pods -n telnet-app -l app=backend -o jsonpath="{.items[0].metadata.name}"'
-          Add-Content $summary "Start-Job { kubectl port-forward svc/frontend-service 4000:80 -n telnet-app } | Out-Null"
-          Add-Content $summary "Start-Job { kubectl port-forward svc/backend 3002:3002 -n telnet-app } | Out-Null"
-          Add-Content $summary 'kubectl port-forward -n telnet-app pod/$bpod 3003:3003'
-          Add-Content $summary '```'
-          Add-Content $summary "Ouvrir : http://localhost:4000"
+          Add-Content $summary "### Application deployee"
+          Add-Content $summary ""
+          Add-Content $summary "| Service | URL |"
+          Add-Content $summary "|---|---|"
+          Add-Content $summary "| Application | http://telnet-app.local |"
+          Add-Content $summary "| Grafana | ``kubectl port-forward svc/grafana 3000:80 -n monitoring`` → http://localhost:3000 |"
 
       - name: Backend logs
         shell: powershell
