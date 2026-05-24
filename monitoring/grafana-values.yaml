@@ -192,18 +192,18 @@ alerting:
               subject: >-
                 [Telnet Monitor]  CPU Usage Critical — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
               message: |
-                 ALERTE CPU — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
+                ALERTE CPU — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
 
                 {{ "{{" }} .CommonAnnotations.description {{ "}}" }}
 
-                ──────────────────────────────
+                ---
                 Namespace       : telnet-app
                 Environnement   : Kubernetes / Minikube
-                Sévérité        : CRITICAL
+                Severite        : CRITICAL
                 Alertes actives : {{ "{{" }} len .Alerts {{ "}}" }}
-                Déclenchement   : {{ "{{" }} (index .Alerts 0).StartsAt {{ "}}" }}
-                ──────────────────────────────
+                Declenchement   : {{ "{{" }} (index .Alerts 0).StartsAt {{ "}}" }}
+                ---
 
-                Accédez au dashboard Grafana pour consulter les métriques en temps réel.
+                Accedez au dashboard Grafana pour consulter les metriques en temps reel.
                 {{ "{{" }} .ExternalURL {{ "}}" }}
             disableResolveMessage: false
