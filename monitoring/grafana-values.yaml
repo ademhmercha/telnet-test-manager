@@ -177,83 +177,8 @@ grafana.ini:
   unified_alerting:
     enabled: true
 
-# Go template syntax below is escaped with {{ "{{" }} / {{ "}}" }} so Helm's tpl
-# function passes the braces through literally to Grafana at runtime.
+# Subject uses Helm-escaped Go template syntax so Helm's tpl passes {{ }} to Grafana.
 alerting:
-  notification-templates.yaml:
-    apiVersion: 1
-    templates:
-      - name: telnet-alert-email
-        template: |
-          {{ "{{" }} define "telnet-alert-email" {{ "}}" }}
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:24px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;">
-            <tr><td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.09);">
-                <tr>
-                  <td style="background:#991B1B;padding:30px 36px 26px;">
-                    <p style="margin:0 0 8px;font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.55);">TELNET MONITOR &nbsp;&middot;&nbsp; KUBERNETES ALERTING</p>
-                    <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;line-height:1.3;">&#9888; &nbsp;CPU Usage Critical</h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background:#FEF2F2;padding:14px 36px;border-left:4px solid #B91C1C;border-bottom:1px solid #FECACA;">
-                    <p style="margin:0;font-size:13px;color:#991B1B;font-weight:600;">{{ "{{" }} .CommonAnnotations.summary {{ "}}" }}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:32px 36px 28px;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF7F7;border:1px solid #FECACA;border-radius:8px;margin-bottom:28px;">
-                      <tr>
-                        <td style="padding:18px 22px;">
-                          <p style="margin:0 0 6px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#9CA3AF;">Contexte</p>
-                          <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">{{ "{{" }} .CommonAnnotations.description {{ "}}" }}</p>
-                        </td>
-                      </tr>
-                    </table>
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-                      <tr>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;width:40%;font-size:13px;color:#6B7280;font-weight:500;">Namespace</td>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#111827;font-weight:600;">telnet-app</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#6B7280;font-weight:500;">Environnement</td>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#111827;font-weight:600;">Kubernetes / Minikube</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#6B7280;font-weight:500;">S&eacute;v&eacute;rit&eacute;</td>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;font-weight:700;color:#B91C1C;">&#128308; &nbsp;CRITICAL</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#6B7280;font-weight:500;">Alertes actives</td>
-                        <td style="padding:12px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#111827;font-weight:600;">{{ "{{" }} len .Alerts {{ "}}" }}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:12px 0;font-size:13px;color:#6B7280;font-weight:500;">D&eacute;clenchement</td>
-                        <td style="padding:12px 0;font-size:13px;color:#111827;font-weight:600;">{{ "{{" }} (index .Alerts 0).StartsAt {{ "}}" }}</td>
-                      </tr>
-                    </table>
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
-                      <tr>
-                        <td>
-                          <a href="{{ "{{" }} .ExternalURL {{ "}}" }}" style="display:inline-block;background:#B91C1C;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.3px;">Voir le Dashboard Grafana &nbsp;&#8594;</a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background:#F8FAFC;border-top:1px solid #F1F5F9;padding:18px 36px;">
-                    <p style="margin:0;font-size:11px;color:#94A3B8;line-height:1.7;">
-                      Grafana Alerting &nbsp;&middot;&nbsp; Telnet Monitor &nbsp;&middot;&nbsp; Kubernetes &nbsp;&nbsp;|&nbsp;&nbsp;
-                      <a href="{{ "{{" }} .ExternalURL {{ "}}" }}/alerting" style="color:#94A3B8;text-decoration:underline;">G&eacute;rer les alertes</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
-          </table>
-          {{ "{{" }} end {{ "}}" }}
-
   contactpoints.yaml:
     apiVersion: 1
     contactPoints:
@@ -265,7 +190,20 @@ alerting:
             settings:
               addresses: ademhmerchaaa@gmail.com
               subject: >-
-                [Telnet Monitor] CPU Usage Critical — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
+                [Telnet Monitor]  CPU Usage Critical — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
               message: |
-                {{ "{{" }} template "telnet-alert-email" . {{ "}}" }}
+                 ALERTE CPU — {{ "{{" }} .CommonAnnotations.summary {{ "}}" }}
+
+                {{ "{{" }} .CommonAnnotations.description {{ "}}" }}
+
+                ──────────────────────────────
+                Namespace       : telnet-app
+                Environnement   : Kubernetes / Minikube
+                Sévérité        : CRITICAL
+                Alertes actives : {{ "{{" }} len .Alerts {{ "}}" }}
+                Déclenchement   : {{ "{{" }} (index .Alerts 0).StartsAt {{ "}}" }}
+                ──────────────────────────────
+
+                Accédez au dashboard Grafana pour consulter les métriques en temps réel.
+                {{ "{{" }} .ExternalURL {{ "}}" }}
             disableResolveMessage: false
