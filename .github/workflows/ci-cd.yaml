@@ -182,17 +182,27 @@ jobs:
           kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
           kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
 
-      - name: Start minikube tunnel
+      - name: Start minikube tunnel via scheduled task
         shell: powershell
         continue-on-error: true
         run: |
-          $existing = Get-WmiObject Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*minikube*tunnel*" }
-          if ($existing) {
-            Write-Host "minikube tunnel already running (PID $($existing.ProcessId))"
+          $taskName = "MinikubeTunnel"
+          $minikubePath = (Get-Command minikube -ErrorAction SilentlyContinue).Source
+          if (-not $minikubePath) { $minikubePath = "minikube" }
+          $existing = schtasks /query /tn $taskName 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            schtasks /create /tn $taskName /tr "`"$minikubePath`" tunnel" /sc ONLOGON /ru "$env:USERNAME" /rl HIGHEST /f 2>&1
+            Write-Host "Scheduled task '$taskName' created."
           } else {
-            Start-Process -FilePath "minikube" -ArgumentList "tunnel" -WindowStyle Hidden
-            Start-Sleep 3
-            Write-Host "minikube tunnel started in background"
+            Write-Host "Scheduled task '$taskName' already exists."
+          }
+          $running = Get-WmiObject Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*minikube*tunnel*" }
+          if (-not $running) {
+            schtasks /run /tn $taskName 2>&1
+            Start-Sleep 5
+            Write-Host "minikube tunnel started via scheduled task."
+          } else {
+            Write-Host "minikube tunnel already running (PID $($running.ProcessId))."
           }
 
       - name: Show pods and services
