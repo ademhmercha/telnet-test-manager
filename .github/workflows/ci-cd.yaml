@@ -182,17 +182,6 @@ jobs:
           kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
           kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
 
-      - name: Check minikube tunnel status
-        shell: powershell
-        continue-on-error: true
-        run: |
-          $running = Get-WmiObject Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*minikube*tunnel*" }
-          if ($running) {
-            Write-Host "OK — minikube tunnel est actif (PID $($running.ProcessId)). http://telnet-app.local est accessible."
-          } else {
-            Write-Warning "minikube tunnel n'est PAS actif. Lancer manuellement en admin : minikube tunnel"
-          }
-
       - name: Show pods and services
         shell: powershell
         run: |
