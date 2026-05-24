@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.service.backend.port }}"
+        prometheus.io/path: "/metrics"
     spec:
       initContainers:
         - name: wait-for-mongodb
