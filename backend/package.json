@@ -5,7 +5,8 @@
   "main": "src/main/server.js",
   "scripts": {
     "start": "node src/main/server.js",
-    "dev": "nodemon src/main/server.js"
+    "dev": "nodemon src/main/server.js",
+    "test": "jest --coverage --forceExit"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,7 +22,15 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^3.0.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/application/usecases/**/*.js"
+    ]
   },
   "keywords": [
     "telnet",
