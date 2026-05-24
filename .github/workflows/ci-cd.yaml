@@ -92,6 +92,13 @@ jobs:
           docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-backend:latest ./backend
           docker build --build-arg CACHEBUST=${{ github.sha }} -t telnet-frontend:latest ./frontend
 
+      - name: Enable ingress addon
+        shell: powershell
+        run: |
+          $env:KUBECONFIG = "$env:USERPROFILE\.kube\config"
+          minikube addons enable ingress
+          Write-Host "Ingress addon enabled."
+
       - name: Fix ingress webhook if broken
         shell: powershell
         run: |

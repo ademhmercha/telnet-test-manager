@@ -4,7 +4,8 @@ metadata:
   name: telnet-app-ingress
   namespace: {{ .Release.Namespace }}
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
   rules:
@@ -18,10 +19,3 @@ spec:
                 name: frontend-service
                 port:
                   number: {{ .Values.service.frontend.port }}
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: {{ .Values.service.backend.port }}
