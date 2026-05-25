@@ -9,8 +9,8 @@ const AUDIT_CTX = { method: 'POST', url: '/login', ip: '127.0.0.1', userAgent: '
 function makeRepos(overrides = {}) {
   return {
     userRepo: {
-      findByUsername: jest.fn(),
-      updateById:     jest.fn().mockResolvedValue({}),
+      findByEmail:  jest.fn(),
+      updateById:   jest.fn().mockResolvedValue({}),
       ...overrides.userRepo
     },
     auditLogRepo: {
@@ -26,11 +26,11 @@ describe('LoginUseCase', () => {
   });
 
   describe('validation', () => {
-    it('throws 400 when username is missing', async () => {
+    it('throws 400 when email is missing', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
 
-      await expect(useCase.execute({ username: '', password: 'pass' }, AUDIT_CTX))
+      await expect(useCase.execute({ email: '', password: 'pass' }, AUDIT_CTX))
         .rejects.toMatchObject({ statusCode: 400, message: 'Identifiants manquants' });
     });
 
@@ -38,7 +38,7 @@ describe('LoginUseCase', () => {
       const { userRepo, auditLogRepo } = makeRepos();
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
 
-      await expect(useCase.execute({ username: 'admin', password: '' }, AUDIT_CTX))
+      await expect(useCase.execute({ email: 'admin@test.com', password: '' }, AUDIT_CTX))
         .rejects.toMatchObject({ statusCode: 400 });
     });
   });
@@ -46,23 +46,23 @@ describe('LoginUseCase', () => {
   describe('authentication', () => {
     it('throws 401 when user does not exist', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
-      userRepo.findByUsername.mockResolvedValue(null);
+      userRepo.findByEmail.mockResolvedValue(null);
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
 
-      await expect(useCase.execute({ username: 'ghost', password: 'pass' }, AUDIT_CTX))
+      await expect(useCase.execute({ email: 'ghost@test.com', password: 'pass' }, AUDIT_CTX))
         .rejects.toMatchObject({ statusCode: 401, message: 'Identifiants incorrects' });
     });
 
     it('throws 401 when password is wrong', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
-      userRepo.findByUsername.mockResolvedValue({
-        id: 1, username: 'admin',
+      userRepo.findByEmail.mockResolvedValue({
+        id: 1, username: 'admin', email: 'admin@test.com',
         password: await bcrypt.hash('correct', 10),
         role: 'admin'
       });
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
 
-      await expect(useCase.execute({ username: 'admin', password: 'wrong' }, AUDIT_CTX))
+      await expect(useCase.execute({ email: 'admin@test.com', password: 'wrong' }, AUDIT_CTX))
         .rejects.toMatchObject({ statusCode: 401 });
     });
   });
@@ -77,12 +77,12 @@ describe('LoginUseCase', () => {
 
     beforeEach(async () => {
       const { userRepo, auditLogRepo } = makeRepos();
-      userRepo.findByUsername.mockResolvedValue({
+      userRepo.findByEmail.mockResolvedValue({
         ...mockUser,
         password: await bcrypt.hash('secret', 10)
       });
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
-      result = await useCase.execute({ username: 'admin', password: 'secret' }, AUDIT_CTX);
+      result = await useCase.execute({ email: 'admin@test.com', password: 'secret' }, AUDIT_CTX);
     });
 
     it('returns a JWT token', () => {
@@ -102,12 +102,12 @@ describe('LoginUseCase', () => {
 
     it('creates an audit log entry with LOGIN action', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
-      userRepo.findByUsername.mockResolvedValue({
+      userRepo.findByEmail.mockResolvedValue({
         ...mockUser,
         password: await bcrypt.hash('secret', 10)
       });
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
-      await useCase.execute({ username: 'admin', password: 'secret' }, AUDIT_CTX);
+      await useCase.execute({ email: 'admin@test.com', password: 'secret' }, AUDIT_CTX);
 
       expect(auditLogRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'LOGIN', username: 'admin', userId: 1 })
@@ -116,12 +116,12 @@ describe('LoginUseCase', () => {
 
     it('updates lastLogin timestamp', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
-      userRepo.findByUsername.mockResolvedValue({
+      userRepo.findByEmail.mockResolvedValue({
         ...mockUser,
         password: await bcrypt.hash('secret', 10)
       });
       const useCase = new LoginUseCase(userRepo, auditLogRepo);
-      await useCase.execute({ username: 'admin', password: 'secret' }, AUDIT_CTX);
+      await useCase.execute({ email: 'admin@test.com', password: 'secret' }, AUDIT_CTX);
 
       expect(userRepo.updateById).toHaveBeenCalledWith(
         1,
