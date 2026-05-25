@@ -84,11 +84,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <input
                 ref={usernameRef}
                 id="username"
-                type="email"
+                type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 placeholder="nom@sagemcom.com"
-                autoComplete="email"
+                autoComplete="username"
                 disabled={loading}
               />
             </div>
