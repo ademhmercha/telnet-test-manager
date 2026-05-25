@@ -126,8 +126,8 @@ export interface SequenceStep {
 }
 
 export const authService = {
-  login: async (username: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post('/login', { username, password });
+  login: async (email: string, password: string): Promise<LoginResponse> => {
+    const response = await api.post('/login', { email, password });
     return response.data;
   },
 };

@@ -10,6 +10,10 @@ class MongoUserRepository extends IUserRepository {
     return this._User.findOne({ username }).lean();
   }
 
+  async findByEmail(email) {
+    return this._User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } }).lean();
+  }
+
   async findById(id) {
     return this._User.findOne({ id }, { password: 0 }).lean();
   }

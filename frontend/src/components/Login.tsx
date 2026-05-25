@@ -12,7 +12,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   // @ts-ignore
   const { t: _t } = useTranslation();
   const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
-  const [username, setUsername]   = useState('');
+  const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [showPwd, setShowPwd]     = useState(false);
   const [loading, setLoading]     = useState(false);
@@ -29,7 +29,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password) {
+    if (!email.trim() || !password) {
       setError(t('login.fillFields'));
       triggerShake();
       return;
@@ -37,7 +37,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await authService.login(username.trim(), password);
+      const response = await authService.login(email.trim(), password);
       sessionStorage.setItem('token', response.token);
       sessionStorage.setItem('user', JSON.stringify(response.user));
       onLogin(response.user, response.token);
@@ -85,8 +85,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 ref={usernameRef}
                 id="username"
                 type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="nom@sagemcom.com"
                 autoComplete="username"
                 disabled={loading}

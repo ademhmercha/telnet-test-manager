@@ -7,14 +7,14 @@ class LoginUseCase {
     this._auditLogRepo = auditLogRepository;
   }
 
-  async execute({ username, password }, auditContext) {
-    if (!username || !password) {
+  async execute({ email, password }, auditContext) {
+    if (!email || !password) {
       const err = new Error('Identifiants manquants');
       err.statusCode = 400;
       throw err;
     }
 
-    const user = await this._userRepo.findByUsername(username);
+    const user = await this._userRepo.findByEmail(email);
     if (!user) {
       const err = new Error('Identifiants incorrects');
       err.statusCode = 401;
