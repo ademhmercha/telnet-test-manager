@@ -4,195 +4,87 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-/* ── Root layout ─────────────────────────────────────────────── */
+/* ── Root ────────────────────────────────────────────────────── */
 .login-root {
   min-height: 100vh;
   display: flex;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
 }
 
-/* ── Left panel ──────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   LEFT PANEL
+   ═══════════════════════════════════════════════════════════════ */
 .login-aside {
-  width: 420px;
+  width: 440px;
   flex-shrink: 0;
-  background: #0f172a;
-  border-right: 1px solid #1e293b;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-/* subtle grid background */
-.login-aside::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(37,99,235,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37,99,235,0.06) 1px, transparent 1px);
-  background-size: 32px 32px;
-  pointer-events: none;
-}
-
-/* radial glow */
-.login-aside::after {
-  content: '';
-  position: absolute;
-  top: -120px;
-  left: -80px;
-  width: 480px;
-  height: 480px;
-  background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 65%);
-  pointer-events: none;
 }
 
 .aside-inner {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 2.5rem 2.25rem;
-  gap: 2rem;
-}
-
-/* Logo */
-.aside-logo {
-  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  height: 100%;
+  padding: 3rem 2.75rem 2.25rem;
 }
 
-.aside-logo-mark {
+/* Brand block — vertically centered, takes all available space */
+.aside-brand {
+  flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  gap: 1.75rem;
+  width: 100%;
 }
 
-.aside-logo-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  letter-spacing: 0.02em;
+/* Sagemcom logo — big, natural colors, nothing filtered */
+.aside-sagem-logo {
+  width: 88%;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
-/* Headline */
-.aside-headline h1 {
-  margin: 0 0 0.625rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f8fafc;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+/* Thin gradient rule below logo */
+.aside-divider {
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, #0047CC 0%, #00C8C8 100%);
+  border-radius: 2px;
 }
 
-.aside-headline p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-/* Role cards */
-.aside-roles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.aside-role-title {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #475569;
-  margin-bottom: 0.25rem;
-}
-
-.aside-role-card {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid #1e293b;
-  border-radius: 8px;
-  padding: 0.875rem 1rem;
-}
-
-.role-card-header {
-  margin-bottom: 0.6rem;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
+/* Product label */
+.aside-product-label {
   font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.role-admin {
-  background: rgba(37,99,235,0.2);
-  color: #93c5fd;
-  border: 1px solid rgba(37,99,235,0.35);
-}
-
-.role-engineer {
-  background: rgba(16,185,129,0.15);
-  color: #6ee7b7;
-  border: 1px solid rgba(16,185,129,0.3);
-}
-
-.role-perms {
-  margin: 0;
-  padding: 0 0 0 1rem;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.role-perms li {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  line-height: 1.4;
-  position: relative;
-}
-
-.role-perms li::before {
-  content: '—';
-  position: absolute;
-  left: -1rem;
-  color: #334155;
-}
-
-/* Footer */
-.aside-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.7rem;
   color: #475569;
-  padding-top: 1.5rem;
-  border-top: 1px solid #1e293b;
 }
 
-.aside-secure-icon {
-  display: flex;
-  align-items: center;
-}
 
-/* ── Right panel ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   RIGHT PANEL
+   ═══════════════════════════════════════════════════════════════ */
 .login-main {
   flex: 1;
-  background: #f8fafc;
+  background: #f6f8fb;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
+}
+
+.login-lang-switcher {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
 }
 
 .login-form-wrap {
@@ -205,11 +97,10 @@
 }
 
 @keyframes formIn {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Shake on error */
 .shake { animation: shake 0.45s ease-in-out; }
 
 @keyframes shake {
@@ -262,24 +153,20 @@
 .field-group input::placeholder { color: #cbd5e1; }
 
 .field-group input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  border-color: #0047CC;
+  box-shadow: 0 0 0 3px rgba(0,71,204,0.1);
 }
 
 .field-group input:disabled {
   background: #f8fafc;
-  color: #94a3b8;
+  color: #64748b;
   cursor: not-allowed;
 }
 
-/* Password wrapper */
-.pwd-wrap {
-  position: relative;
-}
+/* Password */
+.pwd-wrap { position: relative; }
 
-.pwd-wrap input {
-  padding-right: 2.75rem;
-}
+.pwd-wrap input { padding-right: 2.75rem; }
 
 .pwd-toggle {
   position: absolute;
@@ -313,7 +200,7 @@
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #dc2626;
+  color: #b91c1c;
   animation: slideIn 0.2s ease-out;
 }
 
@@ -326,7 +213,7 @@
 .login-btn {
   width: 100%;
   padding: 0.75rem 1.25rem;
-  background: #1e40af;
+  background: linear-gradient(90deg, #0047CC 0%, #0099CC 100%);
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -337,13 +224,13 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
   letter-spacing: 0.01em;
 }
 
 .login-btn:hover:not(:disabled) {
-  background: #1d3a8a;
-  box-shadow: 0 4px 12px rgba(30,64,175,0.3);
+  opacity: 0.9;
+  box-shadow: 0 4px 14px rgba(0,71,204,0.3);
   transform: translateY(-1px);
 }
 
@@ -370,9 +257,7 @@
   flex-shrink: 0;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Form footer */
 .form-footer {
