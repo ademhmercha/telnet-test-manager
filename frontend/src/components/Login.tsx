@@ -80,21 +80,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="field-group">
-              <label htmlFor="username">{t('login.username')}</label>
+              <label htmlFor="username">Email</label>
               <input
                 ref={usernameRef}
                 id="username"
-                type="text"
+                type="email"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="admin"
-                autoComplete="username"
+                placeholder="nom@sagemcom.com"
+                autoComplete="email"
                 disabled={loading}
               />
             </div>
 
             <div className="field-group">
-              <label htmlFor="password">{t('login.password')}</label>
+              <label htmlFor="password">Mot de passe</label>
               <div className="pwd-wrap">
                 <input
                   id="password"
