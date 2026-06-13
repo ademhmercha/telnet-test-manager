@@ -112,6 +112,31 @@ const MultiTest: React.FC = () => {
   const activeTestsRef = useRef<(ActiveTest | null)[]>([null, null]);
   useEffect(() => { activeTestsRef.current = activeTests; }, [activeTests]);
 
+  // Sequence configuration modal
+  const [seqModalIdx, setSeqModalIdx] = useState<number | null>(null);
+  const [seqSearch, setSeqSearch] = useState('');
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  // Lock background scroll + allow Escape to close while the modal is open
+  useEffect(() => {
+    if (seqModalIdx === null) return;
+    document.body.style.overflow = 'hidden';
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSeqModalIdx(null);
+        setSeqSearch('');
+        setDragIdx(null);
+        setDragOverIdx(null);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handler);
+    };
+  }, [seqModalIdx]);
+
   useEffect(() => {
     const stored = sessionStorage.getItem('user');
     if (stored) { try { setUser(JSON.parse(stored)); } catch {} }
@@ -209,6 +234,20 @@ const MultiTest: React.FC = () => {
     setActiveTests(prev => prev.filter((_, i) => i !== idx));
   };
 
+  const openSeqModal = (idx: number) => {
+    setSeqModalIdx(idx);
+    setSeqSearch('');
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const closeSeqModal = () => {
+    setSeqModalIdx(null);
+    setSeqSearch('');
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
   const runAllTests = async () => {
     for (let i = 0; i < testConfigs.length; i++) {
       const c = testConfigs[i];
@@ -254,37 +293,6 @@ const MultiTest: React.FC = () => {
   const ConfigPanel = ({ idx, config }: { idx: number; config: TestConfig }) => {
     const num = idx + 1;
     const badgeNum = (idx % 6) + 1;
-
-    const addCmd = (cmd: TelnetCommand) => {
-      if (cmd.type === 'sequence' && cmd.steps) {
-        updateConfig(idx, { sequence: [...config.sequence, ...cmd.steps!] });
-      } else {
-        updateConfig(idx, {
-          sequence: [...config.sequence, {
-            commandId: cmd.id,
-            description: cmd.name,
-            type: cmd.type === 'monitoring' ? 'monitoring' : 'standard',
-            duration: cmd.type === 'monitoring' ? 20000 : undefined,
-          }],
-        });
-      }
-    };
-
-    const removeCmd = (i: number) =>
-      updateConfig(idx, { sequence: config.sequence.filter((_, j) => j !== i) });
-
-    const moveCmd = (i: number, dir: 'up' | 'down') => {
-      const next = [...config.sequence];
-      if (dir === 'up' && i > 0) [next[i - 1], next[i]] = [next[i], next[i - 1]];
-      else if (dir === 'down' && i < next.length - 1) [next[i], next[i + 1]] = [next[i + 1], next[i]];
-      updateConfig(idx, { sequence: next });
-    };
-
-    const updateDuration = (i: number, ms: number) => {
-      const next = [...config.sequence];
-      next[i] = { ...next[i], duration: ms };
-      updateConfig(idx, { sequence: next });
-    };
 
     return (
       <div className="mt-config-panel">
@@ -343,65 +351,28 @@ const MultiTest: React.FC = () => {
         )}
 
         {config.isSeqMode && (
-          <div className="mt-seq-builder">
-            <div className="mt-seq-available">
-              <div className="mt-seq-available-title">Commandes disponibles</div>
-              <div className="mt-seq-cmd-grid">
-                {telnetCommands.map(c => (
-                  <div key={c.id} className="mt-seq-cmd-card">
-                    <span className="mt-seq-cmd-name">{c.command || c.name}</span>
-                    {c.type === 'monitoring' && <span className="mt-seq-monitoring-tag">📡</span>}
-                    <button className="mt-seq-add-btn" onClick={() => addCmd(c)} title="Ajouter">+</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-seq-list-header">
-              <span>Séquence ({config.sequence.length} étape{config.sequence.length !== 1 ? 's' : ''})</span>
-              {config.sequence.length > 0 && (
-                <button className="mt-seq-clear-btn" onClick={() => updateConfig(idx, { sequence: [] })}>Vider</button>
-              )}
-            </div>
+          <div className="mt-seq-summary">
+            <button className="mt-seq-config-btn" onClick={() => openSeqModal(idx)} type="button">
+              <span>⚙️ Configurer la séquence</span>
+              <span className="mt-seq-count-badge">{config.sequence.length}</span>
+            </button>
 
             {config.sequence.length === 0 ? (
-              <div className="mt-seq-empty">Aucune commande — ajoutez depuis la liste ci-dessus</div>
+              <div className="mt-seq-empty">Aucune commande configurée — cliquez pour ajouter des étapes</div>
             ) : (
-              <div className="mt-seq-steps">
-                {config.sequence.map((step, i) => {
+              <div className="mt-seq-preview">
+                {config.sequence.slice(0, 5).map((step, i) => {
                   const cmd = telnetCommands.find(c => c.id === step.commandId);
                   const isMonStep = step.type === 'monitoring' || cmd?.type === 'monitoring';
                   return (
-                    <div key={i} className={`mt-seq-step ${isMonStep ? 'mt-seq-step-monitoring' : ''}`}>
-                      <span className="mt-seq-step-num">{i + 1}</span>
-                      <div className="mt-seq-step-body">
-                        <span className="mt-seq-step-name">
-                          {cmd?.command || step.commandId}
-                          {isMonStep && ' 📡'}
-                        </span>
-                        {isMonStep && (
-                          <label className="mt-seq-duration-label">
-                            ⏱
-                            <input
-                              type="number" min={1} max={600}
-                              value={Math.round((step.duration || 20000) / 1000)}
-                              onChange={e => {
-                                const s = Math.max(1, Math.min(600, Number(e.target.value) || 1));
-                                updateDuration(i, s * 1000);
-                              }}
-                            />
-                            s
-                          </label>
-                        )}
-                      </div>
-                      <div className="mt-seq-step-controls">
-                        <button onClick={() => moveCmd(i, 'up')} disabled={i === 0} className="mt-seq-move-btn">▲</button>
-                        <button onClick={() => moveCmd(i, 'down')} disabled={i === config.sequence.length - 1} className="mt-seq-move-btn">▼</button>
-                        <button onClick={() => removeCmd(i)} className="mt-seq-remove-btn">✕</button>
-                      </div>
-                    </div>
+                    <span key={i} className={`mt-seq-preview-chip ${isMonStep ? 'mt-seq-preview-chip-monitoring' : ''}`}>
+                      {i + 1}. {cmd?.command || step.commandId}{isMonStep && ' 📡'}
+                    </span>
                   );
                 })}
+                {config.sequence.length > 5 && (
+                  <span className="mt-seq-preview-more">+{config.sequence.length - 5}</span>
+                )}
               </div>
             )}
           </div>
@@ -469,6 +440,176 @@ const MultiTest: React.FC = () => {
     );
   };
 
+  // ── Sequence Configuration Modal ────────────────────────────────────────────
+  const SequenceModal = () => {
+    if (seqModalIdx === null) return null;
+    const idx = seqModalIdx;
+    const config = testConfigs[idx];
+    if (!config) return null;
+    const num = idx + 1;
+    const badgeNum = (idx % 6) + 1;
+
+    const addCmd = (cmd: TelnetCommand) => {
+      if (cmd.type === 'sequence' && cmd.steps) {
+        updateConfig(idx, { sequence: [...config.sequence, ...cmd.steps!] });
+      } else {
+        updateConfig(idx, {
+          sequence: [...config.sequence, {
+            commandId: cmd.id,
+            description: cmd.name,
+            type: cmd.type === 'monitoring' ? 'monitoring' : 'standard',
+            duration: cmd.type === 'monitoring' ? 20000 : undefined,
+          }],
+        });
+      }
+    };
+
+    const removeCmd = (i: number) =>
+      updateConfig(idx, { sequence: config.sequence.filter((_, j) => j !== i) });
+
+    const updateDuration = (i: number, ms: number) => {
+      const next = [...config.sequence];
+      next[i] = { ...next[i], duration: ms };
+      updateConfig(idx, { sequence: next });
+    };
+
+    const reorder = (from: number, to: number) => {
+      if (from === to) return;
+      const next = [...config.sequence];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      updateConfig(idx, { sequence: next });
+    };
+
+    const q = seqSearch.trim().toLowerCase();
+    const filteredCommands = !q ? telnetCommands : telnetCommands.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.command || '').toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q)
+    );
+
+    return (
+      <div className="mt-modal-overlay" onClick={closeSeqModal}>
+        <div className="mt-modal mt-seq-modal" onClick={e => e.stopPropagation()}>
+          <div className="mt-modal-header">
+            <div className="mt-modal-header-text">
+              <h3>Configuration de la séquence</h3>
+              <span className={`mt-badge mt-badge-${badgeNum}`}>TEST {num}</span>
+            </div>
+            <button className="mt-modal-close" onClick={closeSeqModal} title="Fermer">✕</button>
+          </div>
+
+          <div className="mt-modal-body">
+            <div className="mt-modal-col">
+              <div className="mt-modal-col-header">
+                <span className="mt-modal-col-title">Commandes disponibles</span>
+              </div>
+              <input
+                type="text"
+                className="mt-modal-search"
+                placeholder="Rechercher une commande..."
+                value={seqSearch}
+                onChange={e => setSeqSearch(e.target.value)}
+                autoFocus
+              />
+              <div className="mt-modal-cmd-list">
+                {filteredCommands.length === 0 && (
+                  <div className="mt-modal-empty">Aucune commande trouvée</div>
+                )}
+                {filteredCommands.map(c => (
+                  <div key={c.id} className="mt-modal-cmd-item" onClick={() => addCmd(c)}>
+                    <div className="mt-modal-cmd-info">
+                      <span className="mt-modal-cmd-name">
+                        {c.command || c.name}
+                        {c.type === 'monitoring' && <span className="mt-seq-monitoring-tag"> 📡</span>}
+                        {c.type === 'sequence' && <span className="mt-modal-seq-tag" title="Séquence prédéfinie"> ⛓</span>}
+                      </span>
+                      <span className="mt-modal-cmd-desc">{c.description}</span>
+                    </div>
+                    <button className="mt-modal-add-btn" onClick={e => { e.stopPropagation(); addCmd(c); }}>+ Ajouter</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-modal-col">
+              <div className="mt-modal-col-header">
+                <span className="mt-modal-col-title">
+                  Séquence ({config.sequence.length} étape{config.sequence.length !== 1 ? 's' : ''})
+                </span>
+                {config.sequence.length > 0 && (
+                  <button className="mt-seq-clear-btn" onClick={() => updateConfig(idx, { sequence: [] })}>Vider</button>
+                )}
+              </div>
+
+              {config.sequence.length === 0 ? (
+                <div className="mt-modal-empty">Aucune commande — ajoutez-en depuis la liste de gauche</div>
+              ) : (
+                <div className="mt-modal-seq-list">
+                  {config.sequence.map((step, i) => {
+                    const cmd = telnetCommands.find(c => c.id === step.commandId);
+                    const isMonStep = step.type === 'monitoring' || cmd?.type === 'monitoring';
+                    const classes = [
+                      'mt-seq-step', 'mt-modal-seq-item',
+                      isMonStep ? 'mt-seq-step-monitoring' : '',
+                      dragIdx === i ? 'mt-dragging' : '',
+                      dragOverIdx === i && dragIdx !== null && dragIdx !== i ? 'mt-drag-over' : '',
+                    ].filter(Boolean).join(' ');
+                    return (
+                      <div
+                        key={i}
+                        className={classes}
+                        draggable
+                        onDragStart={() => setDragIdx(i)}
+                        onDragEnter={() => setDragOverIdx(i)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={() => {
+                          if (dragIdx !== null) reorder(dragIdx, i);
+                          setDragIdx(null);
+                          setDragOverIdx(null);
+                        }}
+                        onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                      >
+                        <span className="mt-modal-seq-handle" title="Glisser pour réordonner">⠿</span>
+                        <span className="mt-seq-step-num">{i + 1}</span>
+                        <div className="mt-seq-step-body">
+                          <span className="mt-seq-step-name">
+                            {cmd?.command || step.commandId}
+                            {isMonStep && ' 📡'}
+                          </span>
+                          {isMonStep && (
+                            <label className="mt-seq-duration-label">
+                              ⏱
+                              <input
+                                type="number" min={1} max={600}
+                                value={Math.round((step.duration || 20000) / 1000)}
+                                onChange={e => {
+                                  const s = Math.max(1, Math.min(600, Number(e.target.value) || 1));
+                                  updateDuration(i, s * 1000);
+                                }}
+                              />
+                              s
+                            </label>
+                          )}
+                        </div>
+                        <button className="mt-seq-remove-btn" onClick={() => removeCmd(i)}>✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-modal-footer">
+            <span className="mt-modal-hint">⠿ Glissez-déposez une étape pour la réordonner</span>
+            <button className="mt-modal-done-btn" onClick={closeSeqModal}>Terminé</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const hasAnyResult = activeTests.some(t => t !== null);
 
   return (
@@ -509,6 +650,8 @@ const MultiTest: React.FC = () => {
           ))}
         </div>
       )}
+
+      <SequenceModal />
     </div>
   );
 };

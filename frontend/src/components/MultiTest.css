@@ -512,83 +512,81 @@
 }
 
 /* ========================================
-   Sequence builder
+   Sequence summary (collapsed view in panel)
    ======================================== */
-.mt-seq-builder {
-  border: 1px solid var(--border-subtle);
-  border-radius: 7px;
-  overflow: hidden;
+.mt-seq-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.mt-seq-available {
+.mt-seq-config-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   background: var(--bg-elevated);
-  padding: 10px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.mt-seq-available-title {
-  font-size: 0.68rem;
+  border: 1px solid var(--border-deep);
+  border-radius: 7px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-bottom: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
 }
 
-.mt-seq-cmd-grid {
+.mt-seq-config-btn:hover {
+  border-color: var(--accent-blue);
+  background: #ffffff;
+  color: var(--accent-blue);
+}
+
+.mt-seq-count-badge {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 9px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.mt-seq-preview {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
-.mt-seq-cmd-card {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #ffffff;
-  border: 1px solid var(--border-deep);
+.mt-seq-preview-chip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 2px solid var(--accent-blue);
   border-radius: 5px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
 }
 
-.mt-seq-cmd-name {
-  color: var(--text-dim);
-  font-family: var(--font-mono);
+.mt-seq-preview-chip.mt-seq-preview-chip-monitoring {
+  border-left-color: #9333ea;
+}
+
+.mt-seq-preview-more {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-deep);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .mt-seq-monitoring-tag {
   font-size: 0.65rem;
-}
-
-.mt-seq-add-btn {
-  background: var(--accent-blue);
-  border: none;
-  border-radius: 3px;
-  color: #fff;
-  width: 18px;
-  height: 18px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.mt-seq-add-btn:hover { opacity: 0.85; }
-
-.mt-seq-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
-  background: #ffffff;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .mt-seq-clear-btn {
@@ -609,21 +607,12 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: center;
-  background: #ffffff;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-deep);
+  border-radius: 7px;
 }
 
-.mt-seq-steps {
-  background: #ffffff;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-deep) transparent;
-}
-
+/* Step row — reused inside the sequence modal */
 .mt-seq-step {
   display: flex;
   align-items: center;
@@ -651,12 +640,16 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .mt-seq-step-name {
   font-size: 0.75rem;
   color: var(--text-primary);
   font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mt-seq-duration-label {
@@ -679,29 +672,6 @@
   text-align: center;
 }
 
-.mt-seq-step-controls {
-  display: flex;
-  gap: 3px;
-}
-
-.mt-seq-move-btn {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-deep);
-  border-radius: 3px;
-  color: var(--text-muted);
-  font-size: 0.6rem;
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mt-seq-move-btn:hover:not(:disabled) { color: var(--text-primary); background: var(--border-subtle); }
-.mt-seq-move-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
 .mt-seq-remove-btn {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -715,9 +685,297 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .mt-seq-remove-btn:hover { background: #fee2e2; }
+
+/* ========================================
+   Sequence configuration modal
+   ======================================== */
+@keyframes mt-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mt-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  animation: mt-fade-in 0.15s ease;
+}
+
+.mt-modal {
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  overflow: hidden;
+  animation: mt-modal-in 0.18s ease;
+}
+
+.mt-seq-modal {
+  max-width: 900px;
+}
+
+.mt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mt-modal-header-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mt-modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mt-modal-close {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-deep);
+  border-radius: 6px;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+
+.mt-modal-close:hover { background: #fef2f2; color: var(--accent-red); }
+
+.mt-modal-body {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mt-modal-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mt-modal-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.mt-modal-col-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.mt-modal-search {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--border-deep);
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mt-modal-search:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.mt-modal-cmd-list,
+.mt-modal-seq-list {
+  flex: 1;
+  min-height: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 4px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-deep) transparent;
+}
+
+.mt-modal-cmd-list::-webkit-scrollbar,
+.mt-modal-seq-list::-webkit-scrollbar { width: 4px; }
+.mt-modal-cmd-list::-webkit-scrollbar-thumb,
+.mt-modal-seq-list::-webkit-scrollbar-thumb { background: var(--border-deep); border-radius: 2px; }
+
+.mt-modal-cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+}
+
+.mt-modal-cmd-item:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.mt-modal-cmd-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mt-modal-cmd-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-modal-cmd-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-modal-seq-tag {
+  font-size: 0.7rem;
+  color: var(--accent-blue);
+}
+
+.mt-modal-add-btn {
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: opacity 0.12s;
+}
+
+.mt-modal-add-btn:hover { opacity: 0.85; }
+
+.mt-modal-empty {
+  flex: 1;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-deep);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+
+/* Sequence steps inside modal — draggable */
+.mt-modal-seq-item {
+  cursor: grab;
+  user-select: none;
+  transition: opacity 0.12s, transform 0.12s, border-color 0.12s;
+}
+
+.mt-modal-seq-item.mt-dragging {
+  opacity: 0.4;
+}
+
+.mt-modal-seq-item.mt-drag-over {
+  border-top: 2px solid var(--accent-blue);
+  transform: translateY(2px);
+}
+
+.mt-modal-seq-handle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.mt-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.mt-modal-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mt-modal-done-btn {
+  background: #0f172a;
+  border: none;
+  border-radius: 7px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 9px 22px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mt-modal-done-btn:hover { background: #1e293b; }
 
 /* ========================================
    Responsive
@@ -732,4 +990,34 @@
   .mt-results {
     grid-template-columns: 1fr;
   }
+
+  .mt-modal-overlay { padding: 0; }
+
+  .mt-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .mt-modal-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .mt-modal-cmd-list,
+  .mt-modal-seq-list,
+  .mt-modal-empty {
+    min-height: 200px;
+    max-height: 240px;
+  }
+
+  .mt-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .mt-modal-hint { text-align: center; }
+  .mt-modal-done-btn { width: 100%; }
 }
