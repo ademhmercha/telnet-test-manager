@@ -588,20 +588,22 @@ const Reports: React.FC = () => {
                           {pass ? 'PASS' : 'FAIL'}
                         </span>
                       </div>
-                      {lines.length > 0 && (
-                        <div className="rview-transcript">
-                          {lines.map((l, j) => (
-                            <div key={j} className={`rview-log rview-log-${l.dir}`}>
-                              {(l.dir === 'cmd' || l.dir === 'resp' || l.dir === 'err') && (
-                                <span className="rview-log-dir">
-                                  {l.dir === 'cmd' ? '(pc→gw)' : l.dir === 'resp' ? '(gw→pc)' : '(!)'}
-                                </span>
-                              )}
-                              <span className="rview-log-text">{l.text}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="rview-transcript">
+                        {lines.length > 0 ? lines.map((l, j) => (
+                          <div key={j} className={`rview-log rview-log-${l.dir}`}>
+                            {(l.dir === 'cmd' || l.dir === 'resp' || l.dir === 'err') && (
+                              <span className="rview-log-dir">
+                                {l.dir === 'cmd' ? '(pc→gw)' : l.dir === 'resp' ? '(gw→pc)' : '(!)'}
+                              </span>
+                            )}
+                            <span className="rview-log-text">{l.text}</span>
+                          </div>
+                        )) : (
+                          <div className="rview-log-empty">
+                            {pass ? 'Commande exécutée avec succès — logs détaillés non disponibles.' : 'Échec — logs détaillés non disponibles.'}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

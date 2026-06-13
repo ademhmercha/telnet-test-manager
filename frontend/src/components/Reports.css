@@ -219,7 +219,7 @@
   border: 1px solid var(--border);
 }
 
-.modal-xl { max-width: 900px; }
+.modal.modal-xl { max-width: 900px; }
 
 .modal-header {
   display: flex;
@@ -304,6 +304,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .rview-test-pass { border-left: 3px solid var(--success); }
