@@ -232,7 +232,7 @@ const Users: React.FC = () => {
         <button className="ap-btn ap-btn-primary" onClick={openAdd}>+ Nouvel utilisateur</button>
       </div>
 
-      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="ap-loading">Chargement…</div> : (
         <div className="ap-table-wrap">
@@ -292,7 +292,7 @@ const Users: React.FC = () => {
           <div className="ap-modal" onClick={e => e.stopPropagation()}>
             <div className="ap-modal-header">
               <h2>{editingId !== null ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</h2>
-              <button className="ap-modal-close" onClick={close}>✕</button>
+              <button className="ap-modal-close" onClick={close}>×</button>
             </div>
             <div className="ap-modal-body">
               {error && <div className="ap-error-bar" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -309,7 +309,7 @@ const Users: React.FC = () => {
                     <input type={showPwd ? 'text' : 'password'} value={form.password}
                       onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Min. 6 caractères" />
                     <button type="button" className="ap-pwd-toggle" onClick={() => setShowPwd(v => !v)}>
-                      {showPwd ? '🙈' : '👁'}
+                      {showPwd ? 'Masquer' : 'Afficher'}
                     </button>
                   </div>
                 </div>
@@ -352,7 +352,7 @@ const Users: React.FC = () => {
           <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
             <div className="ap-modal-header">
               <h2>Réinitialiser le mot de passe</h2>
-              <button className="ap-modal-close" onClick={() => setResetModal(null)}>✕</button>
+              <button className="ap-modal-close" onClick={() => setResetModal(null)}>×</button>
             </div>
             <div className="ap-modal-body">
               {error && <div className="ap-error-bar" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -378,7 +378,7 @@ const Users: React.FC = () => {
           <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
             <div className="ap-modal-header">
               <h2>Confirmer la suppression</h2>
-              <button className="ap-modal-close" onClick={() => setConfirmDel(null)}>✕</button>
+              <button className="ap-modal-close" onClick={() => setConfirmDel(null)}>×</button>
             </div>
             <div className="ap-modal-body">
               <p className="ap-modal-desc">Supprimer l'utilisateur <strong>{confirmDel.username}</strong> ? Cette action est irréversible.</p>
@@ -471,11 +471,11 @@ const Tests: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="ap-btn ap-btn-ghost" onClick={() => setBulkModal(true)}>Suppression en masse</button>
-          <button className="ap-btn ap-btn-secondary" onClick={load}>↻ Rafraîchir</button>
+          <button className="ap-btn ap-btn-secondary" onClick={load}>Rafraîchir</button>
         </div>
       </div>
 
-      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="ap-loading">Chargement…</div> : (
         <div className="ap-table-wrap">
@@ -517,10 +517,10 @@ const Tests: React.FC = () => {
             <span>{total} test{total !== 1 ? 's' : ''} au total</span>
             <div className="ap-page-btns">
               <button className="ap-btn ap-btn-sm ap-btn-secondary" disabled={offset === 0}
-                onClick={() => setOffset(Math.max(0, offset - LIMIT))}>← Préc.</button>
+                onClick={() => setOffset(Math.max(0, offset - LIMIT))}>Préc.</button>
               <span className="ap-muted">{Math.floor(offset/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
               <button className="ap-btn ap-btn-sm ap-btn-secondary" disabled={offset + LIMIT >= total}
-                onClick={() => setOffset(offset + LIMIT)}>Suiv. →</button>
+                onClick={() => setOffset(offset + LIMIT)}>Suiv.</button>
             </div>
           </div>
         </div>
@@ -532,7 +532,7 @@ const Tests: React.FC = () => {
           <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
             <div className="ap-modal-header">
               <h2>Suppression en masse</h2>
-              <button className="ap-modal-close" onClick={() => setBulkModal(false)}>✕</button>
+              <button className="ap-modal-close" onClick={() => setBulkModal(false)}>×</button>
             </div>
             <div className="ap-modal-body">
               {error && <div className="ap-error-bar" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -550,7 +550,7 @@ const Tests: React.FC = () => {
                 <input type="date" value={bulkBefore} onChange={e => setBulkBefore(e.target.value)} />
                 <small className="ap-hint">Laissez vide pour supprimer sans limite de date</small>
               </div>
-              <div className="ap-warning">⚠ Cette action est irréversible</div>
+              <div className="ap-warning">Cette action est irréversible</div>
             </div>
             <div className="ap-modal-footer">
               <button className="ap-btn ap-btn-secondary" onClick={() => setBulkModal(false)}>Annuler</button>
@@ -568,7 +568,7 @@ const Tests: React.FC = () => {
           <div className="ap-modal ap-modal-sm" onClick={e => e.stopPropagation()}>
             <div className="ap-modal-header">
               <h2>Confirmer la suppression</h2>
-              <button className="ap-modal-close" onClick={() => setConfirmDel(null)}>✕</button>
+              <button className="ap-modal-close" onClick={() => setConfirmDel(null)}>×</button>
             </div>
             <div className="ap-modal-body">
               <p className="ap-modal-desc">Supprimer le test <strong>#{confirmDel.id}</strong> ?</p>
@@ -627,10 +627,10 @@ const AuditLogs: React.FC = () => {
       <div className="ap-toolbar">
         <input className="ap-search" placeholder="Rechercher une action, un utilisateur…"
           value={search} onChange={e => setSearch(e.target.value)} />
-        <button className="ap-btn ap-btn-secondary" onClick={load}>↻ Rafraîchir</button>
+        <button className="ap-btn ap-btn-secondary" onClick={load}>Rafraîchir</button>
       </div>
 
-      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="ap-error-bar"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="ap-loading">Chargement…</div> : (
         <div className="ap-table-wrap">
@@ -659,10 +659,10 @@ const AuditLogs: React.FC = () => {
             <span>{total} entrée{total !== 1 ? 's' : ''}</span>
             <div className="ap-page-btns">
               <button className="ap-btn ap-btn-sm ap-btn-secondary" disabled={offset === 0}
-                onClick={() => setOffset(Math.max(0, offset - LIMIT))}>← Préc.</button>
+                onClick={() => setOffset(Math.max(0, offset - LIMIT))}>Préc.</button>
               <span className="ap-muted">{Math.floor(offset/LIMIT)+1} / {Math.max(1,Math.ceil(total/LIMIT))}</span>
               <button className="ap-btn ap-btn-sm ap-btn-secondary" disabled={offset + LIMIT >= total}
-                onClick={() => setOffset(offset + LIMIT)}>Suiv. →</button>
+                onClick={() => setOffset(offset + LIMIT)}>Suiv.</button>
             </div>
           </div>
         </div>
@@ -885,12 +885,12 @@ const AdminPanel: React.FC = () => {
   const t = (key: string, opts?: Record<string, any>): string => String(_t(key, opts as any));
   const [tab, setTab] = useState<TabId>('overview');
 
-  const TABS: { id: TabId; label: string; icon: string }[] = [
-    { id: 'overview',  label: t('admin.tabOverview'),  icon: '◈' },
-    { id: 'users',     label: t('admin.tabUsers'),     icon: '◉' },
-    { id: 'tests',     label: t('admin.tabTests'),     icon: '◎' },
-    { id: 'auditlogs', label: t('admin.tabAuditLogs'), icon: '◆' },
-    { id: 'analytics', label: t('admin.tabAnalytics'), icon: '◑' },
+  const TABS: { id: TabId; label: string }[] = [
+    { id: 'overview',  label: t('admin.tabOverview') },
+    { id: 'users',     label: t('admin.tabUsers') },
+    { id: 'tests',     label: t('admin.tabTests') },
+    { id: 'auditlogs', label: t('admin.tabAuditLogs') },
+    { id: 'analytics', label: t('admin.tabAnalytics') },
   ];
 
   return (
@@ -908,7 +908,6 @@ const AdminPanel: React.FC = () => {
           {TABS.map(tab_ => (
             <button key={tab_.id} className={`ap-nav-btn ${tab === tab_.id ? 'active' : ''}`}
               onClick={() => setTab(tab_.id)}>
-              <span className="ap-nav-icon">{tab_.icon}</span>
               {tab_.label}
             </button>
           ))}

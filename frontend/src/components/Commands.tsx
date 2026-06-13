@@ -220,7 +220,7 @@ const Commands: React.FC = () => {
       {error && (
         <div className="error-message">
           <span>{error}</span>
-          <button onClick={() => setError('')}>✕</button>
+          <button onClick={() => setError('')}>×</button>
         </div>
       )}
 
@@ -306,7 +306,7 @@ const Commands: React.FC = () => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId ? t('commands.editCommand') : t('commands.newCommand')}</h2>
-              <button className="btn-close" onClick={closeModal}>✕</button>
+              <button className="btn-close" onClick={closeModal}>×</button>
             </div>
             <div className="modal-body">
               {error && (
@@ -408,7 +408,7 @@ const Commands: React.FC = () => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{t('common.confirmDelete')}</h2>
-              <button className="btn-close" onClick={() => setConfirmDelete(null)}>✕</button>
+              <button className="btn-close" onClick={() => setConfirmDelete(null)}>×</button>
             </div>
             <div className="modal-body">
               <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text)' }}>

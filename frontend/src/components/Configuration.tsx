@@ -25,7 +25,7 @@ const ConfirmDelete: React.FC<ConfirmDeleteProps> = ({ label, onConfirm, onCance
     <div className="modal" onClick={e => e.stopPropagation()}>
       <div className="modal-header">
         <h2>Confirmer la suppression</h2>
-        <button className="btn-close" onClick={onCancel}>✕</button>
+        <button className="btn-close" onClick={onCancel}>×</button>
       </div>
       <div className="modal-body">
         <p style={{ margin: 0, fontSize: '0.875rem' }}>
@@ -105,7 +105,7 @@ const PostesTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         <button className="btn btn-primary" onClick={openAdd}>+ Nouveau poste</button>
       </div>
 
-      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="loading">Chargement...</div> : (
         <div className="cfg-table-wrap">
@@ -144,7 +144,7 @@ const PostesTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId !== null ? 'Modifier le poste' : 'Nouveau poste'}</h2>
-              <button className="btn-close" onClick={close}>✕</button>
+              <button className="btn-close" onClick={close}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="error-message" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -248,7 +248,7 @@ const ProduitsTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         <button className="btn btn-primary" onClick={openAdd}>+ Nouveau produit</button>
       </div>
 
-      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="loading">Chargement...</div> : (
         <div className="cfg-table-wrap">
@@ -287,7 +287,7 @@ const ProduitsTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId !== null ? 'Modifier le produit' : 'Nouveau produit'}</h2>
-              <button className="btn-close" onClick={close}>✕</button>
+              <button className="btn-close" onClick={close}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="error-message" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -393,7 +393,7 @@ const SlotsTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         <button className="btn btn-primary" onClick={openAdd}>+ Nouveau slot</button>
       </div>
 
-      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="loading">Chargement...</div> : (
         <div className="cfg-table-wrap">
@@ -434,7 +434,7 @@ const SlotsTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId !== null ? 'Modifier le slot' : 'Nouveau slot'}</h2>
-              <button className="btn-close" onClick={close}>✕</button>
+              <button className="btn-close" onClick={close}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="error-message" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}
@@ -551,7 +551,7 @@ const ReferencesTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
         <button className="btn btn-primary" onClick={openAdd}>+ Nouvelle référence</button>
       </div>
 
-      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>✕</button></div>}
+      {error && <div className="error-message"><span>{error}</span><button onClick={() => setError('')}>×</button></div>}
 
       {loading ? <div className="loading">Chargement...</div> : (
         <div className="cfg-table-wrap">
@@ -592,7 +592,7 @@ const ReferencesTab: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId !== null ? 'Modifier la référence' : 'Nouvelle référence'}</h2>
-              <button className="btn-close" onClick={close}>✕</button>
+              <button className="btn-close" onClick={close}>×</button>
             </div>
             <div className="modal-body">
               {error && <div className="error-message" style={{ marginBottom: '1rem' }}><span>{error}</span></div>}

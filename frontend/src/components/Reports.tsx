@@ -286,7 +286,7 @@ const Reports: React.FC = () => {
           <div class="test-header">
             <span class="test-num">#${i + 1}</span>
             <span class="test-cmd">${escHtml(cmdLabel)}</span>
-            <span class="test-badge ${pass ? 'badge-pass' : 'badge-fail'}">${pass ? '✔ PASS' : '✖ FAIL'}</span>
+            <span class="test-badge ${pass ? 'badge-pass' : 'badge-fail'}">${pass ? 'PASS' : 'FAIL'}</span>
           </div>
           <div class="test-transcript">${logsRows}</div>
         </div>`;
@@ -403,7 +403,7 @@ const Reports: React.FC = () => {
       {error && (
         <div className="error-message">
           <span>{error}</span>
-          <button onClick={() => setError('')}>✕</button>
+          <button onClick={() => setError('')}>×</button>
         </div>
       )}
 
@@ -445,9 +445,9 @@ const Reports: React.FC = () => {
                       <td>{report.generatedBy || '—'}</td>
                       <td>
                         <span className="result-pill">
-                          <span className="rp-pass">✔ {pass}</span>
+                          <span className="rp-pass">{pass}</span>
                           <span className="rp-sep">/</span>
-                          <span className="rp-fail">✖ {fail}</span>
+                          <span className="rp-fail">{fail}</span>
                         </span>
                       </td>
                       <td>
@@ -472,7 +472,7 @@ const Reports: React.FC = () => {
           <div className="modal">
             <div className="modal-header">
               <h2>Générer un rapport</h2>
-              <button className="btn-close" onClick={() => setShowGenerateModal(false)}>✕</button>
+              <button className="btn-close" onClick={() => setShowGenerateModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -518,8 +518,8 @@ const Reports: React.FC = () => {
                 <select value={generateForm.statusFilter}
                   onChange={e => setGenerateForm({ ...generateForm, statusFilter: e.target.value })}>
                   <option value="all">Tous les tests</option>
-                  <option value="success">✔ Pass seulement</option>
-                  <option value="fail">✖ Fail seulement</option>
+                  <option value="success">Pass seulement</option>
+                  <option value="fail">Fail seulement</option>
                 </select>
               </div>
             </div>
@@ -544,7 +544,7 @@ const Reports: React.FC = () => {
                   <h2>Rapport de Test</h2>
                   <span className="rview-id">{selectedReport.id}</span>
                 </div>
-                <button className="btn-close" onClick={() => setShowReportModal(false)}>✕</button>
+                <button className="btn-close" onClick={() => setShowReportModal(false)}>×</button>
               </div>
 
               {/* Info strip */}
@@ -585,7 +585,7 @@ const Reports: React.FC = () => {
                         <span className="rview-test-num">#{i + 1}</span>
                         <span className="rview-test-name">{cmdLabel}</span>
                         <span className={`rview-badge ${pass ? 'rview-badge-pass' : 'rview-badge-fail'}`}>
-                          {pass ? '✔ PASS' : '✖ FAIL'}
+                          {pass ? 'PASS' : 'FAIL'}
                         </span>
                       </div>
                       {lines.length > 0 && (

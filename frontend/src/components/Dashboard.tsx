@@ -53,13 +53,6 @@ type ActiveTest = {
   monitoringEvents?: MonitoringEvent[];
 };
 
-// Fonction utilitaire pour obtenir l'icône de statut
-function getStatusIcon(status: string) {
-  if (status === 'SUCCESS') return '✔';
-  if (status === 'FAIL') return '✖';
-  return '⏳';
-}
-
 // Fonction utilitaire pour obtenir le libellé de statut
 function getStatusLabel(status: string, t: (key: string) => string) {
   if (status === 'SUCCESS') return t('status.success');
@@ -755,7 +748,7 @@ const Dashboard: React.FC = () => {
                 {telnetCommands.find(c => c.id === selectedCommand)?.type === 'monitoring' && (
                   <div style={{ marginTop: '8px' }}>
                     <label style={{ display: 'block', marginBottom: '4px' }}>
-                      ⏱ Durée monitoring (secondes)
+                      Durée monitoring (secondes)
                     </label>
                     <input
                       type="number"
@@ -775,11 +768,11 @@ const Dashboard: React.FC = () => {
 
             {isSequenceMode && permissions.canRunTests() && (
               <div className="form-group sequence-builder" style={{ gridColumn: '1 / -1' }}>
-                <label> Constructeur de séquence</label>
-                
+                <label>Constructeur de séquence</label>
+
                 {/* Sélection des commandes disponibles */}
                 <div className="available-commands">
-                  <h4> Commandes disponibles</h4>
+                  <h4>Commandes disponibles</h4>
                   <div className="commands-grid">
                     {telnetCommands.map(command => {
                       const isMonitoringCmd = command.type === 'monitoring';
@@ -808,17 +801,17 @@ const Dashboard: React.FC = () => {
                 {/* Séquence en cours */}
                 <div className="current-sequence">
                   <div className="sequence-header">
-                    <h4>📋 Séquence ({selectedSequence.length} étape{selectedSequence.length > 1 ? 's' : ''})</h4>
+                    <h4>Séquence ({selectedSequence.length} étape{selectedSequence.length > 1 ? 's' : ''})</h4>
                     {selectedSequence.length > 0 && (
                       <button onClick={clearSequence} className="clear-sequence-btn">
-                        🗑️ Vider
+                        Vider
                       </button>
                     )}
                   </div>
-                  
+
                   {selectedSequence.length === 0 ? (
                     <p className="empty-sequence">
-                      📝 Aucune commande dans la séquence. Ajoutez des commandes depuis la liste ci-dessus.
+                      Aucune commande dans la séquence. Ajoutez des commandes depuis la liste ci-dessus.
                     </p>
                   ) : (
                     <div className="sequence-list">
@@ -833,13 +826,12 @@ const Dashboard: React.FC = () => {
                               <div className="step-main">
                                 <strong>
                                   {command?.command || step.commandId}
-                                  {isMonitoringStep && ' 📡'}
                                 </strong>
                               </div>
                               {isMonitoringStep && (
                                 <div className="step-duration">
                                   <label>
-                                    ⏱ Durée (secondes)&nbsp;
+                                    Durée (secondes)&nbsp;
                                     <input
                                       type="number"
                                       min={1}
@@ -862,7 +854,7 @@ const Dashboard: React.FC = () => {
                                 className="move-btn"
                                 title="Monter"
                               >
-                                ⬆️
+                                ^
                               </button>
                               <button 
                                 onClick={() => moveSequenceStep(index, 'down')}
@@ -870,14 +862,14 @@ const Dashboard: React.FC = () => {
                                 className="move-btn"
                                 title="Descendre"
                               >
-                                ⬇️
+                                v
                               </button>
                               <button 
                                 onClick={() => removeCommandFromSequence(index)}
                                 className="remove-btn"
                                 title="Supprimer"
                               >
-                                ❌
+                                ×
                               </button>
                             </div>
                           </div>
@@ -897,12 +889,12 @@ const Dashboard: React.FC = () => {
           >
             {loading ? (
               <span>
-                ⏳ EXÉCUTION EN COURS...
+                EXÉCUTION EN COURS...
                 <span className="loading-spinner"></span>
               </span>
             ) : (
               <span>
-                {isSequenceMode ? ` EXÉCUTER LA SÉQUENCE (${selectedSequence.length} étapes)` : '⚡ INITIER LE TEST'}
+                {isSequenceMode ? ` EXÉCUTER LA SÉQUENCE (${selectedSequence.length} étapes)` : 'INITIER LE TEST'}
               </span>
             )}
           </button>
@@ -918,7 +910,6 @@ const Dashboard: React.FC = () => {
                   <div className="test-header">
                     <span className="test-id">
                       SÉQUENCE #{test.testId}
-                      {test.hasMonitoringCommands && ' 📡'}
                     </span>
                     <div className="test-controls">
                       {test.status === 'PENDING' && (
@@ -930,11 +921,10 @@ const Dashboard: React.FC = () => {
                           }}
                           title="Arrêter le test"
                         >
-                           ARRÊT D'URGENCE
+                          ARRÊT D'URGENCE
                         </button>
                       )}
                       <span className={getStatusClass(test.status)}>
-                        <span className="status-icon">{getStatusIcon(test.status)}</span>
                         <span>{getStatusLabel(test.status, t)}</span>
                       </span>
                     </div>
@@ -959,7 +949,6 @@ const Dashboard: React.FC = () => {
                         <div className="step-header">
                           <span className="step-number">Étape {step.step}</span>
                           <span className={getStatusClass(step.status)}>
-                            <span className="status-icon">{getStatusIcon(step.status)}</span>
                             <span>{step.status}</span>
                           </span>
                         </div>
@@ -973,7 +962,7 @@ const Dashboard: React.FC = () => {
 
                   {test.logs.length > 0 && (
                     <div className="test-logs">
-                      <h4>📋 JOURNAUX D'EXÉCUTION</h4>
+                      <h4>JOURNAUX D'EXÉCUTION</h4>
                       <div className="test-logs-body">
                       {test.logs.map((l, idx) => {
                         const level = getLogLevel(l);
@@ -982,7 +971,7 @@ const Dashboard: React.FC = () => {
                         if (l.includes('Commande') && l.includes('exécutée')) {
                           return (
                             <div key={idx} className={`log-entry log-command ${levelClass}`.trim()}>
-                              <span className="log-label">🔧 COMMANDE:</span>
+                              <span className="log-label">COMMANDE:</span>
                               <span className="log-content">{l}</span>
                             </div>
                           );
@@ -991,7 +980,7 @@ const Dashboard: React.FC = () => {
                         if (l.includes('Événement:')) {
                           return (
                             <div key={idx} className={`log-entry log-monitoring ${levelClass}`.trim()}>
-                              <span className="log-label">⚡ ÉVÉNEMENT:</span>
+                              <span className="log-label">ÉVÉNEMENT:</span>
                               <span className="log-content">{l}</span>
                             </div>
                           );
@@ -1000,7 +989,7 @@ const Dashboard: React.FC = () => {
                         if (l.includes('root@f5686b') || l.includes('f5686b login')) {
                           return (
                             <div key={idx} className={`log-entry log-response ${levelClass}`.trim()}>
-                              <span className="log-label"> RÉPONSE TELNET:</span>
+                              <span className="log-label">RÉPONSE TELNET:</span>
                               <span className="log-content">{l}</span>
                             </div>
                           );
@@ -1009,7 +998,7 @@ const Dashboard: React.FC = () => {
                         if (l.includes('Connexion')) {
                           return (
                             <div key={idx} className={`log-entry log-connection ${levelClass}`.trim()}>
-                              <span className="log-label">🔌 CONNEXION:</span>
+                              <span className="log-label">CONNEXION:</span>
                               <span className="log-content">{l}</span>
                             </div>
                           );
@@ -1028,7 +1017,7 @@ const Dashboard: React.FC = () => {
                   {/* Affichage des événements de monitoring en temps réel */}
                   {test.isMonitoring && (monitoringEventsStorage[test.testId] || test.monitoringEvents) && ((monitoringEventsStorage[test.testId]?.length || test.monitoringEvents?.length || 0) > 0) && (
                     <div className="monitoring-events">
-                      <h4>🎯 ÉVÉNEMENTS TEMPS RÉEL ({(monitoringEventsStorage[test.testId]?.length || test.monitoringEvents?.length || 0)})</h4>
+                      <h4>ÉVÉNEMENTS TEMPS RÉEL ({(monitoringEventsStorage[test.testId]?.length || test.monitoringEvents?.length || 0)})</h4>
                       <div className="events-list">
                         {(monitoringEventsStorage[test.testId] || test.monitoringEvents || []).map((event: MonitoringEvent, idx: number) => (
                           <div key={idx} className="event-item">
@@ -1043,7 +1032,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       {test.status === 'PENDING' && (
                         <div className="monitoring-indicator">
-                          <span className="pulse">●</span> Monitoring en cours...
+                          <span className="pulse"></span> Monitoring en cours...
                         </div>
                       )}
                     </div>
@@ -1111,7 +1100,6 @@ const Dashboard: React.FC = () => {
                         <td>{getSlotName(result.slotId)}</td>
                         <td>
                           <span className={`status-pill ${getStatusClass(result.status)}`}>
-                            <span className="status-icon">{getStatusIcon(result.status)}</span>
                             <span>{getStatusLabel(result.status, t)}</span>
                           </span>
                         </td>
@@ -1138,7 +1126,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                   >
-                    ← Précédent
+                    Précédent
                   </button>
                   <span className="pagination-info">
                     Page {currentPage} / {totalPages} ({filteredResults.length} tests)
@@ -1148,7 +1136,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Suivant →
+                    Suivant
                   </button>
                 </div>
               )}
@@ -1181,7 +1169,6 @@ const Dashboard: React.FC = () => {
                   <div className="detail-item">
                     <span className="detail-label">Statut:</span>
                     <span className={`status-pill ${getStatusClass(selectedResult.status)}`}>
-                      <span className="status-icon">{getStatusIcon(selectedResult.status)}</span>
                       <span>{getStatusLabel(selectedResult.status, t)}</span>
                     </span>
                   </div>
@@ -1199,7 +1186,6 @@ const Dashboard: React.FC = () => {
                         <div className="step-header">
                           <span className="step-number">Étape {step.step}</span>
                           <span className={getStatusClass(step.status)}>
-                            <span className="status-icon">{getStatusIcon(step.status)}</span>
                             <span>{step.status}</span>
                           </span>
                         </div>
@@ -1243,7 +1229,7 @@ const Dashboard: React.FC = () => {
             {systemStats && (
               <div className="results-section">
                 <div className="results-header">
-                  <h2>📊 Statistiques Système</h2>
+                  <h2>Statistiques Système</h2>
                 </div>
                 <div className="stats-grid">
                   <div className="stat-item">

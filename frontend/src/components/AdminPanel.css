@@ -92,11 +92,6 @@
   font-weight: 600;
 }
 
-.ap-nav-icon {
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
-
 /* ── Content area ────────────────────────────────────────────── */
 .ap-content {
   flex: 1;
@@ -423,11 +418,11 @@
 .ap-field input:disabled { background: #f8fafc; color: #94a3b8; }
 
 .ap-pwd-wrap { position: relative; }
-.ap-pwd-wrap input { padding-right: 2.5rem; }
+.ap-pwd-wrap input { padding-right: 4.5rem; }
 .ap-pwd-toggle {
   position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer;
-  color: #94a3b8; font-size: 1rem; padding: 0.25rem;
+  color: #64748b; font-size: 0.75rem; font-weight: 600; padding: 0.25rem;
 }
 
 /* ── Card ────────────────────────────────────────────────────── */
@@ -514,8 +509,17 @@
 .bar-total { font-size: 0.62rem; color: #64748b; font-weight: 600; }
 
 .chart-legend { display: flex; gap: 1rem; margin-top: 0.5rem; }
-.legend-success::before { content: '■ '; color: #16a34a; }
-.legend-fail::before    { content: '■ '; color: #dc2626; }
+.legend-success::before, .legend-fail::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.legend-success::before { background: #16a34a; }
+.legend-fail::before    { background: #dc2626; }
 .legend-success, .legend-fail { font-size: 0.7rem; color: #64748b; }
 
 /* ══ SYSTEM ══════════════════════════════════════════════════════ */

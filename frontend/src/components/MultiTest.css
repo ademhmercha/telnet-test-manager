@@ -424,7 +424,6 @@
 .mt-step-row.status-fail    { border-left: 2px solid var(--accent-red);   background: #fef2f2; }
 .mt-step-row.status-pending { border-left: 2px solid var(--accent-blue);  }
 
-.mt-step-icon { font-size: 0.75rem; min-width: 16px; }
 .mt-step-desc { flex: 1; color: var(--text-primary); }
 .mt-step-time { color: var(--text-muted); font-size: 0.7rem; }
 
@@ -586,7 +585,16 @@
 }
 
 .mt-seq-monitoring-tag {
-  font-size: 0.65rem;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #faf5ff;
+  color: #9333ea;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .mt-seq-clear-btn {
@@ -888,8 +896,16 @@
 }
 
 .mt-modal-seq-tag {
-  font-size: 0.7rem;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eff6ff;
   color: var(--accent-blue);
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .mt-modal-add-btn {
@@ -937,14 +953,6 @@
 .mt-modal-seq-item.mt-drag-over {
   border-top: 2px solid var(--accent-blue);
   transform: translateY(2px);
-}
-
-.mt-modal-seq-handle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  line-height: 1;
-  cursor: grab;
-  flex-shrink: 0;
 }
 
 .mt-modal-footer {

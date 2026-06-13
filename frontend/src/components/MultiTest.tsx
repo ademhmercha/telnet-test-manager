@@ -52,12 +52,6 @@ const defaultConfig = (): TestConfig => ({
   sequence: [],
 });
 
-function getStatusIcon(status: string) {
-  if (status === 'SUCCESS') return '✔';
-  if (status === 'FAIL') return '✖';
-  return '⏳';
-}
-
 function getStatusLabel(status: string) {
   if (status === 'SUCCESS') return 'Succès';
   if (status === 'FAIL') return 'Échec';
@@ -339,7 +333,7 @@ const MultiTest: React.FC = () => {
         <div className="mt-panel-title">
           <span className={`mt-badge mt-badge-${badgeNum}`}>TEST {num}</span>
           {testConfigs.length > 1 && (
-            <button className="mt-remove-btn" onClick={() => removeTest(idx)} title="Supprimer ce test">✕</button>
+            <button className="mt-remove-btn" onClick={() => removeTest(idx)} title="Supprimer ce test">×</button>
           )}
         </div>
 
@@ -393,7 +387,7 @@ const MultiTest: React.FC = () => {
         {config.isSeqMode && (
           <div className="mt-seq-summary">
             <button className="mt-seq-config-btn" onClick={() => openSeqModal(idx)} type="button">
-              <span>⚙️ Configurer la séquence</span>
+              <span>Configurer la séquence</span>
               <span className="mt-seq-count-badge">{config.sequence.length}</span>
             </button>
 
@@ -406,7 +400,7 @@ const MultiTest: React.FC = () => {
                   const isMonStep = step.type === 'monitoring' || cmd?.type === 'monitoring';
                   return (
                     <span key={i} className={`mt-seq-preview-chip ${isMonStep ? 'mt-seq-preview-chip-monitoring' : ''}`}>
-                      {i + 1}. {cmd?.command || step.commandId}{isMonStep && ' 📡'}
+                      {i + 1}. {cmd?.command || step.commandId}
                     </span>
                   );
                 })}
@@ -431,7 +425,7 @@ const MultiTest: React.FC = () => {
           <span className={`mt-badge mt-badge-${badgeNum}`}>RÉSULTAT TEST {num}</span>
           {test && (
             <span className={`mt-status-pill ${getStatusClass(test.status)}`}>
-              {getStatusIcon(test.status)} {getStatusLabel(test.status)}
+              {getStatusLabel(test.status)}
             </span>
           )}
           {test && <span className="mt-duration">{calculateDuration(test.startTime, test.endTime)}</span>}
@@ -454,7 +448,6 @@ const MultiTest: React.FC = () => {
             <div className="mt-steps">
               {test.steps.map((step, i) => (
                 <div key={i} className={`mt-step-row ${getStatusClass(step.status)}`}>
-                  <span className="mt-step-icon">{getStatusIcon(step.status)}</span>
                   <span className="mt-step-desc">{step.description}</span>
                   <span className="mt-step-time">{new Date(step.timestamp).toLocaleTimeString()}</span>
                 </div>
@@ -537,7 +530,7 @@ const MultiTest: React.FC = () => {
                 <h3>Configuration de la séquence</h3>
                 <span className={`mt-badge mt-badge-${(seqModalIdx % 6) + 1}`}>TEST {seqModalIdx + 1}</span>
               </div>
-              <button className="mt-modal-close" onClick={closeSeqModal} title="Fermer">✕</button>
+              <button className="mt-modal-close" onClick={closeSeqModal} title="Fermer">×</button>
             </div>
 
             <div className="mt-modal-body">
@@ -562,8 +555,8 @@ const MultiTest: React.FC = () => {
                       <div className="mt-modal-cmd-info">
                         <span className="mt-modal-cmd-name">
                           {c.command || c.name}
-                          {c.type === 'monitoring' && <span className="mt-seq-monitoring-tag"> 📡</span>}
-                          {c.type === 'sequence' && <span className="mt-modal-seq-tag" title="Séquence prédéfinie"> ⛓</span>}
+                          {c.type === 'monitoring' && <span className="mt-seq-monitoring-tag">Monitoring</span>}
+                          {c.type === 'sequence' && <span className="mt-modal-seq-tag" title="Séquence prédéfinie">Prédéfinie</span>}
                         </span>
                         <span className="mt-modal-cmd-desc">{c.description}</span>
                       </div>
@@ -611,16 +604,14 @@ const MultiTest: React.FC = () => {
                           }}
                           onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
                         >
-                          <span className="mt-modal-seq-handle" title="Glisser pour réordonner">⠿</span>
                           <span className="mt-seq-step-num">{i + 1}</span>
                           <div className="mt-seq-step-body">
                             <span className="mt-seq-step-name">
                               {cmd?.command || step.commandId}
-                              {isMonStep && ' 📡'}
                             </span>
                             {isMonStep && (
                               <label className="mt-seq-duration-label">
-                                ⏱
+                                Durée
                                 <input
                                   type="number" min={1} max={600}
                                   value={Math.round((step.duration || 20000) / 1000)}
@@ -633,7 +624,7 @@ const MultiTest: React.FC = () => {
                               </label>
                             )}
                           </div>
-                          <button className="mt-seq-remove-btn" type="button" onClick={() => removeSeqCmd(i)}>✕</button>
+                          <button className="mt-seq-remove-btn" type="button" onClick={() => removeSeqCmd(i)}>×</button>
                         </div>
                       );
                     })}
@@ -643,7 +634,7 @@ const MultiTest: React.FC = () => {
             </div>
 
             <div className="mt-modal-footer">
-              <span className="mt-modal-hint">⠿ Glissez-déposez une étape pour la réordonner</span>
+              <span className="mt-modal-hint">Glissez-déposez une étape pour la réordonner</span>
               <button className="mt-modal-done-btn" type="button" onClick={closeSeqModal}>Terminé</button>
             </div>
           </div>

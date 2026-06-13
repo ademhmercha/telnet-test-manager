@@ -181,7 +181,7 @@
 .rpt-date { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
 .rpt-mono { font-family: 'Consolas', monospace; font-size: 0.78rem; color: var(--text); }
 
-/* Result pill (✔ N / ✖ N) */
+/* Result pill (pass N / fail N) */
 .result-pill {
   display: inline-flex;
   align-items: center;

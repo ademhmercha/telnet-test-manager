@@ -250,12 +250,6 @@ body {
 .status-fail    { color: var(--fail);    font-weight: 600; font-size: 0.8rem; }
 .status-pending { color: var(--pending); font-weight: 600; font-size: 0.8rem; }
 
-.status-success .status-icon,
-.status-fail    .status-icon,
-.status-pending .status-icon {
-  margin-right: 0.25rem;
-}
-
 /* ─── Progress ──────────────────────────────────────────────────────────────── */
 .progress-row {
   display: grid;
