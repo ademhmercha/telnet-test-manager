@@ -180,7 +180,7 @@ jobs:
           kubectl wait --for=condition=available deployment/backend  -n telnet-app  --timeout=240s
           kubectl wait --for=condition=available deployment/frontend -n telnet-app  --timeout=180s
           kubectl wait --for=condition=available deployment/grafana         -n monitoring --timeout=180s
-          kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=180s
+          kubectl wait --for=condition=available deployment/prometheus-server -n monitoring --timeout=300s
 
       - name: Show pods and services
         shell: powershell
