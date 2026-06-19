@@ -5,62 +5,61 @@
 
 \section{Introduction}
 
-Dans le paysage technologique en constante évolution de l'industrie des
-télécommunications, les entreprises font face à une pression croissante pour
-valider leurs équipements réseau avec une rapidité, une fiabilité et une
-rigueur sans précédent. Les approches traditionnelles de gestion des tests
-d'infrastructure — reposant sur des connexions Telnet manuelles, des
-procédures non standardisées et des résultats consignés dans des tableurs
-dispersés — ne sont plus suffisantes pour répondre aux exigences des
-environnements industriels modernes, où l'agilité opérationnelle et la
-capacité à livrer rapidement des firmwares validés constituent de véritables
-avantages concurrentiels.
+Le secteur des télécommunications traverse une période de transformation
+rapide, et les entreprises qui y opèrent subissent une pression constante
+pour valider leurs équipements réseau avec plus de rapidité, de fiabilité
+et de rigueur. Les méthodes classiques de gestion des tests --- connexions
+Telnet manuelles, procédures non standardisées, résultats stockés dans des
+tableurs éparpillés --- montrent leurs limites face aux contraintes des
+environnements industriels d'aujourd'hui. Dans ce contexte, livrer
+rapidement des firmwares validés tout en garantissant traçabilité et
+fiabilité n'est plus un avantage~: c'est une nécessité.
 
 Ce projet, intitulé \textit{«~Conception et Déploiement d'une Application
-de Test Telnet des Appareils Réseau avec Pipeline CI/CD DevOps~»}, répond
-au besoin critique d'automatisation intelligente des processus de validation
-au sein de \textbf{Sagemcom Ezzahra}. Alors que les équipes d'ingénierie
-s'efforcent d'accélérer les cycles de qualification tout en maintenant des
-standards élevés de fiabilité et de traçabilité, l'intégration de pratiques
-DevOps modernes dans les pipelines de tests émerge comme une solution
-transformatrice et incontournable.
+de Test Telnet des Appareils Réseau avec Pipeline CI/CD DevOps~»},
+s'attaque directement à ce problème en proposant une automatisation des
+processus de validation au sein de \textbf{Sagemcom Ezzahra}. Les équipes
+d'ingénierie cherchent à accélérer les cycles de qualification sans
+sacrifier les standards de fiabilité et de traçabilité --- et c'est
+précisément là qu'une intégration des pratiques DevOps dans le pipeline
+de tests prend tout son sens.
 
-La convergence des méthodologies DevOps avec l'automatisation des tests
-réseau représente un changement de paradigme~: on passe d'opérations
-réactives et manuelles à une automatisation proactive et intelligente.
-Cette transformation permet non seulement de réduire le temps d'exécution
-des campagnes de validation, mais aussi d'éliminer les erreurs humaines,
-de centraliser la traçabilité des résultats et de créer une infrastructure
-de tests continue qui s'améliore à chaque livraison. Ce chapitre pose les
-fondements de cette transformation en présentant l'organisme d'accueil,
-la problématique, les objectifs stratégiques, l'analyse critique du système
-existant et la méthodologie de travail adoptée.
+Combiner les méthodologies DevOps avec l'automatisation des tests réseau,
+c'est changer de logique~: on abandonne une gestion réactive et manuelle
+pour adopter une automatisation proactive et structurée. Concrètement,
+cela se traduit par des campagnes de validation plus courtes, moins
+d'erreurs humaines, une centralisation des résultats et une infrastructure
+de tests qui gagne en maturité à chaque livraison.
+
+Ce chapitre pose les bases nécessaires à la compréhension du projet, en
+présentant l'organisme d'accueil, la problématique, les objectifs,
+l'analyse du système existant et la méthodologie de travail retenue.
 
 % -----------------------------------------------------------------
 \section{Présentation de Sagemcom Ezzahra}
 
 \subsection{Aperçu de l'entreprise}
 
-\textbf{Sagemcom} est une entreprise française fondée en 2008, issue
-du spin-off de la division équipements de communications de Sagem. Son
-siège social est établi à Rueil-Malmaison (France). Sagemcom conçoit,
-développe et fabrique une large gamme d'équipements de communication pour
-les particuliers et les entreprises~:
+\textbf{Sagemcom} est une entreprise française fondée en 2008, issue du
+spin-off de la division équipements de communications de Sagem, dont le
+siège est établi à Rueil-Malmaison. Elle conçoit, développe et fabrique
+des équipements de communication destinés aussi bien aux particuliers
+qu'aux entreprises~:
 
 \begin{itemize}
   \item Passerelles haut débit (\gls{cpe}) xDSL, VDSL2 et fibre optique
         (ONT/ONU)~;
   \item Décodeurs multimédias (\textit{set-top boxes}) pour la télévision
-        numérique terrestre, câble et IPTV~;
+        numérique terrestre, le câble et l'IPTV~;
   \item Compteurs communicants intelligents (Linky en France)~;
   \item Téléphones DECT résidentiels et professionnels.
 \end{itemize}
 
 \textbf{Sagemcom Ezzahra} est le centre tunisien de recherche, développement
 et production du groupe, situé dans la Zone Industrielle d'Ezzahra, Ben
-Arous, Tunisie. Ce centre emploie plus de 1\,000 ingénieurs et techniciens
-spécialisés dans le développement logiciel embarqué, les tests de validation,
-l'assurance qualité et la production.
+Arous. Il emploie plus de 1\,000~ingénieurs et techniciens spécialisés dans
+le développement logiciel embarqué, les tests de validation, l'assurance
+qualité et la production.
 
 \begin{table}[H]
   \centering
@@ -90,17 +89,16 @@ l'assurance qualité et la production.
 \subsection{Position sur le marché et présence}
 
 Sagemcom est \textbf{leader européen} dans la fourniture de passerelles
-haut débit aux opérateurs de télécommunications. Le groupe livre plus de
-\textbf{30 millions d'équipements} par an à travers le monde. Ses
-principaux clients incluent des opérateurs majeurs tels qu'Orange, SFR,
-Bouygues Télécom, BT, Vodafone, Deutsche Telekom et de nombreux autres
-opérateurs dans plus de \textbf{60 pays}.
+haut débit aux opérateurs télécoms, avec plus de \textbf{30 millions
+d'équipements} livrés chaque année dans le monde. Parmi ses clients
+figurent des opérateurs de premier plan~: Orange, SFR, Bouygues Télécom,
+BT, Vodafone, Deutsche Telekom, et bien d'autres répartis dans plus de
+\textbf{60 pays}.
 
-Le centre de Sagemcom Ezzahra joue un rôle stratégique dans la
-compétitivité du groupe~: il assure le développement et la validation
-des firmwares embarqués Linux pour l'ensemble de la gamme de produits
-CPE, garantissant la qualité et la conformité des livraisons aux
-opérateurs partenaires.
+Le centre de Sagemcom Ezzahra tient une place centrale dans cette
+chaîne~: il prend en charge le développement et la validation des
+firmwares embarqués Linux pour toute la gamme \gls{cpe}, assurant la
+qualité et la conformité des livraisons aux opérateurs partenaires.
 
 \subsection{Contexte du projet}
 
@@ -112,12 +110,12 @@ opérateurs partenaires.
 \end{figure}
 
 Le stage s'est déroulé au sein du \textbf{département d'ingénierie des
-tests}, chargé de la validation fonctionnelle des firmwares embarqués.
-Les équipements réseau testés (passerelles, décodeurs) embarquent un
-système Linux accessible à distance via le protocole \gls{telnet} sur le
-port~23. Chaque équipement physique (\textit{produit}) peut exposer
-plusieurs interfaces Ethernet (\textit{slots}), chacune dotée d'une
-adresse IP distincte, permettant des tests indépendants par interface.
+tests}, dont la mission est la validation fonctionnelle des firmwares
+embarqués. Les équipements testés --- passerelles et décodeurs --- tournent
+sur Linux et sont accessibles à distance via le protocole \gls{telnet}
+sur le port~23. Chaque équipement physique (\textit{produit}) peut exposer
+plusieurs interfaces Ethernet (\textit{slots}), chacune avec sa propre
+adresse IP, ce qui permet de mener des tests indépendants par interface.
 
 % -----------------------------------------------------------------
 \section{Mission et objectifs du projet}
@@ -125,23 +123,22 @@ adresse IP distincte, permettant des tests indépendants par interface.
 \subsection{Énoncé de la mission}
 
 \begin{infobox}[title={Mission du projet}]
-  Développer une application web centralisée permettant d'automatiser,
-  d'exécuter et de tracer les tests Telnet des équipements réseau
-  embarqués de Sagemcom Ezzahra, en s'appuyant sur une infrastructure
-  DevOps complète~: conteneurisation Docker, orchestration Kubernetes
-  et pipeline CI/CD GitHub Actions.
+  Développer une application web centralisée pour automatiser, exécuter
+  et tracer les tests Telnet des équipements réseau de Sagemcom Ezzahra,
+  en s'appuyant sur une infrastructure DevOps complète~: conteneurisation
+  Docker, orchestration Kubernetes et pipeline CI/CD GitHub Actions.
 \end{infobox}
 
 \subsection{Objectifs stratégiques}
 
-Les objectifs du projet sont organisés selon quatre axes~:
+Les objectifs sont organisés en quatre axes~:
 
 \begin{enumerate}
   \item \textbf{Automatisation des tests Telnet}
     \begin{itemize}
-      \item Éliminer la saisie manuelle des commandes Telnet~;
-      \item Supporter les modes~: commande unitaire, séquence d'étapes
-            et supervision continue (\textit{monitoring})~;
+      \item Supprimer la saisie manuelle des commandes Telnet~;
+      \item Prendre en charge trois modes d'exécution~: commande unitaire,
+            séquence d'étapes et supervision continue (\textit{monitoring})~;
       \item Permettre l'exécution parallèle sur plusieurs slots.
     \end{itemize}
 
@@ -149,15 +146,16 @@ Les objectifs du projet sont organisés selon quatre axes~:
     \begin{itemize}
       \item Regrouper la configuration des équipements (Postes, Produits,
             Slots) dans une interface unique~;
-      \item Archiver l'ensemble des résultats de tests en base de données
+      \item Archiver tous les résultats de tests en base de données
             MongoDB~;
       \item Fournir un journal d'audit complet des actions utilisateurs.
     \end{itemize}
 
   \item \textbf{Expérience utilisateur}
     \begin{itemize}
-      \item Diffuser les résultats de tests en temps réel via WebSocket~;
-      \item Implémenter un contrôle d'accès basé sur les rôles (RBAC)~;
+      \item Diffuser les résultats en temps réel via WebSocket~;
+      \item Mettre en place un contrôle d'accès basé sur les rôles
+            (\gls{rbac})~;
       \item Proposer une interface multilingue (FR, EN, PT-BR).
     \end{itemize}
 
@@ -165,8 +163,8 @@ Les objectifs du projet sont organisés selon quatre axes~:
     \begin{itemize}
       \item Conteneuriser l'application avec Docker~;
       \item Orchestrer le déploiement via Kubernetes et Helm~;
-      \item Automatiser l'intégration et le déploiement continus
-            par un pipeline GitHub Actions auto-hébergé~;
+      \item Automatiser l'intégration et le déploiement continus via un
+            pipeline GitHub Actions auto-hébergé~;
       \item Superviser les performances avec Prometheus et Grafana.
     \end{itemize}
 \end{enumerate}
@@ -176,25 +174,25 @@ Les objectifs du projet sont organisés selon quatre axes~:
 
 \subsection{Étude du système existant}
 
-Avant la réalisation de ce projet, la procédure de validation Telnet
-au sein du département de tests reposait entièrement sur des opérations
-manuelles~: chaque ingénieur ou technicien ouvrait un client Telnet
-(PuTTY, Windows Telnet ou un terminal Linux), saisissait l'adresse IP
-du slot à tester, s'authentifiait, exécutait les commandes une par une
-et notait visuellement les résultats dans un tableur ou un document texte.
+Avant ce projet, la validation Telnet au sein du département de tests
+reposait entièrement sur des opérations manuelles. Chaque ingénieur ou
+technicien ouvrait un client Telnet --- PuTTY, Windows Telnet ou un
+terminal Linux --- saisissait l'adresse IP du slot à tester,
+s'authentifiait, tapait les commandes une par une, puis notait les
+résultats à la main dans un tableur ou un fichier texte.
 
-Les principales limitations identifiées sont les suivantes~:
+Les problèmes que cette approche posait étaient clairs~:
 \begin{itemize}
-  \item Saisie manuelle des commandes, source d'erreurs et de perte de
-        temps~;
-  \item Impossibilité d'exécuter des tests en parallèle sur plusieurs
-        slots~;
-  \item Aucune traçabilité structurée~: résultats dispersés dans des
-        fichiers non centralisés~;
-  \item Dépendance totale à l'expertise individuelle de chaque technicien~;
-  \item Absence de supervision en temps réel et de notification en cas
-        d'échec~;
-  \item Aucune intégration dans un processus CI/CD.
+  \item Les commandes saisies manuellement introduisaient des erreurs
+        et faisaient perdre un temps considérable~;
+  \item Il était impossible de lancer des tests en parallèle sur
+        plusieurs slots~;
+  \item Aucune traçabilité structurée~: les résultats se retrouvaient
+        éparpillés dans des fichiers non centralisés~;
+  \item Le processus dépendait entièrement du niveau de chaque
+        technicien, sans standardisation~;
+  \item Aucune supervision en temps réel, aucune alerte en cas d'échec~;
+  \item Le pipeline CI/CD était complètement ignoré dans ce schéma.
 \end{itemize}
 
 \begin{figure}[H]
@@ -243,25 +241,25 @@ Les principales limitations identifiées sont les suivantes~:
 
 \noindent\textbf{Analyse des causes racines~:}
 \begin{itemize}
-  \item \textbf{Absence d'outil dédié~:} aucune plateforme de tests
-        spécifiquement conçue pour les connexions Telnet multi-slots~;
-  \item \textbf{Manque d'industrialisation~:} le processus n'est pas
-        intégré dans une chaîne CI/CD~;
-  \item \textbf{Défaut de centralisation~:} configuration, commandes
-        et résultats sont dispersés sans référentiel commun~;
-  \item \textbf{Absence de gestion des utilisateurs~:} aucun contrôle
-        d'accès ni traçabilité des actions.
+  \item \textbf{Aucun outil dédié~:} il n'existait pas de plateforme
+        conçue spécifiquement pour gérer des connexions Telnet multi-slots~;
+  \item \textbf{Processus non industrialisé~:} aucune intégration dans
+        une chaîne CI/CD~;
+  \item \textbf{Données dispersées~:} configuration, commandes et résultats
+        n'avaient pas de référentiel commun~;
+  \item \textbf{Gestion des utilisateurs absente~:} ni contrôle d'accès,
+        ni traçabilité des actions.
 \end{itemize}
 
 \subsection{Solution proposée}
 
-La solution \textbf{Telnet Test Manager} répond à l'ensemble de ces
-lacunes en proposant les composants suivants~:
+La solution \textbf{Telnet Test Manager} couvre l'ensemble de ces
+lacunes à travers trois composants principaux~:
 
 \begin{enumerate}
   \item \textbf{Application web fullstack}
     \begin{itemize}
-      \item Interface React 18/TypeScript pour la configuration et
+      \item Interface React~18/TypeScript pour la configuration et
             l'exécution des tests~;
       \item Backend Node.js/Express.js structuré selon la Clean
             Architecture~;
@@ -271,21 +269,23 @@ lacunes en proposant les composants suivants~:
   \item \textbf{Moteur de tests Telnet automatisé}
     \begin{itemize}
       \item Exécution isolée dans des Worker Threads Node.js~;
-      \item Trois modes~: commande unitaire, séquence d'étapes,
-            supervision continue~;
+      \item Trois modes d'exécution~: commande unitaire, séquence
+            d'étapes, supervision continue~;
       \item Tests multi-slots en parallèle~;
       \item Diffusion des résultats en temps réel via WebSocket.
     \end{itemize}
 
   \item \textbf{Infrastructure DevOps}
     \begin{itemize}
-      \item Conteneurisation Docker (build multi-stage pour le frontend)~;
-      \item Orchestration Kubernetes avec chart Helm v0.3.0~;
-      \item Autoscaling horizontal (HPA~: 1 à 5 répliques, seuil~: 70\,\%
-            CPU)~;
-      \item Pipeline GitHub Actions en 3 jobs~: CI backend, CI frontend,
-            déploiement~;
-      \item Supervision Prometheus/Grafana (10 panneaux de métriques).
+      \item Conteneurisation Docker avec build multi-stage pour
+            le frontend~;
+      \item Orchestration Kubernetes via chart Helm v0.3.0~;
+      \item Autoscaling horizontal (HPA~: 1 à 5 répliques, seuil
+            CPU à 70\,\%)~;
+      \item Pipeline GitHub Actions en 3 jobs~: CI backend, CI
+            frontend, déploiement~;
+      \item Supervision Prometheus/Grafana avec 10 panneaux de
+            métriques.
     \end{itemize}
 \end{enumerate}
 
@@ -294,53 +294,53 @@ lacunes en proposant les composants suivants~:
 
 \subsection{Contexte et historique}
 
-Ce projet a émergé d'un besoin concret exprimé par le département
-d'ingénierie des tests de Sagemcom Ezzahra. La multiplication des
-familles de produits (passerelles xDSL, VDSL2, fibre, décodeurs IPTV)
-et l'accroissement du nombre de slots à valider par équipement ont rendu
-le processus manuel insoutenable. Une première tentative de scripts
-Python avait été envisagée mais abandonnée faute de centralisation et
-d'interface utilisateur. Le choix s'est finalement porté sur une
+Le besoin est venu directement du département d'ingénierie des tests
+de Sagemcom Ezzahra. Avec la multiplication des familles de produits
+--- passerelles xDSL, VDSL2, fibre, décodeurs IPTV --- et l'augmentation
+du nombre de slots à valider par équipement, le processus manuel est
+devenu difficile à tenir. Une première tentative basée sur des scripts
+Python avait été envisagée, puis abandonnée par manque de centralisation
+et d'interface utilisateur. Le projet s'est alors orienté vers une
 application web moderne, évolutive et intégrée dans l'écosystème DevOps
-de l'entreprise.
+existant.
 
 \subsection{Méthodologie de travail}
 
 \subsubsection{Mise en \oe{}uvre de la méthodologie Agile Scrum}
 
-Le projet adopte la méthodologie \textbf{Agile Scrum}~\cite{schwaber2020scrum}
-pour gérer cette initiative d'automatisation DevOps complexe. Cette approche
-fournit la flexibilité et les capacités de livraison itérative essentielles
-pour des projets de cette envergure et de cette technicité.
+Le projet s'appuie sur la méthodologie \textbf{Agile Scrum} pour piloter
+cette initiative d'automatisation. Cette approche apporte la flexibilité
+et la capacité de livraison itérative nécessaires pour un projet de cette
+complexité technique.
 
-\paragraph{Avantages du cadre Scrum~:}
+\paragraph{Apports du cadre Scrum~:}
 \begin{itemize}
-  \item \textbf{Livraison itérative~:} permet la livraison incrémentale de
-        chaque composant d'infrastructure (moteur Telnet, conteneurisation,
-        orchestration, CI/CD)~;
-  \item \textbf{Validation continue~:} autorise la vérification en temps réel
-        de chaque couche d'automatisation avant de passer à la suivante~;
-  \item \textbf{Visibilité transparente~:} fournit une visibilité claire sur
-        l'avancement du projet à toutes les parties prenantes~;
-  \item \textbf{Atténuation des risques~:} permet l'identification et la
-        résolution précoce des défis techniques (compatibilité Docker,
-        configuration Kubernetes, intégration WebSocket)~;
-  \item \textbf{Engagement des parties prenantes~:} garantit un alignement
-        continu entre les exigences techniques et les objectifs métier.
+  \item \textbf{Livraison itérative~:} chaque composant d'infrastructure
+        (moteur Telnet, conteneurisation, orchestration, CI/CD) est livré
+        de façon incrémentale~;
+  \item \textbf{Validation continue~:} chaque couche d'automatisation est
+        vérifiée avant de passer à la suivante~;
+  \item \textbf{Visibilité claire~:} toutes les parties prenantes suivent
+        l'avancement en temps réel~;
+  \item \textbf{Gestion des risques~:} les problèmes techniques ---
+        compatibilité Docker, configuration Kubernetes, intégration
+        WebSocket --- sont détectés et traités tôt~;
+  \item \textbf{Alignement métier~:} les exigences techniques restent en
+        phase avec les objectifs du projet tout au long du développement.
 \end{itemize}
 
 \paragraph{Structure des sprints~:}
 \begin{itemize}
-  \item \textbf{Durée des sprints~:} 2 semaines, optimisées pour les cycles
-        de livraison d'infrastructure~;
+  \item \textbf{Durée~:} 2 semaines, adaptées aux cycles de livraison
+        d'infrastructure~;
   \item \textbf{Sprint Planning~:} priorisation du backlog technique et
-        allocation des ressources de développement~;
-  \item \textbf{Daily Scrums~:} synchronisation quotidienne de l'avancement
-        et identification des obstacles~;
-  \item \textbf{Sprint Reviews~:} démonstration des livrables et collecte
-        des retours des encadrants~;
-  \item \textbf{Rétrospectives~:} amélioration continue du processus et
-        intégration des leçons apprises.
+        allocation des ressources~;
+  \item \textbf{Daily Scrums~:} synchronisation quotidienne et
+        identification des blocages~;
+  \item \textbf{Sprint Reviews~:} démonstration des livrables et retours
+        des encadrants~;
+  \item \textbf{Rétrospectives~:} amélioration continue du processus à
+        chaque itération.
 \end{itemize}
 
 \begin{figure}[H]
@@ -350,20 +350,19 @@ pour des projets de cette envergure et de cette technicité.
   \label{fig:scrum_schema}
 \end{figure}
 
-Le diagramme ci-dessus illustre le flux de travail Scrum complet adapté à
-notre projet DevOps. Le processus englobe des cycles de sprint de deux
-semaines, intégrant la gestion du backlog d'infrastructure, la planification
-technique des sprints et les incréments livrables. Les cérémonies Daily
-Scrum facilitent la coordination en temps réel entre les tâches d'automatisation
-DevOps, l'implémentation de la sécurité et le développement des modules
+Le schéma Scrum illustre le flux de travail complet adapté au projet.
+Les sprints de deux semaines intègrent la gestion du backlog
+d'infrastructure, la planification technique et les livrables. Les
+Daily Scrums assurent la coordination entre les tâches DevOps,
+l'implémentation de la sécurité et le développement des modules
 applicatifs.
 
 \subsubsection{Composition de l'équipe Scrum}
 
-L'équipe Scrum est spécifiquement structurée pour répondre à la complexité
-technique et aux exigences pluridisciplinaires du projet. Chaque rôle
-apporte une expertise spécialisée tout en maintenant un focus collaboratif
-sur la livraison d'une plateforme de tests prête pour la production.
+L'équipe est structurée pour répondre à la complexité technique et aux
+exigences pluridisciplinaires du projet. Chaque rôle apporte une
+expertise ciblée, dans un fonctionnement collaboratif orienté vers la
+livraison d'une plateforme de tests prête pour la production.
 
 \begin{table}[H]
   \centering
@@ -396,50 +395,38 @@ sur la livraison d'une plateforme de tests prête pour la production.
 
 \section{Conclusion}
 
-Ce chapitre a établi les fondements complets nécessaires à la mise en
-\oe{}uvre d'une plateforme de tests Telnet automatisée et orientée DevOps au
-sein de \textbf{Sagemcom Ezzahra}. L'analyse conduite révèle des opportunités
-de modernisation significatives, alignées à la fois sur les besoins
-opérationnels immédiats de l'équipe de tests et sur les objectifs stratégiques
-à long terme de l'entreprise.
+Ce chapitre a posé les bases nécessaires à la mise en place d'une
+plateforme de tests Telnet automatisée et orientée DevOps au sein de
+\textbf{Sagemcom Ezzahra}. L'analyse menée montre clairement où se
+situent les manques~: automatisation absente, supervision inexistante,
+traçabilité insuffisante --- autant de points qui ralentissent le
+département et allongent les délais de livraison des firmwares validés.
 
-L'évaluation de l'infrastructure existante met en évidence des lacunes
-manifestes en matière d'automatisation, de supervision et de traçabilité des
-tests, qui impactent directement l'agilité opérationnelle du département et
-les délais de livraison des firmwares validés. La solution proposée,
-\textbf{Telnet Test Manager}, répond à ces défis par une intégration
-systématique des pratiques DevOps modernes~: moteur d'exécution Telnet
-automatisé, supervision temps réel par WebSocket, gestion centralisée des
-équipements et pipeline CI/CD de bout en bout.
+La solution \textbf{Telnet Test Manager} répond à ces problèmes par
+une approche DevOps structurée~: moteur d'exécution Telnet automatisé,
+supervision temps réel via WebSocket, gestion centralisée des équipements
+et pipeline CI/CD de bout en bout. Passer des opérations manuelles à une
+plateforme automatisée, ce n'est pas juste une mise à jour technique ---
+c'est une façon différente de travailler pour toute l'équipe d'ingénierie
+des tests.
 
-La transformation depuis des opérations manuelles et réactives vers une
-plateforme de tests intelligente et automatisée représente bien plus qu'une
-simple mise à niveau technique~: elle constitue un changement fondamental
-de philosophie opérationnelle au sein de l'équipe d'ingénierie des tests.
-En mettant en \oe{}uvre une automatisation complète assortie d'une supervision
-en temps réel, Sagemcom Ezzahra atteindra des niveaux inédits de fiabilité,
-de traçabilité et d'efficacité dans la validation de ses équipements réseau
-embarqués.
+Avec une automatisation complète et une supervision en temps réel,
+Sagemcom Ezzahra gagne en fiabilité, en traçabilité et en efficacité
+sur la validation de ses équipements réseau embarqués. La méthodologie
+\textbf{Agile Scrum} encadre cette transition en découpant la livraison
+en sprints de deux semaines, chacun avec des critères de succès clairs,
+ce qui permet de garder le contrôle sur la qualité, la sécurité et les
+performances à chaque étape.
 
-L'adoption de la méthodologie \textbf{Agile Scrum} garantit une livraison
-structurée et progressive des composants applicatifs et d'infrastructure
-complexes, tout en maintenant un focus constant sur la qualité, la sécurité
-et l'optimisation des performances. La structure en cinq sprints fournit des
-critères de succès clairs à chaque itération et démontre la valeur
-opérationnelle substantielle que cette transformation est en mesure
-d'apporter.
+Cette analyse prépare les phases d'implémentation qui suivent, en fixant
+des attentes précises sur les livrables, les délais et les métriques à
+atteindre. L'architecture retenue --- Clean Architecture, WebSocket,
+Docker, Kubernetes, GitHub Actions --- forme une base solide pour une
+plateforme de tests durable et évolutive.
 
-Cette analyse fondatrice prépare l'équipe de développement aux phases
-d'implémentation technique détaillées qui suivent, en établissant des
-attentes précises en matière de livrables, de délais et de métriques de
-succès. L'intégration de la Clean Architecture, de la communication temps
-réel par WebSocket, de la conteneurisation Docker, de l'orchestration
-Kubernetes et d'un pipeline GitHub Actions constitue une plateforme robuste
-pour une excellence durable en matière d'automatisation des tests.
+Au final, la réalisation de cette plateforme DevOps permettra à l'équipe
+d'ingénierie de Sagemcom Ezzahra de valider ses firmwares embarqués plus
+vite, avec une meilleure traçabilité et une productivité accrue ---
+que ce soit avec la version actuelle de Telnet Test Manager ou ses
+évolutions futures.
 
-La réalisation réussie de cette plateforme de tests DevOps positionnera
-l'équipe d'ingénierie de Sagemcom Ezzahra comme une référence en matière
-d'automatisation de la validation de firmwares embarqués, permettant une
-exécution rapide des campagnes de tests, une traçabilité exemplaire et une
-productivité accrue au travers de l'application Telnet Test Manager et de
-ses évolutions futures.

@@ -158,5 +158,22 @@
     "addSlot": "Ajouter un slot",
     "runAll": "Lancer tous les tests",
     "stopAll": "Arrêter tout"
+  },
+  "account": {
+    "title": "Mon compte",
+    "username": "Nom d'utilisateur",
+    "email": "E-mail",
+    "role": "Rôle",
+    "changeTitle": "Modifier mes informations",
+    "hint": "Le mot de passe actuel est toujours requis pour valider les modifications.",
+    "newUsername": "Nouveau nom d'utilisateur",
+    "currentPwd": "Mot de passe actuel",
+    "newPwd": "Nouveau mot de passe",
+    "confirmPwd": "Confirmer le nouveau mot de passe",
+    "save": "Enregistrer les modifications",
+    "currentPwdRequired": "Le mot de passe actuel est requis",
+    "noChanges": "Aucune modification à effectuer",
+    "pwdMismatch": "Les mots de passe ne correspondent pas",
+    "pwdTooShort": "Le mot de passe doit contenir au moins 6 caractères"
   }
 }

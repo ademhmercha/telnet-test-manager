@@ -4,18 +4,17 @@
 \chapter{DevOps et déploiement}
 
 \section*{Introduction}
-Le volet DevOps de ce projet est aussi ambitieux que le développement
-applicatif lui-même. Ce chapitre couvre l'ensemble de la chaîne de livraison
-logicielle~: de la conteneurisation Docker à l'orchestration Kubernetes/Helm,
-en passant par le pipeline GitHub Actions et la supervision Prometheus/Grafana.
+Ce chapitre couvre toute la chaîne de livraison du projet~: de la
+conteneurisation Docker à l'orchestration Kubernetes/Helm, en passant
+par le pipeline GitHub Actions et la supervision Prometheus/Grafana.
 
 % -----------------------------------------------------------------
 \section{Introduction au DevOps et au CI/CD}
 % -----------------------------------------------------------------
 
-Le terme \textbf{DevOps} désigne une culture et un ensemble de pratiques qui
-rapprochent les équipes de développement (Dev) et d'exploitation (Ops) afin
-d'accélérer la livraison de logiciels de qualité. Les trois piliers sont~:
+\textbf{DevOps} désigne un ensemble de pratiques qui rapprochent les
+équipes de développement (Dev) et d'exploitation (Ops) pour accélérer
+la livraison de logiciels fiables. Les trois axes principaux sont~:
 
 \begin{itemize}
   \item \textbf{L'intégration continue (CI)}~: chaque poussée de code
@@ -33,60 +32,7 @@ d'accélérer la livraison de logiciels de qualité. Les trois piliers sont~:
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[
-    step/.style={draw=bleuPFE,fill=bleuPFE!10,rounded corners=4pt,
-                 minimum width=2.8cm,minimum height=1cm,
-                 align=center,font=\scriptsize},
-    env/.style={draw=bleuPFE!30,fill=bleuPFE!3,rounded corners=6pt,
-                minimum width=4cm,minimum height=3.5cm},
-    arr/.style={->,>=stealth,draw=bleuPFE!70,thick},
-    lbl/.style={font=\scriptsize\itshape,color=bleuPFE!60},
-  ]
-
-    % Développeur
-    \node[step,fill=bleuPFE!20] (dev) at (0,0) {\textbf{Développeur}\\git push};
-
-    % GitHub
-    \node[step] (gh) at (3,0) {\textbf{GitHub}\\Dépôt central};
-
-    % CI Backend
-    \node[step] (ci_back) at (6,1.5) {CI Backend\\npm audit + test};
-    % CI Frontend
-    \node[step] (ci_front) at (6,-1.5) {CI Frontend\\npm audit + build};
-
-    % Build Docker
-    \node[step] (docker) at (9.5,0) {\textbf{Build Docker}\\backend + frontend};
-
-    % Deploy Helm
-    \node[step,fill=bleuPFE!15] (helm) at (13,0) {\textbf{Helm Deploy}\\Kubernetes};
-
-    % K8s cluster
-    \draw[draw=bleuPFE!30,fill=bleuPFE!3,rounded corners=6pt]
-      (10.5,-4) rectangle (15.5,-1.2);
-    \node[bleuPFE,font=\bfseries\scriptsize] at (13,-1.4) {Cluster Minikube};
-    \node[step,minimum width=1.8cm] at (11.8,-2.5) {Backend\\Pod};
-    \node[step,minimum width=1.8cm] at (13.8,-2.5) {Frontend\\Pod};
-    \node[step,minimum width=1.8cm] at (12.8,-3.5) {MongoDB\\Pod};
-
-    % Monitoring
-    \node[step] (prom) at (9.5,-4) {Prometheus\\:9090};
-    \node[step] (graf) at (6,-4)   {Grafana\\:3001};
-
-    % Flèches pipeline
-    \draw[arr] (dev)     -- (gh)      node[midway,above,lbl] {push};
-    \draw[arr] (gh)      -- (ci_back) node[near start,above,lbl] {trigger};
-    \draw[arr] (gh)      -- (ci_front);
-    \draw[arr] (ci_back) -- (docker);
-    \draw[arr] (ci_front)-- (docker);
-    \draw[arr] (docker)  -- (helm)    node[midway,above,lbl] {deploy};
-    \draw[arr] (helm)    -- (12.5,-1.8);
-    \draw[arr] (13,-1.8) -- (13,-1.4);
-
-    % Monitoring
-    \draw[arr] (11.8,-2.5) -- (prom) node[midway,below,lbl] {/metrics};
-    \draw[arr] (prom) -- (graf) node[midway,below,lbl] {scrape};
-
-  \end{tikzpicture}
+  \includegraphics[width=\textwidth]{images/architecture_devops}
   \caption{Architecture DevOps — pipeline CI/CD et infrastructure Kubernetes}
   \label{fig:devops_archi}
 \end{figure}
@@ -97,123 +43,40 @@ d'accélérer la livraison de logiciels de qualité. Les trois piliers sont~:
 
 \subsection{Dockerfile du backend}
 
-\begin{lstlisting}[language=docker,
-  caption={backend/Dockerfile — image Node.js 20 Alpine}]
-# Image de base légère (Alpine Linux ~50 MB)
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Copie des manifestes de dépendances (optimise le cache Docker)
-COPY package*.json ./
-
-# Installation des dépendances de production uniquement
-RUN npm ci --only=production
-
-# Paramètre de cache-busting (force la re-copie du code)
-ARG CACHEBUST=1
-
-# Copie du code source
-COPY . .
-
-EXPOSE 3002
-
-CMD ["node", "src/main/server.js"]
-\end{lstlisting}
+Le \texttt{Dockerfile} du backend part de l'image \texttt{node:20-alpine},
+une base Node.js 20 LTS légère sur Alpine Linux ($\sim$50~Mo). Les
+dépendances sont installées avec \texttt{npm ci --only=production} pour
+ne pas embarquer les outils de développement. Un argument \texttt{CACHEBUST}
+force la re-copie du code source à chaque déploiement. L'application
+écoute sur le port 3002 et démarre via \texttt{node src/main/server.js}.
 
 \subsection{Dockerfile du frontend (multi-stage)}
 
-\begin{lstlisting}[language=docker,
-  caption={frontend/Dockerfile — build multi-stage Node.js + Nginx}]
-# ─── Étape 1 : Construction de l'application React ───────────────
-FROM node:18-alpine AS builder
+Le \texttt{Dockerfile} du frontend exploite un build \textbf{multi-stage}~:
+la première étape utilise \texttt{node:18-alpine} pour compiler l'application
+React (\texttt{npm run build}), produisant les fichiers statiques optimisés.
+La seconde étape repart d'une image \texttt{nginx:alpine} vierge et y copie
+uniquement les fichiers compilés ainsi que la configuration Nginx (reverse proxy).
+Cette approche ramène l'image finale de $\sim$900~Mo (avec les dépendances de build)
+à $\sim$25~Mo en production.
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-
-# Build React optimisé pour la production
-RUN npm run build
-
-# ─── Étape 2 : Serveur de production Nginx ───────────────────────
-FROM nginx:alpine
-
-# Copie des fichiers statiques construits
-COPY --from=builder /app/build /usr/share/nginx/html
-
-# Configuration Nginx avec reverse proxy
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-\end{lstlisting}
-
-\begin{notebox}[title={Avantage du build multi-stage}]
-  L'image finale du frontend ne contient que Nginx et les fichiers statiques
-  compilés, sans les outils de build Node.js. La taille passe de~$\sim$900~MB
-  (avec les dépendances de build) à~$\sim$25~MB (image de production).
-\end{notebox}
 
 \subsection{Docker Compose pour le développement}
 
-\begin{lstlisting}[language=yaml,
-  caption={docker-compose.yml — stack de développement locale (5 services)}]
-services:
-  mongodb:
-    image: mongo:7
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin123
-      MONGO_INITDB_DATABASE:      telnet-db
-    volumes:
-      - mongo-data:/data/db
-
-  backend:
-    build: ./backend
-    ports:
-      - "3002:3002"   # API REST
-      - "3003:3003"   # WebSocket
-    environment:
-      MONGO_URI:       mongodb://admin:admin123@mongodb:27017/telnet-db?authSource=admin
-      JWT_SECRET:      ${JWT_SECRET}
-      ALLOWED_ORIGIN:  http://localhost:3000
-    volumes:
-      - ./backend/reports:/app/reports
-    depends_on:
-      - mongodb
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin123
-    volumes:
-      - ./monitoring/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/ds.yaml
-      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/telnet.json
-    depends_on:
-      - prometheus
-
-volumes:
-  mongo-data:
-\end{lstlisting}
+Le fichier \texttt{docker-compose.yml} orchestre cinq services interdépendants~:
+\begin{itemize}
+  \item \textbf{mongodb}~: image \texttt{mongo:7} avec volume persistant
+        \texttt{mongo-data} et variables d'environnement pour l'initialisation
+        de la base~;
+  \item \textbf{backend}~: expose les ports 3002 (API REST) et 3003 (WebSocket),
+        reçoit la chaîne de connexion MongoDB et le secret JWT via des variables
+        d'environnement~;
+  \item \textbf{frontend}~: expose le port 3000, dépend du backend~;
+  \item \textbf{prometheus}~: image officielle \texttt{prom/prometheus} avec le
+        fichier de configuration scrape monté en volume~;
+  \item \textbf{grafana}~: image officielle avec datasources et dashboards
+        provisionnés automatiquement au démarrage.
+\end{itemize}
 
 % -----------------------------------------------------------------
 \section{Orchestration avec Kubernetes et Helm}
@@ -223,54 +86,7 @@ volumes:
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[
-    res/.style={draw=bleuPFE!60,fill=bleuPFE!5,rounded corners=3pt,
-                minimum width=3.2cm,minimum height=0.7cm,
-                align=center,font=\scriptsize},
-    ns/.style={draw=bleuPFE,fill=bleuPFE!10,rounded corners=4pt},
-    arr/.style={->,>=stealth,draw=gray!50},
-  ]
-
-    % Namespace
-    \draw[ns] (-1,-5) rectangle (13,1.5);
-    \node[bleuPFE,font=\bfseries\small] at (6,1.2)
-      {Namespace~: telnet-app};
-
-    % Backend
-    \node[res] (bd) at (0,0)    {Deployment\\backend (x2)};
-    \node[res] (bh) at (0,-1)   {HPA backend\\1-5 replicas};
-    \node[res] (bs) at (0,-2)   {Service\\ClusterIP:3002};
-    \node[res] (bp) at (0,-3)   {PVC backend\\1 Gi};
-
-    % Frontend
-    \node[res] (fd) at (5,0)    {Deployment\\frontend (x1)};
-    \node[res] (fs) at (5,-1)   {Service\\ClusterIP:80};
-
-    % MongoDB
-    \node[res] (md) at (10,0)   {Deployment\\MongoDB 7};
-    \node[res] (ms) at (10,-1)  {Service\\ClusterIP:27017};
-    \node[res] (mp) at (10,-2)  {PVC MongoDB\\2 Gi};
-
-    % Ingress
-    \node[res,minimum width=8cm] (ing) at (5,-4)
-      {Ingress (nginx) — / → frontend~; /api → backend};
-
-    % ConfigMap & Secret
-    \node[res] (cm) at (2,-4.5)  {ConfigMap};
-    \node[res] (sec) at (8,-4.5) {Secret (JWT, mdp)};
-
-    % Seed Job
-    \node[res] (job) at (5,0.8) {Job (post-install)\\Seed admin users};
-
-    % Connexions
-    \draw[arr] (bd) -- (bh);
-    \draw[arr] (bd) -- (bs);
-    \draw[arr] (md) -- (ms);
-    \draw[arr] (fd) -- (fs);
-    \draw[arr] (ing.north) -- (bs.south);
-    \draw[arr] (ing.north) -- (fs.south);
-
-  \end{tikzpicture}
+  \includegraphics[width=\textwidth]{images/k8s_namespace_v2}
   \caption{Ressources Kubernetes déployées dans le namespace \texttt{telnet-app}}
   \label{fig:k8s_resources}
 \end{figure}
@@ -281,88 +97,41 @@ Le chart Helm \texttt{telnet-app} (version~0.3.0) paramétrise l'ensemble
 des manifestes Kubernetes. Il comprend 12 templates et expose plus de
 40 valeurs configurables dans \texttt{values.yaml}~:
 
-\begin{lstlisting}[language=yaml,
-  caption={helm/telnet-app/values.yaml — extrait des valeurs principales}]
-replicaCount:
-  backend:  1
-  frontend: 1
-  mongodb:  1
-
-image:
-  backend:  { name: telnet-backend,  tag: latest, pullPolicy: Never }
-  frontend: { name: telnet-frontend, tag: latest, pullPolicy: Never }
-  mongodb:  { name: mongo, tag: "7", pullPolicy: IfNotPresent }
-
-service:
-  backend:  { port: 3002 }
-  frontend: { port: 80   }
-  mongodb:  { port: 27017 }
-
-ingress:
-  host: telnet-app.local
-
-persistence:
-  backend: { size: 1Gi }
-  mongodb: { size: 2Gi }
-
-hpa:
-  backend:
-    minReplicas: 1
-    maxReplicas: 5
-    targetCPUUtilizationPercentage: 70
-
-resources:
-  backend:
-    requests: { memory: 128Mi, cpu: 100m }
-    limits:   { memory: 256Mi, cpu: 300m }
-  frontend:
-    requests: { memory:  64Mi, cpu:  50m }
-    limits:   { memory: 128Mi, cpu: 200m }
-  mongodb:
-    requests: { memory: 256Mi, cpu: 200m }
-    limits:   { memory: 512Mi, cpu: 500m }
-\end{lstlisting}
+Le fichier \texttt{values.yaml} expose plus de 40 paramètres configurables regroupés
+par catégorie~: le nombre de répliques (\texttt{replicaCount}) pour chaque service,
+les références d'images Docker (\texttt{image.backend}, \texttt{image.frontend},
+\texttt{image.mongodb}), les ports de services, la configuration Ingress
+(\texttt{telnet-app.local}), les tailles de volumes persistants (1~Gi pour le backend,
+2~Gi pour MongoDB), les paramètres HPA (minReplicas~: 1, maxReplicas~: 5, seuil
+CPU~: 70~\%) et les limites de ressources CPU/mémoire pour chaque conteneur.
 
 \subsection{Horizontal Pod Autoscaler}
 
-\begin{lstlisting}[language=yaml,
-  caption={helm/telnet-app/templates/backend-hpa.yaml — autoscaling}]
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: {{ .Release.Name }}-backend-hpa
-  namespace: {{ .Release.Namespace }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: {{ .Release.Name }}-backend
-  minReplicas: {{ .Values.hpa.backend.minReplicas }}
-  maxReplicas: {{ .Values.hpa.backend.maxReplicas }}
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type:               AverageUtilization
-          averageUtilization: {{ .Values.hpa.backend.targetCPUUtilizationPercentage }}
-\end{lstlisting}
+Le \textbf{HorizontalPodAutoscaler} (version \texttt{autoscaling/v2})
+cible le Deployment du backend. Il ajuste automatiquement le nombre de
+pods entre 1 et 5 dès que l'utilisation CPU moyenne dépasse 70~\%. Les
+seuils (\texttt{minReplicas}, \texttt{maxReplicas} et
+\texttt{targetCPUUtilizationPercentage}) sont définis dans
+\texttt{values.yaml}, ce qui permet de les modifier sans toucher aux
+templates Helm.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{images/backend replicas after load test}
+  \caption{Montée en charge HPA --- répliques backend passant de 1 à 5 sous stress CPU (267\,\%/70\,\%)}
+  \label{fig:hpa_scaling}
+\end{figure}
 
 \subsection{Stratégie de déploiement Rolling Update}
 
-Kubernetes applique par défaut une stratégie de \textbf{rolling update}~:
-les nouveaux pods sont lancés progressivement avant que les anciens soient
-arrêtés, garantissant zéro interruption de service lors des mises à jour.
-Paramétrage retenu~:
+Kubernetes utilise par défaut une stratégie de \textbf{rolling update}~:
+les nouveaux pods démarrent progressivement pendant que les anciens
+restent actifs, ce qui évite toute interruption de service.
 
-\begin{lstlisting}[language=yaml,
-  caption={Stratégie de mise à jour du Deployment backend}]
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxUnavailable: 0    # Aucun pod indisponible durant la mise à jour
-    maxSurge:       1    # Un pod supplémentaire temporaire autorisé
-\end{lstlisting}
+Le Deployment backend est configuré avec \texttt{maxUnavailable~: 0} et
+\texttt{maxSurge~: 1}. Concrètement, aucun pod n'est supprimé tant que
+le nouveau n'est pas prêt, et un pod supplémentaire est autorisé pendant
+la transition. Résultat~: les mises à jour se font en \textit{zero downtime}.
 
 % -----------------------------------------------------------------
 \section{Pipeline GitHub Actions}
@@ -370,114 +139,28 @@ strategy:
 
 \subsection{Vue d'ensemble du workflow}
 
-\begin{lstlisting}[language=yaml,
-  caption={.github/workflows/ci-cd.yaml — pipeline CI/CD complet}]
-name: CI/CD Pipeline — Telnet Test Manager
+Le workflow \texttt{ci-cd.yaml} se déclenche sur tout push vers \texttt{main} ou
+\texttt{develop} et sur les pull requests vers \texttt{main}. Un mécanisme de
+\texttt{concurrency} annule les exécutions précédentes de la même branche pour
+éviter les déploiements en parallèle. Le pipeline comprend trois jobs~:
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+\begin{itemize}
+  \item \textbf{ci-backend} (runner Ubuntu)~: installation des dépendances
+        (\texttt{npm ci}), audit de sécurité (\texttt{npm audit --audit-level=critical})
+        et exécution des tests unitaires~;
+  \item \textbf{ci-frontend} (runner Ubuntu)~: mêmes étapes plus un build de
+        production React (\texttt{npm run build})~;
+  \item \textbf{deploy} (runner auto-hébergé, branche \texttt{main} uniquement)~:
+        démarrage de Minikube si nécessaire, construction des images Docker dans le
+        daemon Minikube, déploiement via \texttt{helm upgrade --install --atomic} avec
+        injection des secrets depuis les variables GitHub Actions, puis attente du
+        rollout avec \texttt{kubectl rollout status}.
+\end{itemize}
 
-# Annule les exécutions précédentes du même pipeline pour la même branche
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  # ─────────────────────────────────────────────────────────────
-  # JOB 1 : Intégration continue Backend
-  # ─────────────────────────────────────────────────────────────
-  ci-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with: { node-version: '20' }
-
-      - name: Installer les dépendances
-        run: cd backend && npm ci
-
-      - name: Audit de sécurité (npm audit)
-        run: cd backend && npm audit --audit-level=critical
-
-      - name: Exécuter les tests
-        run: cd backend && npm test --if-present
-
-  # ─────────────────────────────────────────────────────────────
-  # JOB 2 : Intégration continue Frontend
-  # ─────────────────────────────────────────────────────────────
-  ci-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with: { node-version: '20' }
-
-      - name: Installer les dépendances
-        run: cd frontend && npm ci
-
-      - name: Audit de sécurité (npm audit)
-        run: cd frontend && npm audit --audit-level=critical
-
-      - name: Build React (production)
-        run: cd frontend && npm run build
-        env: { CI: false }
-
-  # ─────────────────────────────────────────────────────────────
-  # JOB 3 : Déploiement (self-hosted runner, branche main uniquement)
-  # ─────────────────────────────────────────────────────────────
-  deploy:
-    runs-on: self-hosted
-    needs: [ci-backend, ci-frontend]
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Démarrer Minikube si nécessaire
-        run: |
-          minikube status || minikube start --driver=docker
-
-      - name: Configurer kubectl
-        run: kubectl config use-context minikube
-
-      - name: Construire les images Docker (daemon Minikube)
-        run: |
-          eval $(minikube docker-env)
-          docker build -t telnet-backend:latest  ./backend
-          docker build -t telnet-frontend:latest ./frontend
-
-      - name: Déployer avec Helm (atomic)
-        run: |
-          helm upgrade --install telnet-app ./helm/telnet-app \
-            --create-namespace \
-            --namespace telnet-app \
-            --set secrets.mongoRootUsername=admin \
-            --set secrets.mongoRootPassword=${{ secrets.MONGO_PASSWORD }} \
-            --set secrets.jwtSecret=${{ secrets.JWT_SECRET }} \
-            --atomic \
-            --timeout 600s
-
-      - name: Attendre la disponibilité des pods
-        run: |
-          kubectl rollout status deployment/telnet-app-backend  \
-            -n telnet-app --timeout=240s
-          kubectl rollout status deployment/telnet-app-frontend \
-            -n telnet-app --timeout=180s
-
-      - name: Résumé du déploiement
-        run: |
-          kubectl get pods -n telnet-app
-          kubectl get services -n telnet-app
-\end{lstlisting}
+À l'issue du déploiement, un résumé est automatiquement généré dans
+l'interface GitHub Actions via \texttt{\$GITHUB\_STEP\_SUMMARY}~: il
+récapitule le commit, la branche, l'heure de déploiement et l'état
+des pods dans les namespaces \texttt{telnet-app} et \texttt{monitoring}.
 
 \subsection{Configuration du runner auto-hébergé}
 
@@ -492,13 +175,11 @@ hébergeant Minikube. Cette configuration est nécessaire car~:
 \end{itemize}
 
 Le runner est enregistré sur GitHub via~:
-\begin{lstlisting}[language=yaml,caption={Configuration du runner self-hosted}]
-# Depuis le dossier d'installation du runner GitHub Actions
-./config.cmd --url https://github.com/[ORGANISATION]/[REPO] \
-             --token [TOKEN_RUNNER] \
-             --labels self-hosted,windows,minikube
-./run.cmd   # Démarrage du runner en écoute
-\end{lstlisting}
+L'enregistrement du runner s'effectue en deux commandes~: \texttt{config.cmd}
+reçoit l'URL du dépôt, un token d'authentification éphémère et les labels
+(\texttt{self-hosted}, \texttt{windows}, \texttt{minikube}) qui permettent au
+job \texttt{deploy} de le cibler. La commande \texttt{run.cmd} démarre ensuite
+le runner en écoute permanente des jobs GitHub Actions.
 
 % -----------------------------------------------------------------
 \section{Supervision avec Prometheus et Grafana}
@@ -512,53 +193,34 @@ Quatre métriques personnalisées sont exposées sur \texttt{/metrics}~:
   \centering
   \caption{Métriques Prometheus de Telnet Test Manager}
   \label{tab:prometheus_metrics}
-  \begin{tabularx}{\textwidth}{L{4.5cm} L{2cm} X}
-    \toprule
+  \begin{tabularx}{\textwidth}{|L{6.2cm}|L{2.3cm}|X|}
+    \hline
     \textbf{Métrique} & \textbf{Type} & \textbf{Description} \\
-    \midrule
-    \texttt{http\_requests\_total} & Counter &
+    \hline
+    {\small\texttt{http\_requests\_total}} & Counter &
       Nombre total de requêtes HTTP par méthode, route et code de statut \\
-    \texttt{http\_request\_duration\_seconds} & Histogram &
-      Distribution des temps de réponse par route (buckets~: 10ms à 5s) \\
-    \texttt{telnet\_tests\_launched\_total} & Counter &
+    \hline
+    {\small\texttt{http\_request\_duration\_seconds}} & Histogram &
+      Distribution des temps de réponse par route (buckets~: 10\,ms à 5\,s) \\
+    \hline
+    {\small\texttt{telnet\_tests\_launched\_total}} & Counter &
       Nombre total de tests Telnet lancés \\
-    \texttt{websocket\_active\_connections} & Gauge &
+    \hline
+    {\small\texttt{websocket\_active\_connections}} & Gauge &
       Nombre de connexions WebSocket actives en temps réel \\
-    \bottomrule
+    \hline
   \end{tabularx}
 \end{table}
 
-\begin{lstlisting}[language=javascript,
-  caption={prometheusMetrics.js — définition des métriques}]
-const client = require('prom-client');
-client.collectDefaultMetrics({ prefix: 'telnet_app_' });
-
-const httpRequestsTotal = new client.Counter({
-  name:       'http_requests_total',
-  help:       'Nombre total de requêtes HTTP',
-  labelNames: ['method', 'route', 'status'],
-});
-
-const httpDuration = new client.Histogram({
-  name:       'http_request_duration_seconds',
-  help:       'Durée des requêtes HTTP en secondes',
-  labelNames: ['method', 'route', 'status'],
-  buckets:    [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5],
-});
-
-const telnetTestsTotal = new client.Counter({
-  name: 'telnet_tests_launched_total',
-  help: 'Nombre total de tests Telnet lancés',
-});
-
-const wsConnections = new client.Gauge({
-  name: 'websocket_active_connections',
-  help: 'Connexions WebSocket actives',
-});
-
-module.exports = { httpRequestsTotal, httpDuration,
-                   telnetTestsTotal, wsConnections };
-\end{lstlisting}
+Le module \texttt{prometheusMetrics.js} active d'abord la collecte des métriques
+par défaut de la VM Node.js via \texttt{collectDefaultMetrics} (CPU, mémoire, heap,
+event loop). Il définit ensuite quatre métriques personnalisées~: un \texttt{Counter}
+\texttt{http\_requests\_total} labellisé par méthode, route et code HTTP~; un
+\texttt{Histogram} \texttt{http\_request\_duration\_seconds} avec 8 buckets de
+10~ms à 5~s~; un \texttt{Counter} \texttt{telnet\_tests\_launched\_total} incrémenté
+à chaque appel à \texttt{/run-test}~; et une \texttt{Gauge}
+\texttt{websocket\_active\_connections} mise à jour à chaque connexion ou
+déconnexion WebSocket.
 
 \subsection{Tableau de bord Grafana}
 
@@ -570,39 +232,296 @@ Il comprend dix panneaux~:
   \centering
   \caption{Panneaux du tableau de bord Grafana}
   \label{tab:grafana_panels}
-  \begin{tabularx}{\textwidth}{L{5cm} L{2.5cm} X}
-    \toprule
+  \begin{tabularx}{\textwidth}{|L{4.5cm}|L{2.5cm}|X|}
+    \hline
     \textbf{Panneau} & \textbf{Type} & \textbf{Requête PromQL} \\
-    \midrule
+    \hline
     Backend UP/DOWN & Stat &
       \texttt{up\{job="backend"\}} \\
+    \hline
     Tests Telnet lancés & Stat &
       \texttt{telnet\_tests\_launched\_total} \\
+    \hline
     Requêtes HTTP totales & Stat &
       \texttt{sum(http\_requests\_total)} \\
+    \hline
     RAM Backend (Mo) & Stat &
-      \texttt{process\_resident\_memory\_bytes / 1024\^{}2} \\
+      {\small\texttt{process\_resident\_memory\_bytes / 1024\^{}2}} \\
+    \hline
     Taux de requêtes par route & Séries temp. &
       \texttt{rate(http\_requests\_total[1m])} \\
+    \hline
     Durée p95 des requêtes & Séries temp. &
-      \texttt{histogram\_quantile(0.95, http\_request\_duration\_seconds\_bucket)} \\
+      {\small\texttt{histogram\_quantile(0.95,}}\newline
+      {\small\texttt{rate(http\_request\_duration\_}}\newline
+      {\small\texttt{seconds\_bucket[1m]))}} \\
+    \hline
     Connexions WebSocket & Séries temp. &
       \texttt{websocket\_active\_connections} \\
+    \hline
     CPU Backend (\%) & Jauge &
-      \texttt{rate(process\_cpu\_seconds\_total[1m]) * 100} \\
+      {\small\texttt{rate(process\_cpu\_seconds\_total[1m])}}\newline
+      {\small\texttt{* 100}} \\
+    \hline
     Requêtes par code statut & Barres &
-      \texttt{sum by (status)(http\_requests\_total)} \\
+      {\small\texttt{sum by (status)}}\newline
+      {\small\texttt{(http\_requests\_total)}} \\
+    \hline
     Top 5 routes par latence & Tableau &
-      Moyenne de \texttt{http\_request\_duration\_seconds} par route \\
-    \bottomrule
+      {\small\texttt{avg by (route)}}\newline
+      {\small\texttt{(http\_request\_duration\_seconds)}} \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+Une règle d'alerte \textbf{Backend CPU High} est configurée~: lorsque
+l'utilisation CPU dépasse le seuil de 70\,\%, Grafana envoie automatiquement
+une notification par e-mail avec le niveau de sévérité \texttt{CRITICAL}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/grafana alert}
+  \caption{Alerte e-mail Grafana --- déclenchement automatique sur dépassement CPU (seuil~: 70\,\%)}
+  \label{fig:grafana_alert}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Infrastructure as Code}
+% -----------------------------------------------------------------
+
+L'\textbf{Infrastructure as Code} (IaC) consiste à gérer l'infrastructure
+via des fichiers de configuration versionnés, comme on le ferait pour
+du code applicatif. Ce projet l'applique à trois niveaux.
+
+\subsection{Helm Charts}
+
+Le chart Helm \texttt{telnet-app} (version~0.3.0) est la source unique
+de vérité pour tout le déploiement Kubernetes. Il comprend 12 templates
+paramétrables et expose plus de 40 valeurs configurables dans
+\texttt{values.yaml}. Toute modification d'infrastructure (ressources,
+répliques, secrets) passe par ce fichier versionné dans Git.
+
+\begin{figure}[H]
+  \centering
+  \begin{lstlisting}[basicstyle=\ttfamily\small, frame=single, backgroundcolor=\color{gray!6}]
+helm/telnet-app/
+|-- Chart.yaml
+|-- values.yaml
+`-- templates/
+    |-- backend-deployment.yaml
+    |-- backend-service.yaml
+    |-- backend-hpa.yaml
+    |-- backend-pvc.yaml
+    |-- frontend-deployment.yaml
+    |-- frontend-service.yaml
+    |-- mongodb-deployment.yaml
+    |-- mongodb-service.yaml
+    |-- mongodb-pvc.yaml
+    |-- mongodb-initdb-configmap.yaml
+    |-- configmap.yaml
+    |-- secret.yaml
+    |-- ingress.yaml
+    `-- seed-job.yaml
+  \end{lstlisting}
+  \caption{Structure du chart Helm \texttt{telnet-app} --- 14 templates paramétrables}
+  \label{fig:helm_structure}
+\end{figure}
+
+\subsection{Manifestes Kubernetes}
+
+Chaque ressource Kubernetes est générée depuis le chart Helm~:
+Deployments, Services, HPA, Ingress, PersistentVolumeClaims, ConfigMap
+et Secrets. Les secrets applicatifs (mot de passe MongoDB, JWT secret,
+SMTP) sont injectés via des variables de pipeline GitHub Actions
+(\texttt{secrets.MONGO\_PASSWORD}, etc.) et ne sont jamais commités
+dans le dépôt.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{images/kubernetes deployements manifests}
+  \caption{Ressources Kubernetes déployées dans le namespace \texttt{telnet-app}}
+  \label{fig:kubectl_telnet}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{images/gafana_promethus manifeests}
+  \caption{Ressources Kubernetes déployées dans le namespace \texttt{monitoring} (Prometheus et Grafana)}
+  \label{fig:kubectl_monitoring}
+\end{figure}
+
+\subsection{Automatisation}
+
+L'ensemble du cycle de vie de l'infrastructure est automatisé~:
+\begin{itemize}
+  \item \textbf{Provisioning}~: \texttt{helm upgrade --install} crée
+        ou met à jour toutes les ressources de manière idempotente~;
+  \item \textbf{Seeding}~: un Job Kubernetes post-install initialise
+        les utilisateurs de démonstration en base MongoDB~;
+  \item \textbf{Monitoring}~: Prometheus et Grafana sont déployés via
+        leurs propres charts Helm avec dashboards et alertes provisionnés
+        en code (\texttt{grafana-values.yaml})~;
+  \item \textbf{Rollback}~: \texttt{helm rollback telnet-app}
+        restaure en un seul appel la version précédente.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{images/capture grafana metrics}
+  \caption{Tableau de bord Grafana --- Telnet Test Manager}
+  \label{fig:screen_grafana}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{images/captre du pipeline}
+  \caption{Capture d'écran~: exécution du pipeline CI/CD sur GitHub Actions}
+  \label{fig:screen_pipeline}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Tests et validation}
+% -----------------------------------------------------------------
+
+\subsection{Stratégie de tests}
+
+La qualité du projet est validée selon la \textbf{pyramide de tests}
+classique~: un grand nombre de tests unitaires rapides, des tests
+d'intégration couvrant l'API REST, et des tests fonctionnels manuels.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{images/pyramide_tests}
+  \caption{Pyramide de tests adoptée pour Telnet Test Manager}
+  \label{fig:test_pyramid}
+\end{figure}
+
+\subsection{Tests unitaires (Jest)}
+
+Les tests unitaires couvrent les Use Cases et les modules critiques.
+Les dépendances externes (MongoDB, réseau Telnet) sont mockées.
+
+Deux cas de test couvrent le Use Case d'authentification~: le premier vérifie qu'un
+appel avec des identifiants corrects retourne bien un objet contenant un champ
+\texttt{token} (JWT signé)~; le second vérifie que l'exécution est rejetée avec
+l'erreur \texttt{Compte inactif} lorsque le champ \texttt{statut} de l'utilisateur
+vaut \texttt{inactif}. Le dépôt MongoDB est entièrement mocké via \texttt{jest.fn()},
+garantissant l'isolation du test vis-à-vis de la base de données.
+
+Les tests d'intégration utilisent \textbf{Supertest} avec une base
+MongoDB de test isolée. Ils couvrent l'authentification, les endpoints
+CRUD et la limitation de débit (rate limiting).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/jest_results}
+  \caption{Résultats des tests Jest --- 24 tests passés sur 24 (3 suites)}
+  \label{fig:screen_jest}
+\end{figure}
+
+\subsection{Tests fonctionnels (scénarios E2E)}
+
+\begin{table}[H]
+  \centering
+  \caption{Scénarios de tests fonctionnels --- résultats}
+  \label{tab:e2e_tests}
+  \begin{tabularx}{\textwidth}{|C{1.2cm}|X|L{3.8cm}|L{2.2cm}|}
+    \hline
+    \textbf{ID} & \textbf{Scénario} & \textbf{Précondition} & \textbf{Résultat} \\
+    \hline
+    ST01 & Connexion identifiants valides   & Utilisateur actif en BD   & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST02 & Connexion mot de passe erroné    & ---                       & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST03 & Accès route protégée sans JWT    & ---                       & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST04 & Création d'un Poste (CRUD)       & Rôle ingénieur            & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST05 & Création Slot avec adresse IP    & Poste + Produit existants & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST06 & Exécution test \texttt{single}   & Slot actif                & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST07 & Exécution test séquence 3 étapes & Slot actif                & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST08 & Résultats temps réel (WebSocket) & Test en cours             & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST09 & Arrêt d'un test en cours         & Test PENDING              & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST10 & Tests multi-slots (3 parallèles) & 3 slots configurés        & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST11 & Génération d'un rapport          & Tests historisés           & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST12 & Consultation journal d'audit     & Rôle admin                & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST13 & Changement de langue (FR~$\to$~EN) & ---                     & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+    ST14 & Accès technicien à route admin   & JWT technicien            & \textcolor{vertCode}{\textbf{PASS}} \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Résultats du pipeline CI/CD}
+
+\begin{table}[H]
+  \centering
+  \caption{Résultats du pipeline GitHub Actions}
+  \label{tab:cicd_results}
+  \begin{tabularx}{\textwidth}{|L{2.5cm}|X|L{2.8cm}|L{2.5cm}|}
+    \hline
+    \textbf{Job} & \textbf{Étapes clés} & \textbf{Durée} & \textbf{Statut} \\
+    \hline
+    ci-backend  & npm ci + audit + tests        & 17\,s         & \textcolor{vertCode}{\textbf{Success}} \\
+    \hline
+    ci-frontend & npm ci + audit + build        & 46\,s         & \textcolor{vertCode}{\textbf{Success}} \\
+    \hline
+    deploy      & Build Docker + Helm + rollout & 1\,min\,38\,s & \textcolor{vertCode}{\textbf{Success}} \\
+    \hline
+    \textbf{Total} & --- & \textbf{2\,min\,33\,s} & \textcolor{vertCode}{\textbf{Success}} \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Tableau de synthèse de validation}
+
+\begin{table}[H]
+  \centering
+  \caption{Synthèse de la validation par rapport aux besoins}
+  \label{tab:synthese_validation}
+  \begin{tabularx}{\textwidth}{|C{1.2cm}|X|L{3.8cm}|L{2.2cm}|}
+    \hline
+    \textbf{BF} & \textbf{Besoin} & \textbf{Méthode de test} & \textbf{Statut} \\
+    \hline
+    BF-01 & Authentification JWT           & Tests unit. + intégration  & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-02 & Gestion des équipements CRUD   & Tests intégration          & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-03 & Bibliothèque de commandes      & Tests intégration          & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-04 & Tests multi-slots parallèles   & Tests fonctionnels         & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-05 & Résultats temps réel (WS)      & Tests fonctionnels         & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-06 & Exécution test Telnet          & Tests unit. + fonctionnels & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-07 & Génération de rapports         & Tests fonctionnels         & \textcolor{vertCode}{Validé} \\
+    \hline
+    BF-08 & Administration (RBAC)          & Tests unit. + intégration  & \textcolor{vertCode}{Validé} \\
+    \hline
+    ---   & Pipeline CI/CD                 & Exécution GitHub Actions   & \textcolor{vertCode}{Validé} \\
+    \hline
+    ---   & Déploiement Kubernetes         & \texttt{kubectl rollout}   & \textcolor{vertCode}{Validé} \\
+    \hline
+    ---   & Supervision Prometheus/Grafana & Consultation dashboard     & \textcolor{vertCode}{Validé} \\
+    \hline
   \end{tabularx}
 \end{table}
 
 \section*{Conclusion}
 
-Ce chapitre a détaillé l'infrastructure DevOps complète du projet. La
-conteneurisation Docker, l'orchestration Kubernetes/Helm avec autoscaling
-HPA, le pipeline GitHub Actions en trois jobs et la supervision
-Prometheus/Grafana constituent un système de déploiement mature et
-automatisé. Le chapitre suivant valide l'ensemble de cette réalisation à
-travers une stratégie de tests complète.
+Ce chapitre a détaillé l'infrastructure DevOps complète et la validation
+du projet Telnet Test Manager. La conteneurisation Docker, l'orchestration
+Kubernetes/Helm avec autoscaling HPA, le pipeline GitHub Actions en trois
+jobs et la supervision Prometheus/Grafana constituent un système de
+déploiement mature et automatisé. Le taux de réussite de 100\,\% sur les
+14~scénarios fonctionnels testés et la validation de l'ensemble des
+besoins fonctionnels confirment la qualité de la réalisation.

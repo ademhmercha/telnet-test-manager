@@ -39,6 +39,7 @@ const { createMetrics }             = require('../infrastructure/metrics/prometh
 
 const LoginUseCase                  = require('../application/usecases/auth/LoginUseCase');
 const LogoutUseCase                 = require('../application/usecases/auth/LogoutUseCase');
+const UpdateProfileUseCase          = require('../application/usecases/auth/UpdateProfileUseCase');
 
 const GetPostesUseCase              = require('../application/usecases/poste/GetPostesUseCase');
 const CreatePosteUseCase            = require('../application/usecases/poste/CreatePosteUseCase');
@@ -130,8 +131,9 @@ function buildContainer() {
   const testWorkerManager = new TestWorkerManager(workerScriptPath);
 
   // ── Use Cases ─────────────────────────────────────────────────────────────────
-  const loginUseCase   = new LoginUseCase(userRepo, auditLogRepo);
-  const logoutUseCase  = new LogoutUseCase(userRepo, auditLogRepo);
+  const loginUseCase         = new LoginUseCase(userRepo, auditLogRepo);
+  const logoutUseCase        = new LogoutUseCase(userRepo, auditLogRepo);
+  const updateProfileUseCase = new UpdateProfileUseCase(userRepo, auditLogRepo);
 
   const getPostesUseCase    = new GetPostesUseCase(posteRepo);
   const createPosteUseCase  = new CreatePosteUseCase(posteRepo, auditLogRepo);
@@ -184,7 +186,7 @@ function buildContainer() {
   const deleteReportUseCase  = new DeleteReportUseCase(reportRepo);
 
   // ── Controllers ──────────────────────────────────────────────────────────────
-  const authController         = new AuthController(loginUseCase, logoutUseCase);
+  const authController         = new AuthController(loginUseCase, logoutUseCase, updateProfileUseCase);
   const posteController        = new PosteController(getPostesUseCase, createPosteUseCase, updatePosteUseCase, deletePosteUseCase);
   const produitController      = new ProduitController(getProduitsUseCase, createProduitUseCase, updateProduitUseCase, deleteProduitUseCase);
   const slotController         = new SlotController(getSlotsUseCase, createSlotUseCase, updateSlotUseCase, deleteSlotUseCase);

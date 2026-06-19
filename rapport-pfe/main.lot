@@ -1,12 +1,21 @@
 \babel@toc {french}{}\relax 
 \addvspace {10\p@ }
 \contentsline {table}{\numberline {1.1}{\ignorespaces Fiche d'identité de Sagemcom Ezzahra}}{4}{table.caption.7}%
-\contentsline {table}{\numberline {1.2}{\ignorespaces Analyse critique du système de tests existant}}{8}{table.caption.10}%
-\contentsline {table}{\numberline {1.3}{\ignorespaces Membres de l'équipe Scrum}}{12}{table.caption.14}%
+\contentsline {table}{\numberline {1.2}{\ignorespaces Analyse critique du système de tests existant}}{7}{table.caption.10}%
+\contentsline {table}{\numberline {1.3}{\ignorespaces Membres de l'équipe Scrum}}{10}{table.caption.14}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Besoins fonctionnels}}{15}{table.caption.15}%
-\contentsline {table}{\numberline {2.2}{\ignorespaces Besoins non fonctionnels}}{16}{table.caption.16}%
-\contentsline {table}{\numberline {2.3}{\ignorespaces Composants de l'architecture et leurs rôles}}{19}{table.caption.24}%
-\contentsline {table}{\numberline {2.4}{\ignorespaces Récapitulatif des étapes du pipeline CI/CD}}{21}{table.caption.26}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Récapitulatif des besoins fonctionnels}}{13}{table.caption.15}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Contraintes techniques et non fonctionnelles}}{14}{table.caption.16}%
+\contentsline {table}{\numberline {2.3}{\ignorespaces UC-01 --- S'authentifier}}{16}{table.caption.18}%
+\contentsline {table}{\numberline {2.4}{\ignorespaces UC-04 --- Lancer un test Telnet}}{17}{table.caption.19}%
+\contentsline {table}{\numberline {2.5}{\ignorespaces UC-07 --- Générer un rapport}}{18}{table.caption.20}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Principaux endpoints de l'API REST}}{26}{table.3.1}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Environnement de développement}}{31}{table.caption.39}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Référentiel des endpoints de l'API REST}}{34}{table.4.2}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Métriques Prometheus de Telnet Test Manager}}{46}{table.caption.53}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Panneaux du tableau de bord Grafana}}{47}{table.caption.54}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Scénarios de tests fonctionnels --- résultats}}{52}{table.caption.63}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Résultats du pipeline GitHub Actions}}{52}{table.caption.64}%
+\contentsline {table}{\numberline {5.5}{\ignorespaces Synthèse de la validation par rapport aux besoins}}{53}{table.caption.65}%

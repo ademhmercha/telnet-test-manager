@@ -4,120 +4,184 @@
 \chapter{Conception}
 
 \section*{Introduction}
-Ce chapitre expose les choix architecturaux et les modèles de conception
-retenus pour le développement de Telnet Test Manager. Nous présentons
-successivement l'architecture générale de l'application, les diagrammes de
-classes et de séquence des cas d'utilisation principaux, puis le modèle de
-données MongoDB.
+Ce chapitre présente les choix d'architecture et de conception retenus
+pour Telnet Test Manager. On y trouve l'architecture générale, les
+diagrammes de classes et de séquence des cas d'utilisation principaux,
+et le modèle de données MongoDB.
 
 % -----------------------------------------------------------------
 \section{Architecture générale de l'application}
 % -----------------------------------------------------------------
 
-\subsection{Architecture N-tiers}
-
-L'application adopte une architecture \textbf{N-tiers} séparant clairement
-les responsabilités en couches indépendantes~:
+\subsection{Architecture globale du système}
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[
-    tier/.style={draw=bleuPFE,fill=bleuPFE!8,rounded corners=6pt,
-                 minimum width=14cm,minimum height=1.3cm,
-                 align=center,font=\small},
-    svc/.style={draw=bleuPFE!60,fill=white,rounded corners=3pt,
-                minimum width=3cm,minimum height=0.9cm,
-                align=center,font=\scriptsize},
-    arr/.style={<->,>=stealth,draw=bleuPFE!50,thick},
-    protocol/.style={font=\scriptsize\itshape,color=gray},
-  ]
+  \includegraphics[width=\textwidth]{images/architecture_globale_finale}
+  \caption{Architecture globale du système Telnet Test Manager}
+  \label{fig:archi_globale}
+\end{figure}
 
-    % Couche 1 — Client
-    \node[tier,fill=bleuPFE!12] (c1) at (0,7.5) {};
-    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,7.5) {Couche Présentation};
-    \node[svc] at (-3,7.5) {React 18\\TypeScript};
-    \node[svc] at (0,7.5) {Nginx\\(Reverse Proxy)};
-    \node[svc] at (3,7.5) {WebSocket Client\\(ws)};
+\subsection{Architecture N-tiers}
 
-    % Couche 2 — Application
-    \node[tier,fill=bleuPFE!7] (c2) at (0,5.5) {};
-    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,5.5) {Couche Application};
-    \node[svc] at (-3,5.5) {Express.js API\\Port 3002};
-    \node[svc] at (0,5.5) {WebSocket Server\\Port 3003};
-    \node[svc] at (3,5.5) {Worker Threads\\(Telnet Engine)};
+L'application est organisée selon une architecture \textbf{N-tiers} qui
+sépare les responsabilités en couches distinctes~:
 
-    % Couche 3 — Domaine
-    \node[tier,fill=bleuPFE!5] (c3) at (0,3.5) {};
-    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,3.5) {Couche Domaine};
-    \node[svc] at (-3,3.5) {Use Cases\\(Business Logic)};
-    \node[svc] at (0,3.5) {Entities\\(Domain Models)};
-    \node[svc] at (3,3.5) {Repository\\Interfaces};
-
-    % Couche 4 — Infrastructure
-    \node[tier,fill=bleuPFE!10] (c4) at (0,1.5) {};
-    \node[font=\small\bfseries\color{bleuPFE}] at (-5.5,1.5) {Couche Infrastructure};
-    \node[svc] at (-4,1.5) {MongoDB 7\\(Mongoose)};
-    \node[svc] at (-1,1.5) {Mongo\\Repositories};
-    \node[svc] at (2,1.5) {Prometheus\\Metrics};
-    \node[svc] at (5,1.5) {Grafana\\Dashboard};
-
-    % Flèches entre couches
-    \draw[arr] (0,6.8) -- (0,6.2);
-    \draw[arr] (0,4.8) -- (0,4.2);
-    \draw[arr] (0,2.8) -- (0,2.2);
-
-    % Protocoles
-    \node[protocol] at (0.8,6.5) {HTTP/WS};
-    \node[protocol] at (0.8,4.5) {Use Cases};
-    \node[protocol] at (0.8,2.5) {Repository Pattern};
-
-  \end{tikzpicture}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{"images/architecture N tiers"}
   \caption{Architecture N-tiers de l'application Telnet Test Manager}
   \label{fig:archi_ntiers}
 \end{figure}
 
 \subsection{Clean Architecture}
 
-Le backend est structuré selon les principes de la
-\textbf{Clean Architecture} \cite{martin2017clean}, garantissant l'indépendance
-des règles métier vis-à-vis des détails d'infrastructure. La règle fondamentale
-est que les dépendances ne peuvent pointer que \textit{vers l'intérieur}~:
+Le backend suit les principes de la \textbf{Clean Architecture}
+\cite{martin2017clean}. L'idée centrale est simple~: les règles métier
+ne dépendent d'aucun détail d'infrastructure. Les dépendances ne
+peuvent pointer que \textit{vers l'intérieur}~:
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[scale=0.9]
-    % Couche Domain (centre)
-    \fill[bleuPFE!50] (0,0) circle (2cm);
-    \node[white,font=\bfseries\small,align=center] at (0,0)
-      {\textbf{Domain}\\Entities\\Repository\\Interfaces};
-
-    % Couche Application
-    \fill[bleuPFE!25] (0,0) circle (3.5cm);
-    \fill[bleuPFE!50] (0,0) circle (2cm); % recouvre pour l'anneau
-    \node[bleuPFE!80,font=\small,align=center] at (0,2.7) {Application};
-    \node[font=\scriptsize,align=center] at (0,3.1) {Use Cases};
-
-    % Couche Infrastructure
-    \fill[bleuPFE!12] (0,0) circle (5.2cm);
-    \fill[bleuPFE!25] (0,0) circle (3.5cm);
-    \node[bleuPFE!60,font=\small] at (0,4.3) {Infrastructure};
-    \node[font=\scriptsize,align=center] at (0,4.7)
-      {MongoDB~/ Repos~/ Metrics};
-
-    % Couche Interfaces
-    \fill[bleuPFE!6] (0,0) circle (6.8cm);
-    \fill[bleuPFE!12] (0,0) circle (5.2cm);
-    \node[bleuPFE!50,font=\small] at (0,5.9) {Interfaces};
-    \node[font=\scriptsize,align=center] at (0,6.3)
-      {HTTP Controllers~/ WS~/ Routes~/ Middleware};
-
-    % Flèche de dépendance
-    \draw[->,>=stealth,thick,bleuPFE] (5.5,1) -- (3.2,0.5)
-      node[midway,above,font=\scriptsize] {dépendances};
-
-  \end{tikzpicture}
+  \includegraphics[width=0.75\textwidth]{"images/clean architecture"}
   \caption{Diagramme des couches de la Clean Architecture du backend}
   \label{fig:clean_archi}
+\end{figure}
+
+% -----------------------------------------------------------------
+\section{Choix technologiques}
+% -----------------------------------------------------------------
+
+\subsubsection*{Développement Backend}
+
+\subsection{Node.js / Express.js}
+
+\textbf{Node.js} (v20 LTS) est un environnement d'exécution JavaScript
+côté serveur basé sur le moteur V8. Son modèle non bloquant et le
+support natif des Worker Threads le rendent bien adapté à un serveur
+Telnet concurrent. \textbf{Express.js} (v4.18) structure l'application
+en routes, middlewares et contrôleurs.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/nodejs}
+  \caption{Logo Node.js / Express.js}
+  \label{fig:logo_node}
+\end{figure}
+
+\subsection{MongoDB / Mongoose}
+
+\textbf{MongoDB~7} est une base de données orientée documents (\gls{nosql}).
+Son schéma flexible convient bien aux structures variables des résultats
+de tests Telnet. \textbf{Mongoose~9} apporte la validation des schémas
+et les middlewares d'accès aux données.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/mongodb}
+  \caption{Logo MongoDB}
+  \label{fig:logo_mongo}
+\end{figure}
+
+\subsubsection*{Développement Frontend}
+
+\subsection{React 18 / TypeScript}
+
+\textbf{React 18} avec \textbf{TypeScript} forme l'interface utilisateur.
+Le typage statique réduit les erreurs et facilite la maintenance. Les
+appels API passent tous par une instance \textbf{Axios} avec intercepteur
+JWT. L'internationalisation (FR/EN/PT-BR) est assurée par \textbf{i18next}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{"images/react loogo"}
+  \caption{Logo React 18 / TypeScript}
+  \label{fig:logo_react}
+\end{figure}
+
+\subsubsection*{Outils DevOps}
+
+\subsection{Docker}
+
+\textbf{Docker} encapsule chaque service (backend, frontend, MongoDB)
+dans des images autonomes et portables. Le frontend utilise un build
+multi-stage qui ramène l'image de production à $\sim$25\,Mo.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/docker}
+  \caption{Logo Docker}
+  \label{fig:logo_docker}
+\end{figure}
+
+\subsection{Kubernetes}
+
+\textbf{Kubernetes} (\gls{k8s}) orchestre les conteneurs en production.
+Il gère le déploiement, la montée en charge (HPA) et la résilience
+des services. L'environnement utilisé est \textbf{Minikube}, un cluster
+local single-node.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{images/kubernetes}
+  \caption{Logo Kubernetes}
+  \label{fig:logo_k8s}
+\end{figure}
+
+\subsection{Helm}
+
+\textbf{Helm} est le gestionnaire de paquets Kubernetes. Il permet de
+paramétrer les manifestes YAML via des templates et un fichier
+\texttt{values.yaml}, ce qui rend les déploiements reproductibles
+et faciles à mettre à jour.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.22\textwidth]{images/helm}
+  \caption{Logo Helm}
+  \label{fig:logo_helm}
+\end{figure}
+
+\subsection{GitHub Actions}
+
+\textbf{GitHub Actions} est la plateforme CI/CD intégrée à GitHub.
+Les workflows sont définis en YAML et se déclenchent sur les événements
+Git. Un \textbf{runner auto-hébergé} donne accès au cluster Minikube
+local sans avoir à exposer l'infrastructure sur Internet.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.30\textwidth]{images/githubactions}
+  \caption{Logo GitHub Actions}
+  \label{fig:logo_ghactions}
+\end{figure}
+
+\subsection{Prometheus}
+
+\textbf{Prometheus} collecte les métriques en interrogeant périodiquement
+l'endpoint \texttt{/metrics} du backend. Quatre métriques personnalisées
+sont définies~: requêtes HTTP, durées de réponse, tests Telnet lancés
+et connexions WebSocket actives.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.28\textwidth]{"images/promtheus logo"}
+  \caption{Logo Prometheus}
+  \label{fig:logo_prometheus}
+\end{figure}
+
+\subsection{Grafana}
+
+\textbf{Grafana} visualise les métriques collectées par Prometheus.
+Le tableau de bord du projet contient 12 panneaux (CPU, mémoire,
+latences HTTP, répliques HPA, WebSocket) et envoie des alertes
+e-mail automatiques en cas de dépassement de seuil.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.25\textwidth]{images/grafana}
+  \caption{Logo Grafana}
+  \label{fig:logo_grafana}
 \end{figure}
 
 % -----------------------------------------------------------------
@@ -126,157 +190,7 @@ est que les dépendances ne peuvent pointer que \textit{vers l'intérieur}~:
 
 \begin{figure}[H]
   \centering
-  \begin{tikzpicture}[
-    cls/.style={draw=bleuPFE,fill=white,
-                minimum width=3.8cm,align=left,
-                font=\scriptsize},
-    asc/.style={draw=bleuPFE!60,->,>=open triangle 60},
-    comp/.style={draw=bleuPFE!60,->,>=diamond},
-    note/.style={font=\tiny\itshape,color=gray},
-  ]
-
-    % ── User ──────────────────────────────────────────────
-    \node[cls] (user) at (0,0) {
-      \begin{tabular}{l}
-        \textbf{Utilisateur}\\
-        \hline
-        id~: Number\\
-        username~: String\\
-        motDePasse~: String [hashed]\\
-        role~: \{admin, ingenieur, technicien\}\\
-        permissions~: String[]\\
-        email~: String\\
-        statut~: \{actif, inactif\}\\
-        \hline
-        login()\\
-        logout()\\
-      \end{tabular}
-    };
-
-    % ── Poste ─────────────────────────────────────────────
-    \node[cls] (poste) at (6,3) {
-      \begin{tabular}{l}
-        \textbf{Poste}\\
-        \hline
-        id~: Number\\
-        nom~: String\\
-        description~: String\\
-        statut~: String\\
-        \hline
-        getProduits()\\
-      \end{tabular}
-    };
-
-    % ── Produit ───────────────────────────────────────────
-    \node[cls] (produit) at (6,0) {
-      \begin{tabular}{l}
-        \textbf{Produit}\\
-        \hline
-        id~: Number\\
-        nom~: String\\
-        posteId~: Number\\
-        description~: String\\
-        \hline
-        getSlots()\\
-      \end{tabular}
-    };
-
-    % ── Slot ──────────────────────────────────────────────
-    \node[cls] (slot) at (6,-3.5) {
-      \begin{tabular}{l}
-        \textbf{Slot}\\
-        \hline
-        id~: Number\\
-        nom~: String\\
-        produitId~: Number\\
-        adresse~: String [IP]\\
-        port~: Number [23]\\
-        description~: String\\
-        \hline
-        connect()\\
-      \end{tabular}
-    };
-
-    % ── CommandeTelnet ────────────────────────────────────
-    \node[cls] (cmd) at (-5.5,3) {
-      \begin{tabular}{l}
-        \textbf{CommandeTelnet}\\
-        \hline
-        id~: String\\
-        nom~: String\\
-        type~: \{single,sequence,monitoring\}\\
-        commande~: String\\
-        reponseAttendue~: String\\
-        etapes~: Etape[]\\
-        \hline
-        execute()\\
-      \end{tabular}
-    };
-
-    % ── ResultatTest ──────────────────────────────────────
-    \node[cls] (result) at (-5.5,-2) {
-      \begin{tabular}{l}
-        \textbf{ResultatTest}\\
-        \hline
-        id~: Number\\
-        slotId~: Number\\
-        commandeId~: String\\
-        runMode~: String\\
-        statut~: \{PENDING,SUCCESS,FAIL,STOPPED\}\\
-        horaireDebut~: Date\\
-        horaireFin~: Date\\
-        etapes~: EtapeResultat[]\\
-        logs~: String[]\\
-        \hline
-        stop()\\
-      \end{tabular}
-    };
-
-    % ── JournalAudit ──────────────────────────────────────
-    \node[cls] (audit) at (-5.5,-6) {
-      \begin{tabular}{l}
-        \textbf{JournalAudit}\\
-        \hline
-        timestamp~: Date\\
-        userId~: Number\\
-        username~: String\\
-        action~: String\\
-        methode~: String\\
-        url~: String\\
-        ip~: String\\
-      \end{tabular}
-    };
-
-    % ── Rapport ───────────────────────────────────────────
-    \node[cls] (report) at (0,-6) {
-      \begin{tabular}{l}
-        \textbf{Rapport}\\
-        \hline
-        id~: String\\
-        createdAt~: Date\\
-        generePar~: String\\
-        synthese~: Mixed\\
-        tests~: Mixed[]\\
-      \end{tabular}
-    };
-
-    % ── Associations ──────────────────────────────────────
-    \draw[asc] (poste.south) -- (produit.north)
-      node[note,midway,right] {1\dots N};
-    \draw[asc] (produit.south) -- (slot.north)
-      node[note,midway,right] {1\dots N};
-    \draw[asc] (user.east) -- (result.west |- user.east)
-      node[note,near start,above] {lance};
-    \draw[asc] (cmd.south) -- (result.north -| cmd.south)
-      node[note,midway,right] {référence};
-    \draw[asc] (slot.west) -- (result.east |- slot.west)
-      node[note,near start,above] {teste};
-    \draw[asc] (user.south) -- (audit.north -| user.south)
-      node[note,midway,right] {génère};
-    \draw[asc] (result.east) -- (report.west |- result.east)
-      node[note,near start,above] {compilé dans};
-
-  \end{tikzpicture}
+  \includegraphics[width=\textwidth]{images/diagramclass}
   \caption{Diagramme de classes principal de Telnet Test Manager}
   \label{fig:class_diagram}
 \end{figure}
@@ -413,101 +327,180 @@ est que les dépendances ne peuvent pointer que \textit{vers l'intérieur}~:
   \label{fig:seq_telnet}
 \end{figure}
 
+\subsection{Cas d'utilisation~: Gestion CRUD des équipements}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    life/.style={dashed,draw=gray!50},
+    box/.style={draw=bleuPFE,fill=bleuPFE!8,minimum width=2.4cm,
+                minimum height=0.6cm,align=center,font=\scriptsize},
+    msg/.style={->,>=stealth,draw=bleuPFE,font=\scriptsize},
+    ret/.style={->,>=stealth,draw=bleuPFE!50,dashed,font=\scriptsize},
+  ]
+    \node[box] (ing)   at (0,0)    {Ingénieur};
+    \node[box] (front) at (3.5,0)  {Frontend\\React};
+    \node[box] (back)  at (7,0)    {Backend\\API};
+    \node[box] (db)    at (10.5,0) {MongoDB};
+
+    \draw[life] (0,-0.3)    -- (0,-9);
+    \draw[life] (3.5,-0.3)  -- (3.5,-9);
+    \draw[life] (7,-0.3)    -- (7,-9);
+    \draw[life] (10.5,-0.3) -- (10.5,-9);
+
+    \draw[msg] (0,-1)    -- (3.5,-1)
+      node[midway,above] {Clic «Ajouter un poste»};
+    \draw[ret] (3.5,-1.8) -- (0,-1.8)
+      node[midway,above] {Affichage formulaire modal};
+    \draw[msg] (0,-2.6)  -- (3.5,-2.6)
+      node[midway,above] {Saisie nom + description};
+    \draw[msg] (3.5,-3.4) -- (7,-3.4)
+      node[midway,above] {\texttt{POST /postes \{nom, desc\}}};
+    \draw[msg] (7,-4.2)  -- (7,-4.2)
+      node[right] {Vérif. JWT + rôle Ingénieur};
+    \draw[msg] (7,-5)    -- (10.5,-5)
+      node[midway,above] {\texttt{PosteRepo.create(poste)}};
+    \draw[ret] (10.5,-5.7) -- (7,-5.7)
+      node[midway,above] {\{id: N, nom, createdAt\}};
+    \draw[ret] (7,-6.5)  -- (3.5,-6.5)
+      node[midway,above] {201~: poste créé};
+    \draw[msg] (3.5,-7.3) -- (3.5,-7.3)
+      node[right] {Actualise la liste};
+    \draw[ret] (3.5,-8.1) -- (0,-8.1)
+      node[midway,above] {Notification «Succès»};
+
+    \draw[draw=bleuPFE!25,dashed] (1.5,-6) rectangle (5,-8.7);
+    \node[font=\scriptsize\bfseries\color{bleuPFE!60}] at (2.1,-6.1)
+      {[alt] PUT/DELETE};
+  \end{tikzpicture}
+  \caption{Diagramme de séquence~: Création d'un équipement (CRUD)}
+  \label{fig:seq_crud}
+\end{figure}
+
+\subsection{Cas d'utilisation~: Tests multi-slots en parallèle}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    life/.style={dashed,draw=gray!50},
+    box/.style={draw=bleuPFE,fill=bleuPFE!8,minimum width=1.8cm,
+                minimum height=0.6cm,align=center,font=\tiny},
+    msg/.style={->,>=stealth,draw=bleuPFE,font=\tiny},
+    ret/.style={->,>=stealth,draw=bleuPFE!50,dashed,font=\tiny},
+  ]
+    \node[box] (ing)   at (0,0)    {Ingénieur};
+    \node[box] (front) at (2.5,0)  {Frontend};
+    \node[box] (back)  at (5.5,0)  {Backend};
+    \node[box] (w1)    at (8.5,0)  {Worker 1\\(Slot A)};
+    \node[box] (w2)    at (11,0)   {Worker 2\\(Slot B)};
+    \node[box] (db)    at (13.5,0) {MongoDB};
+
+    \foreach \x in {0,2.5,5.5,8.5,11,13.5}
+      \draw[life] (\x,-0.3) -- (\x,-13.5);
+
+    \draw[msg] (0,-1) -- (2.5,-1)
+      node[midway,above] {Sélection 2 slots + commande};
+    \draw[msg] (2.5,-1.8) -- (5.5,-1.8)
+      node[midway,above] {\texttt{POST /run-test \{slotIds:[A,B]\}}};
+    \draw[msg] (5.5,-2.6) -- (13.5,-2.6)
+      node[midway,above] {createTestResults ×2 (PENDING)};
+    \draw[msg] (5.5,-3.4) -- (8.5,-3.4)
+      node[midway,above] {spawnWorker(id1, slotA)};
+    \draw[msg] (5.5,-4)   -- (11,-4)
+      node[midway,above] {spawnWorker(id2, slotB)};
+    \draw[ret] (5.5,-4.8) -- (2.5,-4.8)
+      node[midway,above] {200~: \{testIds:[1,2]\}};
+    \draw[ret] (2.5,-5.4) -- (0,-5.4)
+      node[midway,above] {Affiche «En cours (×2)»};
+
+    \draw[draw=bleuPFE!25,dashed] (6,-6.2) rectangle (14.5,-12.5);
+    \node[font=\tiny\bfseries\color{bleuPFE!60}] at (7.2,-6.3)
+      {par (parallèle)};
+
+    \draw[msg] (8.5,-6.8)  -- (8.5,-6.8)  node[right] {TCP SlotA:23 + auth + cmd};
+    \draw[msg] (8.5,-7.5)  -- (5.5,-7.5)  node[midway,above] {WS~: step SUCCESS};
+    \draw[msg] (8.5,-8.2)  -- (13.5,-8.2) node[midway,above] {updateResult (SUCCESS)};
+
+    \draw[msg] (11,-9.2)   -- (11,-9.2)   node[right] {TCP SlotB:23 + auth + cmd};
+    \draw[msg] (11,-9.9)   -- (5.5,-9.9)  node[midway,above] {WS~: step FAIL};
+    \draw[msg] (11,-10.6)  -- (13.5,-10.6)node[midway,above] {updateResult (FAIL)};
+
+    \draw[msg] (5.5,-11.5) -- (2.5,-11.5)
+      node[midway,above] {WS broadcast résultats finals};
+    \draw[ret] (2.5,-12.3) -- (0,-12.3)
+      node[midway,above] {UI~: SUCCESS/FAIL par slot};
+
+  \end{tikzpicture}
+  \caption{Diagramme de séquence~: Tests multi-slots en parallèle}
+  \label{fig:seq_multislot}
+\end{figure}
+
+\subsection{Cas d'utilisation~: Génération de rapport}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    life/.style={dashed,draw=gray!50},
+    box/.style={draw=bleuPFE,fill=bleuPFE!8,minimum width=2.4cm,
+                minimum height=0.6cm,align=center,font=\scriptsize},
+    msg/.style={->,>=stealth,draw=bleuPFE,font=\scriptsize},
+    ret/.style={->,>=stealth,draw=bleuPFE!50,dashed,font=\scriptsize},
+  ]
+    \node[box] (ing)   at (0,0)    {Ingénieur};
+    \node[box] (front) at (3.5,0)  {Frontend\\React};
+    \node[box] (back)  at (7,0)    {Backend\\API};
+    \node[box] (db)    at (10.5,0) {MongoDB};
+
+    \draw[life] (0,-0.3)    -- (0,-9.5);
+    \draw[life] (3.5,-0.3)  -- (3.5,-9.5);
+    \draw[life] (7,-0.3)    -- (7,-9.5);
+    \draw[life] (10.5,-0.3) -- (10.5,-9.5);
+
+    \draw[msg] (0,-1)    -- (3.5,-1)
+      node[midway,above] {Filtre par date, statut, slot};
+    \draw[msg] (3.5,-1.8) -- (7,-1.8)
+      node[midway,above] {\texttt{POST /reports/generate \{filters\}}};
+    \draw[msg] (7,-2.6)  -- (10.5,-2.6)
+      node[midway,above] {findTestResults(filters)};
+    \draw[ret] (10.5,-3.3) -- (7,-3.3)
+      node[midway,above] {Liste résultats filtrés};
+    \draw[msg] (7,-4.1)  -- (7,-4.1)
+      node[right] {Calcul synthèse (taux succès, durée moy.)};
+    \draw[msg] (7,-4.9)  -- (10.5,-4.9)
+      node[midway,above] {RapportRepo.create(rapport)};
+    \draw[ret] (10.5,-5.6) -- (7,-5.6)
+      node[midway,above] {\{id, createdAt\}};
+    \draw[ret] (7,-6.4)  -- (3.5,-6.4)
+      node[midway,above] {201~: rapport complet};
+    \draw[msg] (3.5,-7.2) -- (3.5,-7.2)
+      node[right] {Affiche rapport + statistiques};
+    \draw[ret] (3.5,-8)  -- (0,-8)
+      node[midway,above] {Rapport affiché};
+    \draw[msg] (0,-8.8)  -- (3.5,-8.8)
+      node[midway,above] {[opt] Clic «Exporter»};
+
+  \end{tikzpicture}
+  \caption{Diagramme de séquence~: Génération d'un rapport}
+  \label{fig:seq_rapport}
+\end{figure}
+
 % -----------------------------------------------------------------
 \section{Modèle de la base de données MongoDB}
 % -----------------------------------------------------------------
 
 \subsection{Justification du choix NoSQL}
 
-MongoDB a été retenu comme système de gestion de base de données pour
-plusieurs raisons~:
+MongoDB a été choisi pour plusieurs raisons pratiques~:
 \begin{itemize}
-  \item La nature \textbf{schéma flexible} des données de tests (étapes
-        et logs de taille variable selon le type de test)~;
-  \item La performance des opérations en \textbf{lecture/écriture intensive}
-        sur les journaux d'audit~;
-  \item La sérialisation native en \textbf{BSON/JSON} alignée avec
-        l'écosystème Node.js~;
-  \item La facilité d'intégration avec \textbf{Mongoose} (ODM) qui apporte
-        la validation de schéma et les middlewares.
+  \item Le \textbf{schéma flexible} s'adapte aux données de tests dont
+        la structure varie selon le type de test (étapes, logs)~;
+  \item Les opérations en \textbf{lecture/écriture intensive} sur les
+        journaux d'audit sont bien gérées~;
+  \item La sérialisation native en \textbf{BSON/JSON} s'intègre
+        naturellement dans l'écosystème Node.js~;
+  \item L'intégration avec \textbf{Mongoose} (ODM) est simple et apporte
+        validation de schéma et middlewares.
 \end{itemize}
-
-\subsection{Schémas des collections principales}
-
-\paragraph{Collection \texttt{users}}
-\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection users}]
-{
-  id:           { type: Number, unique: true },
-  username:     { type: String, required: true, unique: true },
-  password:     { type: String, required: true },  // bcrypt hash
-  role:         { type: String, enum: ['admin','engineer','technician'] },
-  permissions:  [{ type: String }],  // ['read','write','admin']
-  email:        { type: String },
-  statut:       { type: String, enum: ['actif','inactif'], default: 'actif' },
-  lastLogin:    { type: Date },
-  totalTimeMinutes: { type: Number, default: 0 },
-  createdAt:    { type: Date, default: Date.now }
-}
-\end{lstlisting}
-
-\paragraph{Collection \texttt{slots}}
-\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection slots}]
-{
-  id:          { type: Number, unique: true },
-  nom:         { type: String, required: true },
-  produitId:   { type: Number, required: true, ref: 'Produit' },
-  adresse:     { type: String, required: true }, // IP ex: "192.168.5.1"
-  port:        { type: Number, default: 23 },    // Telnet port
-  description: { type: String }
-}
-\end{lstlisting}
-
-\paragraph{Collection \texttt{telnetCommands}}
-\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection telnetCommands}]
-{
-  id:               { type: String, unique: true },
-  name:             { type: String, required: true },
-  type:             { type: String, enum: ['single','sequence','monitoring'] },
-  command:          { type: String },   // Pour le type 'single'
-  description:      { type: String },
-  expectedResponse: { type: String },   // Sous-chaîne attendue dans la réponse
-  expectedEvents:   [{ type: String }], // Pour le mode monitoring
-  steps: [{
-    command:          String,
-    description:      String,
-    type:             String,
-    expectedResponse: String,
-    expectedEvents:   [String],
-    duration:         Number,
-    timeout:          Number
-  }]
-}
-\end{lstlisting}
-
-\paragraph{Collection \texttt{testResults}}
-\begin{lstlisting}[language=javascript,caption={Schéma Mongoose — collection testResults}]
-{
-  id:        { type: Number, unique: true },   // Date.now()
-  slotId:    { type: Number, ref: 'Slot' },
-  posteId:   { type: Number, ref: 'Poste' },
-  produitId: { type: Number, ref: 'Produit' },
-  commandId: { type: String, ref: 'TelnetCommand' },
-  runMode:   { type: String,
-               enum: ['single','builtin_sequence','sequence','monitoring'] },
-  statut:    { type: String,
-               enum: ['PENDING','SUCCESS','FAIL','STOPPED'],
-               default: 'PENDING' },
-  startTime: { type: Date },
-  endTime:   { type: Date },
-  steps: [{
-    step:        String,
-    description: String,
-    statut:      String,
-    timestamp:   Date
-  }],
-  logs: [{ type: String }]
-}
-\end{lstlisting}
 
 % -----------------------------------------------------------------
 \section{Conception des interfaces utilisateur}
@@ -515,8 +508,8 @@ plusieurs raisons~:
 
 \subsection{Tableau de bord principal (Dashboard)}
 
-Le tableau de bord offre un espace unique de sélection et d'exécution des
-tests. Il est composé de~:
+Le tableau de bord regroupe la sélection et l'exécution des tests en
+une seule page. Il comprend~:
 \begin{itemize}
   \item Un panneau de sélection hiérarchique (Poste~$\to$ Produit~$\to$
         Slot) permettant d'identifier l'équipement cible~;
@@ -526,12 +519,13 @@ tests. Il est composé de~:
   \item Des boutons d'action~: Lancer, Arrêter, Exporter.
 \end{itemize}
 
+
 \subsection{Module de configuration}
 
-L'interface de configuration adopte une présentation en \textbf{tableaux
-imbriqués} avec des formulaires modaux pour les opérations CRUD. La
-hiérarchie Poste~$\to$ Produit~$\to$ Slot~$\to$ Référence est navigable
-via des onglets.
+L'interface de configuration présente les données en \textbf{tableaux}
+avec des formulaires modaux pour les opérations CRUD. La hiérarchie
+Poste~$\to$ Produit~$\to$ Slot~$\to$ Référence se navigue par onglets.
+
 
 \subsection{Panneau d'administration}
 
@@ -549,12 +543,11 @@ Le panneau d'administration comprend cinq onglets~:
         statut, utilisateur et période.
 \end{enumerate}
 
+
 \section*{Conclusion}
 
-Ce chapitre a posé les bases architecturales et conceptuelles du projet.
-L'architecture N-tiers combinée aux principes de la Clean Architecture
-garantit la séparation des responsabilités et la testabilité du code.
-Les diagrammes de classes et de séquence documentent les interactions
-entre les composants, tandis que les schémas MongoDB formalisent le
-modèle de persistance. Le chapitre suivant détaille la mise en \oe{}uvre
-technique de ces choix de conception.
+Ce chapitre a défini les choix d'architecture et de conception du projet.
+L'architecture N-tiers combinée à la Clean Architecture assure la
+séparation des responsabilités et facilite les tests. Les diagrammes de
+classes et de séquence décrivent les interactions entre composants. Le
+chapitre suivant détaille la mise en œuvre technique de ces choix.

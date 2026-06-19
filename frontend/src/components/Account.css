@@ -1,0 +1,213 @@
+:root {
+  --bg:          #f1f5f9;
+  --surface:     #ffffff;
+  --border:      #e2e8f0;
+  --text:        #0f172a;
+  --text-muted:  #64748b;
+  --accent:      #0f172a;
+  --success:     #16a34a;
+  --success-bg:  #f0fdf4;
+  --fail:        #dc2626;
+  --fail-bg:     #fef2f2;
+  --radius:      6px;
+  --shadow:      0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+}
+
+.acct-container {
+  padding: 2rem;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.acct-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  padding: 2rem;
+}
+
+.acct-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1.25rem;
+}
+
+.acct-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.acct-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.acct-info-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 90px;
+}
+
+.acct-info-value {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.acct-muted {
+  color: var(--text-muted);
+}
+
+.acct-role-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.acct-badge-admin {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.acct-badge-engineer {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.acct-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+.acct-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.35rem;
+}
+
+.acct-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.acct-required {
+  color: var(--fail);
+}
+
+.acct-alert {
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.acct-alert-ok {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid #bbf7d0;
+}
+
+.acct-alert-err {
+  background: var(--fail-bg);
+  color: var(--fail);
+  border: 1px solid #fecaca;
+}
+
+.acct-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.acct-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.acct-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.acct-field input {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.acct-field input:focus {
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.acct-pwd-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.acct-pwd-wrap input {
+  width: 100%;
+  padding-right: 4.5rem;
+  box-sizing: border-box;
+}
+
+.acct-eye {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.acct-eye:hover {
+  color: var(--text);
+}
+
+.acct-submit {
+  margin-top: 0.25rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: opacity 0.15s;
+}
+
+.acct-submit:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.acct-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

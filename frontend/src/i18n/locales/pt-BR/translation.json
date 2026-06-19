@@ -158,5 +158,22 @@
     "addSlot": "Adicionar slot",
     "runAll": "Executar todos os testes",
     "stopAll": "Parar tudo"
+  },
+  "account": {
+    "title": "Minha conta",
+    "username": "Nome de usuário",
+    "email": "E-mail",
+    "role": "Perfil",
+    "changeTitle": "Atualizar minhas informações",
+    "hint": "Sua senha atual é sempre necessária para confirmar as alterações.",
+    "newUsername": "Novo nome de usuário",
+    "currentPwd": "Senha atual",
+    "newPwd": "Nova senha",
+    "confirmPwd": "Confirmar nova senha",
+    "save": "Salvar alterações",
+    "currentPwdRequired": "A senha atual é obrigatória",
+    "noChanges": "Nenhuma alteração a fazer",
+    "pwdMismatch": "As senhas não coincidem",
+    "pwdTooShort": "A senha deve ter pelo menos 6 caracteres"
   }
 }

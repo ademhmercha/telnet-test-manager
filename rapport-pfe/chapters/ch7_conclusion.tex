@@ -6,61 +6,85 @@
 \markboth{Conclusion générale et perspectives}
          {Conclusion générale et perspectives}
 
-\section*{Bilan des réalisations}
-
 Ce projet de fin d'études, réalisé au sein de \textbf{Sagemcom Ezzahra},
-avait pour ambition de concevoir et déployer une solution complète de
-tests Telnet automatisés pour les équipements réseau embarqués, intégrée
-dans une infrastructure DevOps moderne.
+a abouti à la conception, au développement et au déploiement d'une
+solution complète de tests Telnet automatisés pour les équipements réseau
+embarqués. On est parti d'un processus manuel lent et fragmenté pour
+livrer une plateforme web fullstack, intégrée dans une infrastructure
+DevOps fonctionnelle et déployée automatiquement.
 
-Sur le \textbf{plan applicatif}, nous avons livré \textbf{Telnet Test
-Manager}, une application web fullstack structurée selon les principes
-de la \textit{Clean Architecture}. Le moteur Telnet, implémenté via les
-Worker Threads de Node.js et la bibliothèque \texttt{telnet-client},
-supporte quatre modes d'exécution~: commande unitaire, séquence, supervision
-continue et séquence personnalisée. La diffusion des résultats en temps
-réel par WebSocket et l'interface React~18/TypeScript multilingue offrent
-une expérience utilisateur professionnelle et réactive.
+Sur le \textbf{plan applicatif}, \textbf{Telnet Test Manager} change
+concrètement la façon dont les firmwares sont validés. L'application
+est structurée selon les principes de la \textit{Clean Architecture}
+en couches découplées (Domain, Application, Infrastructure, Interfaces),
+ce qui facilite la maintenance et les évolutions futures. Le moteur
+Telnet, basé sur les \textbf{Worker Threads} de Node.js, prend en
+charge quatre modes~: commande unitaire, séquence pas-à-pas, supervision
+continue et tests multi-slots en parallèle. Les résultats sont diffusés
+en temps réel via \textbf{WebSocket} et l'interface \textbf{React~18/TypeScript}
+est disponible en trois langues. Le contrôle d'accès \gls{rbac} à trois
+rôles --- Administrateur, Ingénieur et Technicien --- gère les permissions
+de façon claire et sécurisée.
 
-Sur le \textbf{plan DevOps}, l'application est entièrement conteneurisée
-avec Docker (build multi-stage pour le frontend, réduisant l'image de
-production à~$\sim$25~Mo), orchestrée par un chart Helm~v0.3.0 sur
-Kubernetes Minikube avec autoscaling horizontal (1~à~5~répliques, seuil
-CPU~: 70\,\%). Un pipeline GitHub Actions en trois jobs automatise
-l'intégration continue, les audits de sécurité et le déploiement via un
-runner auto-hébergé. La stack Prometheus/Grafana assure la visibilité
-en temps réel des performances applicatives.
+Sur le \textbf{plan DevOps}, l'application est conteneurisée avec
+\textbf{Docker} (build multi-stage qui ramène l'image frontend de
+$\sim$900~Mo à $\sim$25~Mo en production) et orchestrée par un chart
+\textbf{Helm} v0.3.0 sur \textbf{Kubernetes}. L'autoscaling horizontal
+a été validé en conditions réelles~: lors des tests de charge, le CPU
+a atteint 267\,\% du seuil, déclenchant automatiquement la montée de
+1 à 5 répliques. Le \textbf{pipeline GitHub Actions} en trois jobs
+gère l'intégration continue, les audits de sécurité et le déploiement
+en 2~minutes~33~secondes via un runner auto-hébergé. \textbf{Prometheus}
+et \textbf{Grafana} supervisent les métriques en temps réel et envoient
+des alertes e-mail automatiques sur dépassement du seuil CPU.
+
+Sur le \textbf{plan des tests}, les résultats sont clairs~: 24~tests
+unitaires Jest passés à 100\,\%, 14~scénarios fonctionnels couvrant
+tous les besoins identifiés, sans aucun échec sur l'ensemble de la
+batterie de tests.
+
+Pour l'équipe d'ingénierie des tests de \textbf{Sagemcom Ezzahra},
+les bénéfices sont directs. Remplacer les terminaux manuels par une
+interface web centralisée réduit le temps des campagnes de validation
+et supprime les erreurs de saisie. Le journal d'audit et les rapports
+automatiques permettent de suivre chaque campagne précisément.
+L'architecture scalable et le déploiement automatisé donnent à l'équipe
+une base solide pour faire évoluer la plateforme.
 
 \section*{Perspectives d'évolution}
 
-Plusieurs axes d'amélioration sont envisagés pour les versions futures~:
+Les fondations établies par ce projet ouvrent plusieurs axes
+d'amélioration pour les versions futures~:
 
 \begin{itemize}
-  \item \textbf{Support du protocole SSH~:} ajouter une couche SSH en
-        complément de Telnet pour couvrir les équipements modernes
-        refusant les connexions non chiffrées~;
+  \item \textbf{Support du protocole SSH~:} étendre le moteur de
+        connexion pour couvrir les équipements modernes refusant
+        les connexions Telnet non chiffrées~;
 
-  \item \textbf{Tests end-to-end automatisés~:} intégrer Cypress ou
-        Playwright dans le pipeline CI/CD pour valider automatiquement
-        les scénarios utilisateur complets~;
+  \item \textbf{Analyse intelligente des résultats~:} appliquer
+        des algorithmes de détection d'anomalies sur l'historique
+        des tests pour anticiper les défaillances matérielles avant
+        qu'elles n'affectent la production~;
 
-  \item \textbf{Analyse intelligente des résultats~:} appliquer des
-        algorithmes de détection d'anomalies sur l'historique des tests
-        pour anticiper les défaillances matérielles~;
+  \item \textbf{Tests end-to-end automatisés~:} intégrer Cypress
+        ou Playwright dans le pipeline CI/CD pour valider
+        automatiquement les scénarios utilisateur complets~;
 
-  \item \textbf{Déploiement cloud hybride~:} migrer vers AWS EKS ou
-        GCP GKE pour étendre la portée de l'infrastructure à plusieurs
-        sites géographiques~;
+  \item \textbf{Déploiement cloud hybride~:} migrer vers AWS EKS
+        ou GCP GKE pour étendre la portée de l'infrastructure à
+        plusieurs sites géographiques de Sagemcom~;
 
-  \item \textbf{Planification des campagnes~:} implémenter un module
-        de scheduling permettant de lancer des campagnes de tests
+  \item \textbf{Planification des campagnes~:} implémenter un
+        module de scheduling pour lancer des campagnes de tests
         automatiques sur des plages horaires programmées.
 \end{itemize}
 
 \vspace{0.5cm}
-\noindent En définitive, ce projet illustre comment l'union du génie
-logiciel moderne (\textit{Clean Architecture}, WebSocket, \gls{rbac})
-et des pratiques \gls{devops} avancées (Docker, Kubernetes, CI/CD,
-Prometheus) peut transformer un processus manuel fragmenté en une
-plateforme automatisée, traçable et scalable, apportant une valeur
-ajoutée concrète à l'équipe d'ingénierie de Sagemcom Ezzahra.
+\noindent Ce projet montre qu'en combinant une architecture logicielle
+solide (\textit{Clean Architecture}, WebSocket, \gls{rbac}) avec des
+pratiques \gls{devops} concrètes (Docker, Kubernetes, CI/CD,
+Prometheus/Grafana), il est possible de remplacer un processus manuel
+fragmenté par une plateforme automatisée, traçable et scalable. Le
+résultat est une infrastructure de tests qui s'adapte à la charge, se
+déploie seule et laisse une trace de chaque action --- exactement ce
+dont l'équipe de Sagemcom Ezzahra avait besoin.

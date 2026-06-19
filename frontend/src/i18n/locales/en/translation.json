@@ -158,5 +158,22 @@
     "addSlot": "Add slot",
     "runAll": "Run all tests",
     "stopAll": "Stop all"
+  },
+  "account": {
+    "title": "My account",
+    "username": "Username",
+    "email": "Email",
+    "role": "Role",
+    "changeTitle": "Update my information",
+    "hint": "Your current password is always required to confirm changes.",
+    "newUsername": "New username",
+    "currentPwd": "Current password",
+    "newPwd": "New password",
+    "confirmPwd": "Confirm new password",
+    "save": "Save changes",
+    "currentPwdRequired": "Current password is required",
+    "noChanges": "No changes to make",
+    "pwdMismatch": "Passwords do not match",
+    "pwdTooShort": "Password must be at least 6 characters"
   }
 }

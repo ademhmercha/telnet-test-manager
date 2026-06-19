@@ -9,6 +9,8 @@ const StepSchema = new mongoose.Schema({
 
 const TestResultSchema = new mongoose.Schema({
   id:        { type: Number, required: true, unique: true },
+  userId:    Number,
+  username:  String,
   slotId:    Number,
   posteId:   Number,
   produitId: Number,

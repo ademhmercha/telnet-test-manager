@@ -247,6 +247,7 @@ export const testService = {
     slotId?: number;
     posteId?: number;
     produitId?: number;
+    userId?: number;
     limit?: number;
   }): Promise<TestResult[]> => {
     const response = await api.get('/test-results', { params: filters });

@@ -95,6 +95,8 @@ class RunTestUseCase {
 
     await this._testResultRepo.create({
       id: testId,
+      userId:    auditContext?.userId,
+      username:  auditContext?.username,
       slotId:    parseInt(slotId),
       posteId:   parseInt(posteId),
       produitId: parseInt(produitId),

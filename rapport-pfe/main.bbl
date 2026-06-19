@@ -1,8 +1,9 @@
 \begin{thebibliography}{}
 
-\bibitem[Schwaber and Sutherland, 2020]{schwaber2020scrum}
-Schwaber, K. and Sutherland, J. (2020).
-\newblock The scrum guide.
-\newblock Consulté en décembre 2024.
+\bibitem[Martin, 2017]{martin2017clean}
+Martin, R.~C. (2017).
+\newblock {\em Clean Architecture: A Craftsman's Guide to Software Structure
+  and Design}.
+\newblock Prentice Hall, Upper Saddle River, NJ, USA.
 
 \end{thebibliography}

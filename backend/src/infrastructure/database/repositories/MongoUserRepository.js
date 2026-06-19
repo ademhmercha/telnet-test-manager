@@ -18,6 +18,10 @@ class MongoUserRepository extends IUserRepository {
     return this._User.findOne({ id }, { password: 0 }).lean();
   }
 
+  async findByIdWithPassword(id) {
+    return this._User.findOne({ id }).lean();
+  }
+
   async findAll() {
     return this._User.find({}, { _id: 0, __v: 0, password: 0 }).lean();
   }

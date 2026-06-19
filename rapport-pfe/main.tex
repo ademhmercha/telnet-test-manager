@@ -13,6 +13,7 @@
 \usepackage[top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
 \usepackage{setspace}
 \onehalfspacing
+\raggedbottom
 
 %%% ── Typographie ────────────────────────────────────────────
 \usepackage{mathptmx}          % Times New Roman — plus épais en impression
@@ -21,7 +22,7 @@
 
 %% Espacement entre paragraphes (pas d'indentation, aéré)
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{8pt plus 1pt minus 1pt}
+\setlength{\parskip}{4pt plus 1pt minus 1pt}
 
 %%% ── Couleurs ───────────────────────────────────────────────
 \usepackage[dvipsnames,svgnames,x11names]{xcolor}
@@ -29,6 +30,8 @@
 \definecolor{lightblue}{RGB}{232,232,232}
 \definecolor{codegray}{RGB}{248,248,248}
 \definecolor{codegreen}{RGB}{0,120,0}
+\definecolor{bleuPFE}{RGB}{0,82,165}
+\definecolor{vertCode}{RGB}{0,128,0}
 
 %%% ── Formatage des titres ───────────────────────────────────
 \usepackage{titlesec}
@@ -40,25 +43,25 @@
   {4pt}
   {{\color{black}\rule{\textwidth}{2pt}}\\[2pt]}
   [{\color{black}\rule{\textwidth}{2pt}}]
-\titlespacing*{\chapter}{0pt}{0pt}{28pt}
+\titlespacing*{\chapter}{0pt}{0pt}{18pt}
 
 %% Section : noir gras
 \titleformat{\section}
   {\normalfont\large\bfseries\color{black}}
   {\thesection}{1em}{}
-\titlespacing*{\section}{0pt}{18pt}{8pt}
+\titlespacing*{\section}{0pt}{12pt}{4pt}
 
 %% Sous-section : noir gras
 \titleformat{\subsection}
   {\normalfont\normalsize\bfseries\color{black}}
   {\thesubsection}{1em}{}
-\titlespacing*{\subsection}{0pt}{12pt}{5pt}
+\titlespacing*{\subsection}{0pt}{8pt}{3pt}
 
 %% Sous-sous-section : noir gras
 \titleformat{\subsubsection}
   {\normalfont\small\bfseries\color{black}}
   {\thesubsubsection}{1em}{}
-\titlespacing*{\subsubsection}{0pt}{10pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{6pt}{2pt}
 
 %% Paragraph (titre inline)
 \titleformat{\paragraph}[runin]
@@ -67,6 +70,7 @@
 
 %%% ── En-têtes et pieds de page ──────────────────────────────
 \usepackage{fancyhdr}
+\setlength{\headheight}{13.6pt}
 \fancyhf{}
 \fancyhead[L]{\small\nouppercase{\leftmark}}
 \fancyhead[R]{\small\textit{PFE \annee}}
@@ -96,14 +100,13 @@
   backgroundcolor  = \color{codegray},
   showstringspaces = false,
   frame            = single,
-  framecolor       = black!20,
   rulecolor        = \color{black!20},
   tabsize          = 2,
   captionpos       = b,
   breaklines       = true,
   breakatwhitespace= true,
-  aboveskip        = 14pt,
-  belowskip        = 14pt,
+  aboveskip        = 6pt,
+  belowskip        = 6pt,
   xleftmargin      = 6pt,
   morecomment      = [l]{//},
   morecomment      = [s]{/*}{*/},
@@ -156,12 +159,13 @@
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 %% Hauteur de ligne dans les tableaux
-\renewcommand{\arraystretch}{1.45}
+\renewcommand{\arraystretch}{1.3}
 %% Épaisseur des filets
 \setlength{\arrayrulewidth}{0.7pt}
 
 %%% ── Graphiques ─────────────────────────────────────────────
 \usepackage{graphicx}
+\usepackage{grffile}   % filenames with spaces
 \usepackage{float}
 \usepackage{caption}
 \captionsetup{
@@ -169,13 +173,13 @@
   labelfont  = bf,
   labelsep   = period,
   margin     = 10pt,
-  skip       = 8pt,
+  skip       = 4pt,
 }
 \captionsetup[table]{position=above}
 \usepackage{subcaption}
 %% Espacement autour des flottants
-\setlength{\intextsep}{14pt plus 2pt minus 2pt}
-\setlength{\textfloatsep}{16pt plus 2pt minus 4pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
 
 %%% ── Liens hypertexte ───────────────────────────────────────
 \usepackage[
@@ -209,10 +213,10 @@
 
 %%% ── Listes ─────────────────────────────────────────────────
 \usepackage{enumitem}
-\setlist[itemize,1]{label=\textbullet,  topsep=4pt, itemsep=3pt, leftmargin=*}
-\setlist[itemize,2]{label=\textbullet,  topsep=2pt, itemsep=2pt, leftmargin=*}
-\setlist[itemize,3]{label=\textperiodcentered, topsep=1pt, itemsep=1pt, leftmargin=*}
-\setlist[enumerate]{topsep=4pt, itemsep=3pt, leftmargin=*}
+\setlist[itemize,1]{label=\textbullet,  topsep=2pt, itemsep=1pt, leftmargin=*}
+\setlist[itemize,2]{label=\textbullet,  topsep=1pt, itemsep=1pt, leftmargin=*}
+\setlist[itemize,3]{label=\textperiodcentered, topsep=0pt, itemsep=0pt, leftmargin=*}
+\setlist[enumerate]{topsep=2pt, itemsep=1pt, leftmargin=*}
 \setlist[description]{topsep=4pt, itemsep=3pt, leftmargin=2cm, labelwidth=1.8cm}
 
 %%% ── Commandes utilitaires ──────────────────────────────────
@@ -242,28 +246,28 @@
 \pagestyle{empty}
 
 \input{config/page_garde}
-\cleardoublepage
+\clearpage
 
 \pagestyle{fancy}
 \input{config/dedicace}
-\cleardoublepage
+\clearpage
 
 \input{config/remerciements}
-\cleardoublepage
+\clearpage
 
 %%% ── Table des matières ─────────────────────────────────────
 {\hypersetup{linkcolor=black}
 \tableofcontents}
-\cleardoublepage
+\clearpage
 
 \listoffigures
-\cleardoublepage
+\clearpage
 
 \listoftables
-\cleardoublepage
+\clearpage
 
 \printglossary[type=\acronymtype,title={Liste des acronymes}]
-\cleardoublepage
+\clearpage
 
 %%% ── Corps du rapport (numérotation arabe) ──────────────────
 \pagenumbering{arabic}
@@ -272,11 +276,13 @@
 \input{chapters/ch0_introduction}
 \input{chapters/ch1_contexte}
 \input{chapters/ch2_analyse_besoins}
-\input{chapters/ch3_realisation}
+\input{chapters/ch3_conception}
+\input{chapters/ch4_developpement}
+\input{chapters/ch5_devops}
 \input{chapters/ch7_conclusion}
 
 %%% ── Bibliographie ──────────────────────────────────────────
-\cleardoublepage
+\clearpage
 \bibliographystyle{apalike}
 \bibliography{references}
 \addcontentsline{toc}{chapter}{Bibliographie}

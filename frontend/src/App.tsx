@@ -7,6 +7,7 @@ import Commands from './components/Commands';
 import MultiTest from './components/MultiTest';
 import Configuration from './components/Configuration';
 import AdminPanel from './components/AdminPanel';
+import Account from './components/Account';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import './App.css';
 
@@ -14,9 +15,10 @@ interface User {
   id: number;
   username: string;
   role: string;
+  email?: string;
 }
 
-type ViewId = 'dashboard' | 'reports' | 'commands' | 'multitest' | 'configuration' | 'admin';
+type ViewId = 'dashboard' | 'reports' | 'commands' | 'multitest' | 'configuration' | 'admin' | 'account';
 
 function App() {
   // @ts-ignore
@@ -72,14 +74,20 @@ function App() {
     setCurrentView('dashboard');
   };
 
+  const handleUsernameChange = (newUsername: string) => {
+    if (user) setUser({ ...user, username: newUsername });
+  };
+
   const allowedViews = NAV_ITEMS
     .filter(n => user && n.roles.includes(user.role))
     .map(n => n.id);
 
-  const safeView: ViewId = allowedViews.includes(currentView) ? currentView : 'dashboard';
+  const safeView: ViewId = (allowedViews.includes(currentView) || currentView === 'account')
+    ? currentView
+    : 'dashboard';
 
   const navigate = (view: ViewId) => {
-    if (allowedViews.includes(view)) setCurrentView(view);
+    if (view === 'account' || allowedViews.includes(view)) setCurrentView(view);
   };
 
   const roleBadgeClass = user?.role === 'admin' ? 'nav-role-admin' : 'nav-role-engineer';
@@ -118,6 +126,13 @@ function App() {
                 <span className={`nav-user-role ${roleBadgeClass}`}>{user.role}</span>
               </div>
               <div className="nav-divider" />
+              <button
+                className={`nav-account-btn ${safeView === 'account' ? 'active' : ''}`}
+                onClick={() => navigate('account')}
+              >
+                {t('account.title')}
+              </button>
+              <div className="nav-divider" />
               <LanguageSwitcher />
               <div className="nav-divider" />
               <button className="nav-logout" onClick={handleLogout}>
@@ -133,6 +148,7 @@ function App() {
             {safeView === 'multitest'     && <MultiTest />}
             {safeView === 'configuration' && <Configuration />}
             {safeView === 'admin'         && <AdminPanel />}
+            {safeView === 'account'       && <Account user={user} onUsernameChange={handleUsernameChange} />}
           </main>
         </>
       ) : (

@@ -983,6 +983,96 @@ body {
   line-height: 1;
 }
 
+/* ─── Sequence open button ──────────────────────────────────────────────────── */
+.seq-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.seq-open-btn:hover { opacity: 0.85; }
+
+.seq-count-badge {
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.78rem;
+}
+
+/* ─── Sequence modal ─────────────────────────────────────────────────────────── */
+.seq-modal-content {
+  max-width: 860px;
+  width: 95vw;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.seq-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  overflow: hidden;
+}
+
+.seq-panel-commands,
+.seq-panel-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  max-height: 52vh;
+  padding-right: 4px;
+}
+
+.seq-panel-commands h4,
+.seq-panel-steps h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cmd-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 1px;
+}
+
+.seq-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ─── Sequence modal (mt- variable overrides — always light theme) ──────────── */
+.mt-modal-overlay {
+  --bg-card:       #ffffff;
+  --bg-surface:    #f8fafc;
+  --bg-elevated:   #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --border-deep:   #cbd5e1;
+  --accent-blue:   #2563eb;
+  --accent-green:  #16a34a;
+  --accent-red:    #dc2626;
+  --accent-yellow: #d97706;
+  --text-primary:  #0f172a;
+  --text-muted:    #64748b;
+  --text-dim:      #475569;
+}
+
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .dashboard-main { padding: 1rem; }

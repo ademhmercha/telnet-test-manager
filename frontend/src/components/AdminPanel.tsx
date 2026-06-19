@@ -636,21 +636,17 @@ const AuditLogs: React.FC = () => {
         <div className="ap-table-wrap">
           <table className="ap-table">
             <thead><tr>
-              <th>Horodatage</th><th>Utilisateur</th><th>Rôle</th>
-              <th>Action</th><th>Méthode</th><th>URL</th><th>IP</th>
+              <th>Horodatage</th><th>Utilisateur</th><th>Rôle</th><th>Action</th>
             </tr></thead>
             <tbody>
               {logs.length === 0 ? (
-                <tr><td colSpan={7} className="ap-empty">Aucun log trouvé</td></tr>
+                <tr><td colSpan={4} className="ap-empty">Aucun log trouvé</td></tr>
               ) : logs.map((l, i) => (
                 <tr key={i}>
                   <td className="ap-mono ap-muted ap-nowrap">{fmtDate(l.timestamp)}</td>
                   <td><strong>{l.username || '—'}</strong></td>
                   <td>{l.role ? <span className={`role-pill role-${l.role}`}>{l.role}</span> : '—'}</td>
                   <td><span className={`action-pill ${ACTION_COLORS[l.action] || 'ac-grey'}`}>{l.action}</span></td>
-                  <td><span className="method-pill">{l.method}</span></td>
-                  <td className="ap-mono ap-muted ap-truncate">{l.url}</td>
-                  <td className="ap-mono ap-muted">{l.ip}</td>
                 </tr>
               ))}
             </tbody>
