@@ -34,3 +34,9 @@ backend/reports/
 
 # Coverage
 coverage/
+
+# Documentation files (hidden from supervisor branch)
+rapport-pfe/
+DEMO_DEVOPS.md
+DEVOPS_README.md
+desciption.md
