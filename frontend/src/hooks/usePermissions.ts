@@ -13,6 +13,7 @@ export const usePermissions = (user: User | null) => {
 
   const isAdmin = (): boolean => hasRole('admin');
   const isEngineer = (): boolean => hasRole('engineer');
+  const isTechnician = (): boolean => hasRole('technician');
 
   const canRunTests = (): boolean => hasPermission('run_tests');
   const canViewLogs = (): boolean => hasPermission('view_logs');
@@ -25,6 +26,7 @@ export const usePermissions = (user: User | null) => {
     hasRole,
     isAdmin,
     isEngineer,
+    isTechnician,
     canRunTests,
     canViewLogs,
     canAudit,

@@ -27,7 +27,17 @@ data:
           role: 'engineer',
           email: 'engineer@telnet.com',
           statut: 'actif',
-          permissions: ['read','write','run_tests'],
+          permissions: ['read','write','delete','run_tests'],
+          totalTimeMinutes: 0
+        },
+        {
+          id: 3,
+          username: 'technician',
+          password: '$2a$10$AQZFp38jGIfjXKEN7FTzp.FDe2R95AcO3b.BXvf.DUwT8QJcObe2e',
+          role: 'technician',
+          email: 'technician@telnet.com',
+          statut: 'actif',
+          permissions: ['read','run_tests'],
           totalTimeMinutes: 0
         }
       ]);

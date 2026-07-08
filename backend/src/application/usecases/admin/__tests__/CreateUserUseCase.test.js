@@ -60,6 +60,17 @@ describe('CreateUserUseCase', () => {
       );
     });
 
+    it('assigns limited permissions to technician role', async () => {
+      const { userRepo, auditLogRepo } = makeRepos();
+      const useCase = new CreateUserUseCase(userRepo, auditLogRepo);
+
+      await useCase.execute({ username: 'newtech', password: 'pass', role: 'technician' }, AUDIT_CTX);
+
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ permissions: ['read','run_tests'] })
+      );
+    });
+
     it('assigns limited permissions to engineer role', async () => {
       const { userRepo, auditLogRepo } = makeRepos();
       const useCase = new CreateUserUseCase(userRepo, auditLogRepo);
@@ -67,7 +78,7 @@ describe('CreateUserUseCase', () => {
       await useCase.execute({ username: 'neweng', password: 'pass', role: 'engineer' }, AUDIT_CTX);
 
       expect(userRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ permissions: ['read','write','run_tests'] })
+        expect.objectContaining({ permissions: ['read','write','delete','run_tests'] })
       );
     });
 

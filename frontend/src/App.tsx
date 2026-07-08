@@ -29,11 +29,11 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewId>('dashboard');
 
   const NAV_ITEMS = [
-    { id: 'dashboard'     as ViewId, label: t('nav.dashboard'),      roles: ['admin', 'engineer'] },
-    { id: 'reports'       as ViewId, label: t('nav.reports'),         roles: ['admin', 'engineer'] },
+    { id: 'dashboard'     as ViewId, label: t('nav.dashboard'),      roles: ['admin', 'engineer', 'technician'] },
+    { id: 'reports'       as ViewId, label: t('nav.reports'),         roles: ['admin', 'engineer', 'technician'] },
     { id: 'commands'      as ViewId, label: t('nav.commands'),        roles: ['admin', 'engineer'] },
-    { id: 'multitest'     as ViewId, label: t('nav.multitest'),       roles: ['admin', 'engineer'] },
-    { id: 'configuration' as ViewId, label: t('nav.configuration'),   roles: ['admin'] },
+    { id: 'multitest'     as ViewId, label: t('nav.multitest'),       roles: ['admin', 'engineer', 'technician'] },
+    { id: 'configuration' as ViewId, label: t('nav.configuration'),   roles: ['admin', 'engineer'] },
     { id: 'admin'         as ViewId, label: t('nav.admin'),           roles: ['admin'] },
   ];
 
@@ -90,7 +90,7 @@ function App() {
     if (view === 'account' || allowedViews.includes(view)) setCurrentView(view);
   };
 
-  const roleBadgeClass = user?.role === 'admin' ? 'nav-role-admin' : 'nav-role-engineer';
+  const roleBadgeClass = user?.role === 'admin' ? 'nav-role-admin' : user?.role === 'engineer' ? 'nav-role-engineer' : 'nav-role-technician';
 
   if (loading) {
     return (

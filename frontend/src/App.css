@@ -125,6 +125,12 @@
   border: 1px solid rgba(16,185,129,0.25);
 }
 
+.nav-role-technician {
+  background: rgba(245,158,11,0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245,158,11,0.25);
+}
+
 /* Language switcher */
 .lang-switcher {
   display: flex;

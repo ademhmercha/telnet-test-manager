@@ -64,7 +64,7 @@ const Commands: React.FC = () => {
 
   const userRaw = sessionStorage.getItem('user');
   const user = userRaw ? JSON.parse(userRaw) : null;
-  const isAdmin = user?.role === 'admin';
+  const canEdit = user?.role === 'admin' || user?.role === 'engineer';
 
   useEffect(() => {
     fetchCommands();
@@ -209,7 +209,7 @@ const Commands: React.FC = () => {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          {isAdmin && (
+          {canEdit && (
             <button className="btn btn-primary" onClick={openModal}>
               {t('commands.addCommand')}
             </button>
@@ -238,13 +238,13 @@ const Commands: React.FC = () => {
                   <th>{t('commands.colCommand')}</th>
                   <th>{t('commands.colDescription')}</th>
                   <th>{t('commands.colExpected')}</th>
-                  {isAdmin && <th>{t('commands.colActions')}</th>}
+                  {canEdit && <th>{t('commands.colActions')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    <td colSpan={canEdit ? 7 : 6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                       {t('commands.noCommands')}
                     </td>
                   </tr>
@@ -269,7 +269,7 @@ const Commands: React.FC = () => {
                               </div>
                             : <span className="muted">—</span>}
                       </td>
-                      {isAdmin && (
+                      {canEdit && (
                         <td>
                           <div className="action-buttons">
                             <button

@@ -653,14 +653,15 @@ const TABS: { id: TabId; label: string }[] = [
 
 const Configuration: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('postes');
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const canEdit = role === 'admin' || role === 'engineer';
 
   return (
     <div className="cfg-container">
       <div className="cfg-header">
         <h1>Configuration</h1>
-        {!isAdmin && (
-          <span className="read-only-notice">Mode lecture — seuls les admins peuvent modifier</span>
+        {!canEdit && (
+          <span className="read-only-notice">Mode lecture — seuls les admins et ingénieurs peuvent modifier</span>
         )}
       </div>
 
@@ -677,10 +678,10 @@ const Configuration: React.FC = () => {
           ))}
         </nav>
         <div className="cfg-tab-content">
-          {activeTab === 'postes'     && <PostesTab     isAdmin={isAdmin} />}
-          {activeTab === 'produits'   && <ProduitsTab   isAdmin={isAdmin} />}
-          {activeTab === 'slots'      && <SlotsTab      isAdmin={isAdmin} />}
-          {activeTab === 'references' && <ReferencesTab isAdmin={isAdmin} />}
+          {activeTab === 'postes'     && <PostesTab     isAdmin={canEdit} />}
+          {activeTab === 'produits'   && <ProduitsTab   isAdmin={canEdit} />}
+          {activeTab === 'slots'      && <SlotsTab      isAdmin={canEdit} />}
+          {activeTab === 'references' && <ReferencesTab isAdmin={canEdit} />}
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ function createTelnetCommandRouter(telnetCommandController, authenticate, requir
   router.get('/',    authenticate,                           (req, res) => telnetCommandController.getAll(req, res));
   router.post('/',   authenticate, requirePermission('write'), (req, res) => telnetCommandController.create(req, res));
   router.put('/:id', authenticate, requirePermission('write'), (req, res) => telnetCommandController.update(req, res));
-  router.delete('/:id', authenticate, requireRole('admin'),   (req, res) => telnetCommandController.delete(req, res));
+  router.delete('/:id', authenticate, requirePermission('delete'),   (req, res) => telnetCommandController.delete(req, res));
   return router;
 }
 

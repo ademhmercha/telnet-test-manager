@@ -86,6 +86,11 @@
   color: #334155;
 }
 
+.acct-badge-technician {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .acct-divider {
   border: none;
   border-top: 1px solid var(--border);

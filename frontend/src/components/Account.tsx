@@ -75,7 +75,7 @@ export default function Account({ user, onUsernameChange }: Props) {
     }
   };
 
-  const roleBadgeClass = user.role === 'admin' ? 'acct-badge-admin' : 'acct-badge-engineer';
+  const roleBadgeClass = user.role === 'admin' ? 'acct-badge-admin' : user.role === 'engineer' ? 'acct-badge-engineer' : 'acct-badge-technician';
 
   return (
     <div className="acct-container">

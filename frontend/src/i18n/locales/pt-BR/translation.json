@@ -47,6 +47,7 @@
     "accessLevels": "Níveis de acesso",
     "adminRole": "Administrador",
     "engineerRole": "Engenheiro",
+    "technicianRole": "Técnico",
     "secureAuth": "Autenticação segura · JWT · Bcrypt",
     "restricted": "Telnet Test Manager · v1.0 · Acesso restrito",
     "adminPerms": [
@@ -58,7 +59,13 @@
     ],
     "engineerPerms": [
       "Painel & execução de testes",
-      "Consulta de comandos Telnet",
+      "Comandos Telnet — CRUD completo",
+      "Geração & consulta de relatórios",
+      "Configuração (estações, produtos, slots)",
+      "Gerenciamento de infraestrutura"
+    ],
+    "technicianPerms": [
+      "Painel & execução de testes",
       "Geração & consulta de relatórios"
     ]
   },

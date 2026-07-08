@@ -1,6 +1,7 @@
 const ROLE_PERMISSIONS = {
-  admin:    ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
-  engineer: ['read','write','run_tests']
+  admin:      ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
+  engineer:   ['read','write','delete','run_tests'],
+  technician: ['read','run_tests']
 };
 
 class UpdateUserUseCase {
@@ -20,7 +21,7 @@ class UpdateUserUseCase {
     if (email  !== undefined) update.email  = email;
     if (statut !== undefined) update.statut = statut;
     if (role   !== undefined) {
-      if (!['admin','engineer'].includes(role)) {
+      if (!['admin','engineer','technician'].includes(role)) {
         const err = new Error('Rôle invalide');
         err.statusCode = 400;
         throw err;

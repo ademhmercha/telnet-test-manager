@@ -319,6 +319,7 @@ const Users: React.FC = () => {
                 <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
                   <option value="admin">Administrateur</option>
                   <option value="engineer">Ingénieur</option>
+                  <option value="technician">Technicien</option>
                 </select>
               </div>
               <div className="ap-field">

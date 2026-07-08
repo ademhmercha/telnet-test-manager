@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs');
 
 const ROLE_PERMISSIONS = {
-  admin:    ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
-  engineer: ['read','write','run_tests']
+  admin:      ['read','write','delete','admin','audit','manage_users','view_logs','run_tests'],
+  engineer:   ['read','write','delete','run_tests'],
+  technician: ['read','run_tests']
 };
 
 class CreateUserUseCase {
@@ -17,8 +18,8 @@ class CreateUserUseCase {
       err.statusCode = 400;
       throw err;
     }
-    if (!['admin','engineer'].includes(role)) {
-      const err = new Error('Rôle invalide (admin ou engineer)');
+    if (!['admin','engineer','technician'].includes(role)) {
+      const err = new Error('Rôle invalide (admin, engineer ou technician)');
       err.statusCode = 400;
       throw err;
     }
