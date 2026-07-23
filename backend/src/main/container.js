@@ -17,6 +17,7 @@ const TestResultModel    = require('../infrastructure/database/models/TestResult
 const TelnetCommandModel = require('../infrastructure/database/models/TelnetCommandModel');
 const AuditLogModel      = require('../infrastructure/database/models/AuditLogModel');
 const ReportModel        = require('../infrastructure/database/models/ReportModel');
+const CounterModel       = require('../infrastructure/database/models/CounterModel');
 
 // ── Infrastructure : repositories ────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ function buildContainer() {
   const metrics = createMetrics();
 
   // ── Repositories ────────────────────────────────────────────────────────────
-  const userRepo          = new MongoUserRepository(UserModel);
+  const userRepo          = new MongoUserRepository(UserModel, CounterModel);
   const posteRepo         = new MongoPosteRepository(PosteModel);
   const produitRepo       = new MongoProduitRepository(ProduitModel);
   const referenceRepo     = new MongoReferenceRepository(ReferenceModel);

@@ -215,7 +215,7 @@ Exemples clés :
 ```
 container.js (buildContainer)
 │
-├── new MongoUserRepository(UserModel)          ←── UserModel (Mongoose)
+├── new MongoUserRepository(UserModel, CounterModel) ←── UserModel + CounterModel (Mongoose)
 ├── new MongoSlotRepository(SlotModel)          ←── SlotModel (Mongoose)
 ├── new MongoTestResultRepository(TestResultModel)
 ├── …

@@ -1,9 +1,10 @@
 const IUserRepository = require('../../../domain/repositories/IUserRepository');
 
 class MongoUserRepository extends IUserRepository {
-  constructor(UserModel) {
+  constructor(UserModel, CounterModel) {
     super();
     this._User = UserModel;
+    this._Counter = CounterModel;
   }
 
   async findByUsername(username) {
@@ -27,12 +28,26 @@ class MongoUserRepository extends IUserRepository {
   }
 
   async findLastId() {
+    const counter = await this._Counter.findById('userId').lean();
+    if (counter) return counter.seq;
+
+    // Première exécution / données pré-existantes : on amorce le compteur
+    // sur le MAX(id) actuel pour ne pas revenir en arrière.
     const last = await this._User.findOne({}, { id: 1 }).sort({ id: -1 }).lean();
-    return last?.id || 0;
+    const seed = last?.id || 0;
+    await this._Counter.findByIdAndUpdate(
+      'userId', { $max: { seq: seed } }, { upsert: true }
+    );
+    return seed;
   }
 
   async create(data) {
     const user = await this._User.create(data);
+    // $max garantit que le compteur ne redescend jamais : un id supprimé
+    // ne sera donc jamais réattribué à un nouvel utilisateur.
+    await this._Counter.findByIdAndUpdate(
+      'userId', { $max: { seq: data.id } }, { upsert: true }
+    );
     const { password, _id, __v, ...safe } = user.toObject();
     return safe;
   }
