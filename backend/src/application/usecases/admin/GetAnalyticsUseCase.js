@@ -55,32 +55,24 @@ class GetAnalyticsUseCase {
       { username: 1, role: 1, statut: 1, totalTimeMinutes: 1, loginTimestamp: 1, _id: 0 }
     );
 
-    const allUsernamesSet = new Set([
-      ...testsByUser.map(u => u._id),
-      ...allUsers.map(u => u.username)
-    ]);
-
-    const userMeta = Object.fromEntries(allUsers.map(u => {
-      let minutes = u.totalTimeMinutes || 0;
-      if (u.loginTimestamp) {
-        const activeMs = Date.now() - new Date(u.loginTimestamp).getTime();
-        if (activeMs > 0 && activeMs < 24 * 3600 * 1000) minutes += activeMs / 60000;
-      }
-      return [u.username, { ...u, currentTotalMinutes: minutes }];
-    }));
-
-    const userStats = [...allUsernamesSet]
-      .filter(Boolean)
-      .map(username => {
-        const t = testsByUser.find(u => u._id === username);
-        const m = userMeta[username];
+    // Seuls les comptes existant encore dans `users` sont affichés : les logs
+    // d'audit rattachés à un compte supprimé depuis restent en base (traçabilité)
+    // mais ne polluent plus cette vue.
+    const userStats = allUsers
+      .map(u => {
+        let minutes = u.totalTimeMinutes || 0;
+        if (u.loginTimestamp) {
+          const activeMs = Date.now() - new Date(u.loginTimestamp).getTime();
+          if (activeMs > 0 && activeMs < 24 * 3600 * 1000) minutes += activeMs / 60000;
+        }
+        const t = testsByUser.find(x => x._id === u.username);
         return {
-          username,
-          role:         m?.role   || 'deleted',
-          statut:       m ? (m.statut || 'actif') : 'supprimé',
-          totalTests:   t?.tests  || 0,
-          sessions:     sessionCountMap[username] || 0,
-          totalMinutes: Math.round(m?.currentTotalMinutes || 0)
+          username:     u.username,
+          role:         u.role,
+          statut:       u.statut || 'actif',
+          totalTests:   t?.tests || 0,
+          sessions:     sessionCountMap[u.username] || 0,
+          totalMinutes: Math.round(minutes)
         };
       })
       .filter(u => u.totalTests > 0 || u.totalMinutes > 0)

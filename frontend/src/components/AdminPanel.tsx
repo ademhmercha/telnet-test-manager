@@ -684,18 +684,21 @@ interface HBarProps {
   value: number;
   max: number;
   displayValue: string;
-  color?: string;
+  badge?: string;
 }
 
-const HBar: React.FC<HBarProps> = ({ label, value, max, displayValue, color = 'blue' }) => {
+const HBar: React.FC<HBarProps> = ({ label, value, max, displayValue, badge }) => {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="hbar-row">
       <div className="hbar-label">{label}</div>
       <div className="hbar-track">
-        <div className={`hbar-fill hbar-${color}`} style={{ width: `${pct}%` }} />
+        <div className="hbar-fill" style={{ width: `${pct}%` }} />
       </div>
-      <div className="hbar-val">{displayValue}</div>
+      <div className="hbar-val">
+        {displayValue}
+        {badge && <span className="hbar-badge">{badge}</span>}
+      </div>
     </div>
   );
 };
@@ -744,13 +747,37 @@ const Analytics: React.FC = () => {
       {!loading && !error && data && (() => {
         const { productStats = [], userStats = [], dailyActivity = [] } = data;
         const maxProd  = Math.max(...productStats.map((p: any) => p.total), 1);
-        const roleLabel = (role: string) => role === 'deleted' ? 'Compte supprimé' : role;
         const maxTests = Math.max(...userStats.map((u: any) => u.totalTests), 1);
         const maxTime  = Math.max(...userStats.map((u: any) => u.totalMinutes), 1);
-        const maxDay   = Math.max(...dailyActivity.map((d: any) => (d.success || 0) + (d.failed || 0)), 1);
+        const maxDay   = Math.max(...dailyActivity.map((d: any) => (d.success || 0) + (d.fail || 0)), 1);
+
+        const totalTests   = productStats.reduce((s: number, p: any) => s + p.total, 0);
+        const totalSuccess = productStats.reduce((s: number, p: any) => s + p.success, 0);
+        const successRate  = totalTests > 0 ? Math.round(totalSuccess / totalTests * 100) : 0;
+        const topProduct   = productStats[0]?.nom || '—';
 
         return (
           <>
+            {/* Headline stats */}
+            <div className="stat-tiles">
+              <div className="stat-tile">
+                <div className="stat-tile-value">{totalTests}</div>
+                <div className="stat-tile-label">Tests exécutés</div>
+              </div>
+              <div className="stat-tile">
+                <div className="stat-tile-value">{successRate}%</div>
+                <div className="stat-tile-label">Taux de succès</div>
+              </div>
+              <div className="stat-tile">
+                <div className="stat-tile-value">{userStats.length}</div>
+                <div className="stat-tile-label">Utilisateurs actifs</div>
+              </div>
+              <div className="stat-tile">
+                <div className="stat-tile-value stat-tile-value-sm" title={topProduct}>{topProduct}</div>
+                <div className="stat-tile-label">Produit le plus testé</div>
+              </div>
+            </div>
+
             {/* Products most tested */}
             <div className="ap-card">
               <div className="ap-card-header">Produits les plus testés</div>
@@ -763,7 +790,7 @@ const Analytics: React.FC = () => {
                         value={p.total}
                         max={maxProd}
                         displayValue={`${p.total} test${p.total !== 1 ? 's' : ''}`}
-                        color="blue"
+                        badge={`${p.successRate}% succès`}
                       />
                     ))}
                   </div>
@@ -778,11 +805,10 @@ const Analytics: React.FC = () => {
                 : <div className="hbar-list">
                     {userStats.map((u: any) => (
                       <HBar key={u.username}
-                        label={`${u.username} (${roleLabel(u.role)})`}
+                        label={`${u.username} (${u.role})`}
                         value={u.totalTests}
                         max={maxTests}
                         displayValue={`${u.totalTests} test${u.totalTests !== 1 ? 's' : ''}`}
-                        color={u.role === 'admin' ? 'indigo' : 'teal'}
                       />
                     ))}
                   </div>
@@ -797,11 +823,10 @@ const Analytics: React.FC = () => {
                 : <div className="hbar-list">
                     {userStats.map((u: any) => (
                       <HBar key={u.username}
-                        label={`${u.username} (${roleLabel(u.role)})`}
+                        label={`${u.username} (${u.role})`}
                         value={u.totalMinutes}
                         max={maxTime}
                         displayValue={fmtMinutes(u.totalMinutes)}
-                        color="purple"
                       />
                     ))}
                   </div>
@@ -811,20 +836,27 @@ const Analytics: React.FC = () => {
             {/* Daily activity chart */}
             <div className="ap-card">
               <div className="ap-card-header">Activité quotidienne (14 derniers jours)</div>
+              <div className="daily-legend">
+                <span className="legend-dot dot-success" /> Succès
+                <span className="legend-dot dot-failed" />  Échecs
+              </div>
               {dailyActivity.length === 0
                 ? <div className="ap-empty">Aucune donnée</div>
                 : <div className="daily-chart">
                     {dailyActivity.map((d: any) => {
-                      const total = (d.success || 0) + (d.failed || 0);
+                      const success = d.success || 0;
+                      const fail    = d.fail || 0;
+                      const total   = success + fail;
                       const heightPct = maxDay > 0 ? (total / maxDay) * 100 : 0;
+                      const tooltip = `${d.date}\n${total} test${total !== 1 ? 's' : ''} — ${success} succès, ${fail} échec${fail !== 1 ? 's' : ''}`;
                       return (
-                        <div key={d.date} className="daily-col">
+                        <div key={d.date} className="daily-col" tabIndex={0} data-tooltip={tooltip}>
                           <div className="daily-bar-wrap">
                             <div className="daily-bar" style={{ height: `${heightPct}%` }}>
                               <div className="daily-bar-success"
-                                style={{ height: total > 0 ? `${((d.success || 0) / total) * 100}%` : '0%' }} />
+                                style={{ height: total > 0 ? `${(success / total) * 100}%` : '0%' }} />
                               <div className="daily-bar-failed"
-                                style={{ height: total > 0 ? `${((d.failed || 0) / total) * 100}%` : '0%' }} />
+                                style={{ height: total > 0 ? `${(fail / total) * 100}%` : '0%' }} />
                             </div>
                           </div>
                           <div className="daily-label">{d.date?.slice(5)}</div>
@@ -834,10 +866,6 @@ const Analytics: React.FC = () => {
                     })}
                   </div>
               }
-              <div className="daily-legend">
-                <span className="legend-dot dot-success" /> Succès
-                <span className="legend-dot dot-failed" />  Échecs
-              </div>
             </div>
 
             {/* Summary table */}
@@ -857,7 +885,7 @@ const Analytics: React.FC = () => {
                   {userStats.map((u: any) => (
                     <tr key={u.username}>
                       <td><strong>{u.username}</strong></td>
-                      <td><span className={`role-pill role-${u.role}`}>{roleLabel(u.role)}</span></td>
+                      <td><span className={`role-pill role-${u.role}`}>{u.role}</span></td>
                       <td>{u.totalTests}</td>
                       <td>{fmtMinutes(u.totalMinutes)}</td>
                       <td>{u.sessions > 0 ? Math.round(u.totalTests / u.sessions) : '—'}</td>

@@ -278,7 +278,6 @@
 .role-admin      { background: rgba(37,99,235,0.12); color: #1d4ed8; border: 1px solid rgba(37,99,235,0.25); }
 .role-engineer   { background: rgba(5,150,105,0.1);  color: #065f46; border: 1px solid rgba(5,150,105,0.2); }
 .role-technician { background: rgba(245,158,11,0.12); color: #92400e; border: 1px solid rgba(245,158,11,0.25); }
-.role-deleted    { background: rgba(100,116,139,0.12); color: #334155; border: 1px solid rgba(100,116,139,0.25); }
 
 .status-pill {
   display: inline-block;
@@ -635,6 +634,44 @@
   color: #fff;
 }
 
+/* Analytics — headline stat tiles */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.875rem;
+}
+
+.stat-tile {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+}
+
+.stat-tile-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+  margin-bottom: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-tile-value-sm {
+  font-size: 1.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-tile-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Horizontal bar chart */
 .hbar-list {
   display: flex;
@@ -660,22 +697,18 @@
 }
 
 .hbar-track {
-  height: 10px;
-  background: #e2e8f0;
-  border-radius: 5px;
+  height: 8px;
+  background: #eef1f5;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .hbar-fill {
   height: 100%;
-  border-radius: 5px;
+  border-radius: 4px;
+  background: #1d4ed8;
   transition: width 0.4s ease;
 }
-
-.hbar-blue   { background: #3b82f6; }
-.hbar-teal   { background: #14b8a6; }
-.hbar-indigo { background: #6366f1; }
-.hbar-purple { background: #a855f7; }
 
 .hbar-val {
   font-size: 0.8rem;
@@ -683,6 +716,16 @@
   font-weight: 600;
   text-align: right;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.hbar-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
 /* Daily activity chart */
@@ -695,12 +738,44 @@
 }
 
 .daily-col {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
   height: 100%;
+  border-radius: 4px;
+  outline: none;
+}
+
+.daily-col:hover .daily-bar,
+.daily-col:focus-visible .daily-bar {
+  filter: brightness(1.08);
+}
+
+.daily-col:focus-visible {
+  box-shadow: 0 0 0 2px rgba(29,78,216,0.35);
+}
+
+.daily-col[data-tooltip]:hover::after,
+.daily-col[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  white-space: pre;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .daily-bar-wrap {
@@ -745,7 +820,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
   font-size: 0.78rem;
   color: #64748b;
 }
