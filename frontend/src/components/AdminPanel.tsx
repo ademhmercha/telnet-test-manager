@@ -744,6 +744,7 @@ const Analytics: React.FC = () => {
       {!loading && !error && data && (() => {
         const { productStats = [], userStats = [], dailyActivity = [] } = data;
         const maxProd  = Math.max(...productStats.map((p: any) => p.total), 1);
+        const roleLabel = (role: string) => role === 'deleted' ? 'Compte supprimé' : role;
         const maxTests = Math.max(...userStats.map((u: any) => u.totalTests), 1);
         const maxTime  = Math.max(...userStats.map((u: any) => u.totalMinutes), 1);
         const maxDay   = Math.max(...dailyActivity.map((d: any) => (d.success || 0) + (d.failed || 0)), 1);
@@ -777,7 +778,7 @@ const Analytics: React.FC = () => {
                 : <div className="hbar-list">
                     {userStats.map((u: any) => (
                       <HBar key={u.username}
-                        label={`${u.username} (${u.role})`}
+                        label={`${u.username} (${roleLabel(u.role)})`}
                         value={u.totalTests}
                         max={maxTests}
                         displayValue={`${u.totalTests} test${u.totalTests !== 1 ? 's' : ''}`}
@@ -796,7 +797,7 @@ const Analytics: React.FC = () => {
                 : <div className="hbar-list">
                     {userStats.map((u: any) => (
                       <HBar key={u.username}
-                        label={`${u.username} (${u.role})`}
+                        label={`${u.username} (${roleLabel(u.role)})`}
                         value={u.totalMinutes}
                         max={maxTime}
                         displayValue={fmtMinutes(u.totalMinutes)}
@@ -856,7 +857,7 @@ const Analytics: React.FC = () => {
                   {userStats.map((u: any) => (
                     <tr key={u.username}>
                       <td><strong>{u.username}</strong></td>
-                      <td><span className={`role-pill role-${u.role}`}>{u.role}</span></td>
+                      <td><span className={`role-pill role-${u.role}`}>{roleLabel(u.role)}</span></td>
                       <td>{u.totalTests}</td>
                       <td>{fmtMinutes(u.totalMinutes)}</td>
                       <td>{u.sessions > 0 ? Math.round(u.totalTests / u.sessions) : '—'}</td>

@@ -76,8 +76,8 @@ class GetAnalyticsUseCase {
         const m = userMeta[username];
         return {
           username,
-          role:         m?.role   || '?',
-          statut:       m?.statut || 'actif',
+          role:         m?.role   || 'deleted',
+          statut:       m ? (m.statut || 'actif') : 'supprimé',
           totalTests:   t?.tests  || 0,
           sessions:     sessionCountMap[username] || 0,
           totalMinutes: Math.round(m?.currentTotalMinutes || 0)
